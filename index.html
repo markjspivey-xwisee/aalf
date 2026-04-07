@@ -278,7 +278,7 @@ class Human{
   get stage(){return ageStage(this.age)}
   get stageName(){return AGE_STAGE[this.stage]}
   get strength(){return this.stage===2?1:this.stage===3?.6:this.stage===1?.4:.1}
-  get speed(){return BIOME_WALK[0]*(this.stage>=1?.6+this.skills.hunt*.3:.15)*(this.hunger<80?1:.5)}
+  get speed(){return(this.stage>=1?.6+this.skills.hunt*.3:.15)*(this.hunger<80?1:.5)}
   get toolName(){return TOOL_NAME[this.tool]}
   get canWork(){return this.stage>=1&&this.alive}
 
