@@ -281,14 +281,28 @@ class Tribe{
     this.structures=[];this.relations={};
     this.homeX=0;this.homeY=0;this.wars=0;this.trades=0;this.rituals=0;
     this.culture=R();
+    // ── Language: unique word set that evolves ──
+    this.words={food:this._word(),water:this._word(),danger:this._word(),fire:this._word(),
+      hello:this._word(),hunt:this._word(),build:this._word(),war:this._word()};
+    // ── Legends: greatest members remembered ──
+    this.legends=[];// {name, deed, year}
+    // ── Phenotype: skin tone drifts per tribe ──
+    this.skinBase=30+F(R()*40);// hue 30-70 (warm skin tones)
+    this.skinLight=35+F(R()*30);// lightness %
+    // ── Migration state ──
+    this.migrating=false;this.migTarget=null;this.migTicks=0;
   }
   get sz(){return this.members.size}
   get color(){return`hsl(${this.hue},60%,50%)`}
+  get skinColor(){return`hsl(${this.skinBase},${45+this.culture*15}%,${this.skinLight}%)`}
   _genName(){const s='Ka,Na,Zu,Mo,Ta,Ri,Ba,Lo,Ga,Su,Wa,Di,Fe,Ko,Mu'.split(',');return s[F(R()*s.length)]+s[F(R()*s.length)].toLowerCase()}
+  _word(){const c='ktnmrsbdgfpzlwj',v='aeiou';let w='';for(let i=0;i<2+F(R()*2);i++)w+=c[F(R()*c.length)]+v[F(R()*v.length)];return w}
   hasTech(t){return this.techs[t]>0}
   learnTech(t,bus){if(!this.techs[t]){this.techs[t]=1;this.knowledge++;bus.emit(E.TOOL,this.id,{tech:t,tribe:this.name})}}
   relation(otherId){return this.relations[otherId]||0}
   adjustRelation(otherId,delta){this.relations[otherId]=mx(-1,mn(1,(this.relations[otherId]||0)+delta))}
+  addLegend(name,deed,year){if(this.legends.some(l=>l.name===name&&l.deed===deed))return;this.legends.push({name,deed,year});if(this.legends.length>5)this.legends.shift()}
+  speak(concept){return this.words[concept]||'...'}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -471,6 +485,9 @@ class Human{
     this.task=null;
     this.tx=[];this.ty=[];
     this.kills=0;this.taught=0;
+    this.speech=null;this.speechTimer=0;// speech bubble
+    this.phenoHue=tribe?tribe.skinBase+F((R()-.5)*8):35;
+    this.phenoLight=tribe?tribe.skinLight+F((R()-.5)*6):45;
     if(tribe)tribe.members.add(this.id);
   }
   get stage(){return ageStage(this.age)}
@@ -564,7 +581,7 @@ class Human{
       if(this.carrying.food<5)this.carrying.food+=got*.3;return}
     if(this.skills.hunt>.3&&this.tool>=1&&R()<.1){
       this.hunger=mx(0,this.hunger-20);this.skills.hunt=mn(1,this.skills.hunt+.003);
-      this.kills++;bus.emit(E.HUNT,this.id,{name:this.name});return}
+      this.kills++;if(this.tribe&&R()<.3)this.say(this.tribe.speak('hunt'));bus.emit(E.HUNT,this.id,{name:this.name});return}
     // Move toward prey or food
     let bx=0,by=0,bv=0;
     // Check for nearby animals
@@ -649,9 +666,11 @@ class Human{
     }
   }
 
+  say(word){this.speech=word;this.speechTimer=40}
   _socialize(world,bus){
     this.task='socializing';
     this.social=mn(100,this.social+10);
+    if(this.tribe&&R()<.08)this.say(this.tribe.speak('hello'));
     const nearby=world.nearbyHumans(this,3);
     for(const n of nearby){
       if(!n.alive)continue;
@@ -711,6 +730,7 @@ class Human{
       if(this.skills[s]>n.skills[s]){n.skills[s]=mn(1,n.skills[s]+.03);this.taught++}
     }
     bus.emit(E.ELDER,this.id,{name:this.name,tribe:this.tribe?.name});
+    if(this.taught>5&&this.tribe)this.tribe.addLegend(this.name,'wise teacher',F(this.age));
   }
 
   die(bus,cause){
@@ -801,6 +821,7 @@ class World{
 
     if(this.tick%20===0)this._updateTribes(bus);
     if(this.tick%30===0)this._checkWar(bus);
+    if(this.tick%50===0)this._checkMigration(bus);
 
     for(const tribe of this.tribes){
       if(!tribe.hasTech('farming')&&tribe.sz>6){
@@ -878,7 +899,37 @@ class World{
           bus.emit(E.WAR,winner.id,{winner:winner.name,loser:loser.name,casualties});
           if(audioEngine)audioEngine.playWar();
           if(particles)particles.emit(loser.homeX,loser.homeY,20,{vx:0,vy:-.1,vxR:1,vyR:.8,life:20,lifeR:10,r:220,g:40,b:30,a:.7,sz:2.5,spread:3});
-          for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m)m.skills.fight=mn(1,m.skills.fight+.02)}
+          for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m){m.skills.fight=mn(1,m.skills.fight+.02);if(m.kills>2)winner.addLegend(m.name,'great warrior',this.year)}}
+        }
+      }
+    }
+  }
+
+  _checkMigration(bus){
+    for(const tribe of this.tribes){
+      if(tribe.migrating){tribe.migTicks--;if(tribe.migTicks<=0)tribe.migrating=false;continue}
+      if(tribe.sz<3)continue;
+      // Check food near home
+      const homeFood=this.res.get(tribe.homeX,tribe.homeY,'food');
+      if(homeFood<1&&R()<.15){
+        // Find better location
+        let bestX=tribe.homeX,bestY=tribe.homeY,bestF=homeFood;
+        for(let i=0;i<20;i++){
+          const tx=R()*this.w,ty=R()*this.h;
+          if(this.terrain[this.ix(tx,ty)]===BIOME.WATER)continue;
+          const f=this.res.get(tx,ty,'food');
+          if(f>bestF){bestF=f;bestX=tx;bestY=ty}
+        }
+        if(bestF>homeFood+1){
+          tribe.migrating=true;tribe.migTarget={x:bestX,y:bestY};tribe.migTicks=100;
+          // Move all members toward target
+          for(const mid of tribe.members){
+            const m=this.humans.find(h=>h.id===mid&&h.alive);
+            if(m){m.x+=(bestX-m.x)*.3;m.y+=(bestY-m.y)*.3}
+          }
+          tribe.homeX=bestX;tribe.homeY=bestY;
+          bus.emit(E.MIGRATE,tribe.id,{tribe:tribe.name,x:F(bestX),y:F(bestY)});
+          if(particles)particles.emit(bestX,bestY,15,{vx:0,vy:-.1,vxR:.5,vyR:.3,life:30,lifeR:15,r:200,g:180,b:100,a:.5,sz:2,spread:4});
         }
       }
     }
@@ -1343,6 +1394,7 @@ function setupToasts(){
   sim.bus.sub(E.MONUMENT,(ev)=>showToast(`🗿 ${ev.d.tribe} built a MONUMENT!`,'monument'));
   sim.bus.sub(E.DOMESTICATE,(ev)=>showToast(`🐕 ${ev.d.tribe} DOMESTICATED animals!`,'domesticate'));
   sim.bus.sub(E.DISASTER,(ev)=>showToast(`⚡ DISASTER: ${ev.d.type}!`,'disaster'));
+  sim.bus.sub(E.MIGRATE,(ev)=>showToast(`🚶 ${ev.d.tribe} is MIGRATING!`,'monument'));
 }
 
 function setupKeys(){
@@ -1641,10 +1693,8 @@ function draw(){
     else if(vm==='tool'){const tc=['#555','#888','#aaa','#cc8844','#dd6644','#4488cc'];body=tc[h.tool]||'#555'}
     else if(vm==='social'){body=h.tribe?h.tribe.color:`hsl(0,0%,40%)`}
     else{
-      if(h.stage===0)body='#ffe0c0';
-      else if(h.stage===1)body='#e0c8a0';
-      else if(h.stage===3)body='#c0b8b0';
-      else body=h.sex==='m'?'#d4a060':'#c88060';
+      // Genetic phenotype coloring
+      body=`hsl(${h.phenoHue},${h.stage===0?20:40}%,${h.phenoLight+(h.stage===3?10:0)}%)`;
     }
 
     cx2.beginPath();cx2.arc(px,py,rr*3.5,0,PI*2);
@@ -1667,6 +1717,34 @@ function draw(){
     // Follow indicator
     if(followTarget&&followTarget===h.id){
       cx2.beginPath();cx2.arc(px,py,rr+6,0,PI*2);cx2.strokeStyle='rgba(255,220,50,0.7)';cx2.lineWidth=1.5;cx2.setLineDash([3,3]);cx2.stroke();cx2.setLineDash([]);
+    }
+    // Speech bubble
+    if(h.speechTimer>0){
+      h.speechTimer--;
+      const alpha=mn(1,h.speechTimer/15);
+      const bw=h.speech.length*4+8;
+      cx2.fillStyle=`rgba(20,15,30,${.7*alpha})`;
+      cx2.beginPath();cx2.roundRect(px-bw/2,py-rr-16,bw,12,3);cx2.fill();
+      cx2.fillStyle=`rgba(255,240,200,${alpha})`;
+      cx2.font=`${mx(7,F(C*.45))}px monospace`;cx2.textAlign='center';cx2.textBaseline='middle';
+      cx2.fillText(h.speech,px,py-rr-10);
+    }
+  }
+
+  // ── Diplomacy lines between tribes ──
+  if(vm==='tribe'||vm==='social'){
+    cx2.lineWidth=1.5;
+    for(let i=0;i<w.tribes.length;i++){
+      for(let j=i+1;j<w.tribes.length;j++){
+        const a=w.tribes[i],b=w.tribes[j];
+        const rel=a.relation(b.id);
+        if(abs(rel)<.1)continue;// neutral = no line
+        const ax=a.homeX*C+C/2,ay=a.homeY*C+C/2,bx=b.homeX*C+C/2,by=b.homeY*C+C/2;
+        cx2.beginPath();cx2.moveTo(ax,ay);cx2.lineTo(bx,by);
+        if(rel>0)cx2.strokeStyle=`rgba(60,200,80,${mn(.5,rel*.6)})`;// green=friendly
+        else cx2.strokeStyle=`rgba(220,50,50,${mn(.5,abs(rel)*.6)})`;// red=hostile
+        cx2.setLineDash(rel>0?[4,4]:[2,4]);cx2.stroke();cx2.setLineDash([]);
+      }
     }
   }
 
@@ -1753,7 +1831,12 @@ function ui(){
   const tot=mx(1,s.pop);
   const sorted=[...sim.world.tribes].sort((a,b)=>b.sz-a.sz);
   for(const t of sorted){const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;bar.appendChild(d)}
-  leg.innerHTML=sorted.slice(0,4).map(t=>`<span style="color:${t.color}">■</span>${t.name}(${t.sz})`).join(' ');
+  leg.innerHTML=sorted.slice(0,4).map(t=>{
+    const techs=Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>({fire:'🔥',farming:'🌾',language:'💬',burial:'⚱',domestication:'🐕',monument:'🗿'}[k]||'✦')).join('');
+    const migIcon=t.migrating?'🚶':'';
+    const legendStr=t.legends.length?` 📜${t.legends.length}`:'';
+    return`<span style="color:${t.color}">■</span>${t.name}(${t.sz})${techs}${migIcon}${legendStr}`;
+  }).join(' ');
 
   spark('s1',sim.st.pH,'#7dce82');
   if(document.getElementById('tt2').classList.contains('on'))spark('s2',sim.st.tH,'#e09040');
