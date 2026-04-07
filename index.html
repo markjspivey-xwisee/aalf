@@ -279,9 +279,9 @@ class Animal{
     this.y=((this.y%world.h)+world.h)%world.h;
   }
   _tickDeer(world,isNight){
-    // Flee from humans
+    // Flee from humans (check every other tick for perf)
     let fleeX=0,fleeY=0,fleeing=false;
-    for(const h of world.humans){
+    if(world.tick&1) for(const h of world.humans){
       if(!h.alive)continue;
       const dx=this.x-h.x,dy=this.y-h.y;
       const d2=dx*dx+dy*dy;
@@ -324,9 +324,7 @@ class Animal{
         if(!h.alive)continue;
         const dx=h.x-this.x,dy=h.y-this.y;
         const d2=dx*dx+dy*dy;
-        // Prefer lone (no tribe) or isolated humans
-        const lonely=!h.tribe||(world.nearbyHumans(h,3).length<2);
-        if(d2<64&&lonely&&d2<bestD){bestD=d2;bestH=h}
+        if(d2<64&&d2<bestD){bestD=d2;bestH=h}
       }
     }
     if(bestH&&bestD<1.5){
@@ -1340,9 +1338,9 @@ function draw(){
   const st=sTC[w.season]||[0,0,0];
 
   // Night tint modifiers
-  const nightR= nightAlpha>0?-20*nightAlpha:0;
-  const nightG= nightAlpha>0?-10*nightAlpha:0;
-  const nightB= nightAlpha>0? 30*nightAlpha:0;
+  const nightR= nightAlpha>0?-12*nightAlpha:0;
+  const nightG= nightAlpha>0?-6*nightAlpha:0;
+  const nightB= nightAlpha>0? 15*nightAlpha:0;
 
   // ── Terrain ──
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
@@ -1361,19 +1359,19 @@ function draw(){
     cx2.fillStyle=col;cx2.fillRect(x*C,y*C,C+.5,C+.5);
   }
 
-  // ── Night: fire pit glow (warm orange circles) ──
-  if(nightAlpha>0.1){
+  // ── Night: fire pit glow (warm orange circles, max 15 for perf) ──
+  if(nightAlpha>0.15){
+    let fireCount=0;
     for(const s of w.structures){
-      if(s.type!==STRUCT.FIRE_PIT)continue;
+      if(s.type!==STRUCT.FIRE_PIT||fireCount>=15)continue;
+      fireCount++;
       const px=s.x*C+C/2,py=s.y*C+C/2;
-      const glowR=C*6;
-      const grd=cx2.createRadialGradient(px,py,C*.3,px,py,glowR);
-      grd.addColorStop(0,`rgba(255,160,40,${nightAlpha*.6})`);
-      grd.addColorStop(0.3,`rgba(200,100,20,${nightAlpha*.25})`);
-      grd.addColorStop(1,'rgba(0,0,0,0)');
-      cx2.fillStyle=grd;cx2.beginPath();cx2.arc(px,py,glowR,0,PI*2);cx2.fill();
-      // Occasional crackle sound
-      if(R()<.003&&audioEngine)audioEngine.playCrackle();
+      const glowR=C*5;
+      cx2.fillStyle=`rgba(255,140,30,${nightAlpha*.18})`;
+      cx2.beginPath();cx2.arc(px,py,glowR,0,PI*2);cx2.fill();
+      cx2.fillStyle=`rgba(255,180,60,${nightAlpha*.25})`;
+      cx2.beginPath();cx2.arc(px,py,glowR*.4,0,PI*2);cx2.fill();
+      if(R()<.002&&audioEngine)audioEngine.playCrackle();
     }
   }
 
@@ -1488,12 +1486,6 @@ function draw(){
   }
 
   cx2.restore();
-
-  // ── Night overlay (over entire canvas, outside camera transform) ──
-  if(nightAlpha>0){
-    cx2.fillStyle=`rgba(5,5,30,${nightAlpha*.7})`;
-    cx2.fillRect(0,0,cw,ch);
-  }
 
   ui();
 }
