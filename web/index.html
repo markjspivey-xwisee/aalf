@@ -1873,7 +1873,7 @@ function draw(){
       const alpha=mn(1,h.speechTimer/15);
       const bw=h.speech.length*4+8;
       cx2.fillStyle=`rgba(20,15,30,${.7*alpha})`;
-      cx2.beginPath();cx2.roundRect(px-bw/2,py-rr-16,bw,12,3);cx2.fill();
+      cx2.fillRect(px-bw/2,py-rr-16,bw,12);// speech bubble bg
       cx2.fillStyle=`rgba(255,240,200,${alpha})`;
       cx2.font=`${mx(7,F(C*.45))}px monospace`;cx2.textAlign='center';cx2.textBaseline='middle';
       cx2.fillText(h.speech,px,py-rr-10);
