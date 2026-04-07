@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AALF — Autopoietic Artificial Life Forms</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#c8d6e5;font-family:'JetBrains Mono',monospace;overflow-x:hidden}
+#app{display:grid;grid-template-columns:1fr 320px;grid-template-rows:auto 1fr auto;height:100vh;gap:0}
+header{grid-column:1/-1;padding:12px 20px;background:linear-gradient(90deg,#0d1320,#131b2e);border-bottom:1px solid #1a2540;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:18px;color:#00e5ff;letter-spacing:2px}
+header .sub{font-size:11px;color:#5a6a7a;margin-left:12px}
+.controls{display:flex;gap:8px;align-items:center}
+.controls button{background:#1a2540;border:1px solid #2a3a55;color:#8ecae6;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:12px;transition:all .2s}
+.controls button:hover{background:#2a3a55;color:#00e5ff}
+.controls button.active{background:#00e5ff22;border-color:#00e5ff;color:#00e5ff}
+.controls select,.controls input{background:#1a2540;border:1px solid #2a3a55;color:#8ecae6;padding:5px 8px;border-radius:4px;font-family:inherit;font-size:12px}
+#world-container{position:relative;overflow:hidden;background:#080c14;display:flex;align-items:center;justify-content:center}
+canvas{display:block}
+#sidebar{background:#0d1320;border-left:1px solid #1a2540;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+.panel{background:#111927;border:1px solid #1a2540;border-radius:6px;padding:10px}
+.panel h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#5a7a9a;margin-bottom:8px;border-bottom:1px solid #1a253a;padding-bottom:5px}
+.stat-row{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}
+.stat-label{color:#5a6a7a}
+.stat-value{color:#8ecae6;font-weight:bold}
+.stat-value.green{color:#00e676}
+.stat-value.red{color:#ff5252}
+.stat-value.cyan{color:#00e5ff}
+.stat-value.yellow{color:#ffd740}
+.sparkline-container{height:40px;margin-top:6px;position:relative}
+.sparkline-container canvas{width:100%;height:100%}
+.event-log{max-height:180px;overflow-y:auto;font-size:11px;line-height:1.6}
+.event-log .entry{padding:1px 4px;border-radius:2px}
+.event-log .entry:nth-child(odd){background:#0a0e1a}
+.event-log .born{color:#00e676}
+.event-log .died{color:#ff5252}
+.event-log .divided{color:#00e5ff}
+.event-log .autopoiesis{color:#ffd740}
+.event-log .breach{color:#ff1744}
+footer{grid-column:1/-1;padding:6px 20px;background:#0d1320;border-top:1px solid #1a2540;font-size:11px;color:#3a4a5a;display:flex;justify-content:space-between}
+.legend{display:flex;gap:16px;font-size:11px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+#tooltip{position:absolute;background:#1a2540ee;border:1px solid #2a3a55;border-radius:6px;padding:8px 12px;font-size:11px;pointer-events:none;display:none;z-index:10;max-width:220px}
+#tooltip .tt-id{color:#00e5ff;font-weight:bold}
+#tooltip .tt-row{display:flex;justify-content:space-between;gap:12px}
+@media(max-width:900px){#app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto auto}#sidebar{border-left:none;border-top:1px solid #1a2540;max-height:300px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div style="display:flex;align-items:baseline">
+      <h1>AALF</h1>
+      <span class="sub">Autopoietic Artificial Life Forms &mdash; Subscription-Driven Simulation</span>
+    </div>
+    <div class="controls">
+      <button id="btn-pause" class="active">&#9654; Run</button>
+      <button id="btn-step">Step</button>
+      <button id="btn-spawn">+ Spawn</button>
+      <button id="btn-reset">Reset</button>
+      <label style="font-size:11px;color:#5a6a7a">Speed
+        <input id="speed" type="range" min="1" max="60" value="15" style="width:80px;vertical-align:middle">
+      </label>
+    </div>
+  </header>
+  <div id="world-container">
+    <canvas id="world-canvas"></canvas>
+    <div id="tooltip"></div>
+  </div>
+  <div id="sidebar">
+    <div class="panel">
+      <h3>Simulation</h3>
+      <div class="stat-row"><span class="stat-label">Tick</span><span id="s-tick" class="stat-value cyan">0</span></div>
+      <div class="stat-row"><span class="stat-label">Population</span><span id="s-pop" class="stat-value green">0</span></div>
+      <div class="stat-row"><span class="stat-label">Autopoietic</span><span id="s-auto" class="stat-value green">0</span></div>
+      <div class="stat-row"><span class="stat-label">Peak Pop.</span><span id="s-peak" class="stat-value">0</span></div>
+      <div class="stat-row"><span class="stat-label">Births</span><span id="s-births" class="stat-value">0</span></div>
+      <div class="stat-row"><span class="stat-label">Deaths</span><span id="s-deaths" class="stat-value red">0</span></div>
+      <div class="stat-row"><span class="stat-label">Max Gen.</span><span id="s-gen" class="stat-value yellow">0</span></div>
+      <div class="stat-row"><span class="stat-label">Events</span><span id="s-events" class="stat-value">0</span></div>
+      <div class="stat-row"><span class="stat-label">Subscribers</span><span id="s-subs" class="stat-value">0</span></div>
+    </div>
+    <div class="panel">
+      <h3>Population History</h3>
+      <div class="sparkline-container"><canvas id="spark-pop"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Avg. Viability</h3>
+      <div class="sparkline-container"><canvas id="spark-viab"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Event Log <span style="color:#3a4a5a">(subscription feed)</span></h3>
+      <div id="event-log" class="event-log"></div>
+    </div>
+  </div>
+  <footer>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#00e676"></span> Healthy</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#ffd740"></span> Stressed</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#ff5252"></span> Non-autopoietic</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#00e5ff"></span> Ready to divide</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#1a3a2a"></span> Resources</span>
+    </div>
+    <div>Hover organisms for details &bull; Click to inspect</div>
+  </footer>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  EVENT BUS — Subscription System
+// ═══════════════════════════════════════════════════════════
+class EventBus {
+  constructor() {
+    this._subs = new Map();
+    this._wildcards = [];
+    this._history = [];
+    this._count = 0;
+  }
+  subscribe(types, cb, filter) {
+    const sub = { id: Math.random().toString(36).slice(2, 10), types: types ? new Set(Array.isArray(types) ? types : [types]) : null, cb, filter, active: true };
+    if (!sub.types) { this._wildcards.push(sub); }
+    else { for (const t of sub.types) { if (!this._subs.has(t)) this._subs.set(t, []); this._subs.get(t).push(sub); } }
+    return sub;
+  }
+  unsubscribe(sub) { sub.active = false; }
+  emit(type, sourceId, data = {}) {
+    this._count++;
+    const evt = { type, sourceId, data, tick: data._tick || 0 };
+    this._history.push(evt);
+    if (this._history.length > 5000) this._history = this._history.slice(-3000);
+    let n = 0;
+    for (const s of (this._subs.get(type) || [])) { if (s.active && (!s.filter || s.filter(evt))) { s.cb(evt); n++; } }
+    for (const s of this._wildcards) { if (s.active && (!s.filter || s.filter(evt))) { s.cb(evt); n++; } }
+    return n;
+  }
+  get eventCount() { return this._count; }
+  get subscriberCount() {
+    const seen = new Set();
+    for (const subs of this._subs.values()) for (const s of subs) if (s.active) seen.add(s.id);
+    for (const s of this._wildcards) if (s.active) seen.add(s.id);
+    return seen.size;
+  }
+}
+
+// Event types
+const E = {
+  SPAWNED: 'spawned', DIED: 'died', DIVIDED: 'divided',
+  METABOLISM: 'metabolism', CONSUMED: 'consumed', PRODUCED: 'produced',
+  MEMBRANE_REPAIRED: 'membrane.repaired', MEMBRANE_DAMAGED: 'membrane.damaged', MEMBRANE_BREACHED: 'membrane.breached',
+  RESOURCE_SPAWNED: 'resource.spawned', ENV_TICK: 'env.tick',
+  COUPLING: 'coupling', EXCHANGED: 'exchanged',
+  SIM_STEP: 'sim.step', SIM_START: 'sim.start',
+  AUTOPOIESIS_OK: 'autopoiesis.sustained', AUTOPOIESIS_LOST: 'autopoiesis.lost',
+};
+
+// ═══════════════════════════════════════════════════════════
+//  CHEMISTRY
+// ═══════════════════════════════════════════════════════════
+const MOL = { SUB_A: 0, SUB_B: 1, CATALYST: 2, LIPID: 3, ENZYME: 4, TRANSPORTER: 5, SIGNAL: 6, ENERGY: 7, WASTE: 8 };
+const MOL_NAMES = ['sub_a','sub_b','catalyst','lipid','enzyme','transporter','signal','energy','waste'];
+
+const REACTIONS = [
+  { name:'energy_prod', inp:{[MOL.SUB_A]:1}, out:{[MOL.ENERGY]:4,[MOL.WASTE]:1}, cost:-4, cat:false, rate:0.95 },
+  { name:'lipid_syn',   inp:{[MOL.SUB_B]:1,[MOL.ENERGY]:1}, out:{[MOL.LIPID]:3}, cost:1, cat:false, rate:0.85 },
+  { name:'enzyme_syn',  inp:{[MOL.SUB_A]:1,[MOL.SUB_B]:1,[MOL.ENERGY]:2}, out:{[MOL.ENZYME]:1}, cost:2, cat:true, rate:0.4 },
+  { name:'trans_syn',   inp:{[MOL.SUB_B]:2,[MOL.ENERGY]:1}, out:{[MOL.TRANSPORTER]:1}, cost:1.5, cat:false, rate:0.5 },
+  { name:'signal_syn',  inp:{[MOL.SUB_A]:1,[MOL.ENERGY]:1}, out:{[MOL.SIGNAL]:2}, cost:1, cat:false, rate:0.3 },
+  { name:'waste_exp',   inp:{[MOL.WASTE]:3}, out:{}, cost:0.5, cat:false, rate:0.8 },
+];
+
+function canReact(rxn, inv, energy) {
+  if (energy < rxn.cost) return false;
+  for (const [m, amt] of Object.entries(rxn.inp)) if ((inv[m]||0) < amt) return false;
+  return true;
+}
+function doReact(rxn, inv) {
+  for (const [m, amt] of Object.entries(rxn.inp)) inv[m] = (inv[m]||0) - amt;
+  for (const [m, amt] of Object.entries(rxn.out)) inv[m] = (inv[m]||0) + amt;
+  return -rxn.cost;
+}
+function metabolize(inv, energy, hasCat, enzymeBonus) {
+  let delta = 0; const done = [];
+  for (const rxn of REACTIONS) {
+    if (rxn.cat && !hasCat) continue;
+    const eff = Math.min(1, rxn.rate + enzymeBonus);
+    if (canReact(rxn, inv, energy + delta) && Math.random() < eff) {
+      delta += doReact(rxn, inv);
+      done.push(rxn.name);
+    }
+  }
+  return { delta, done };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MEMBRANE
+// ═══════════════════════════════════════════════════════════
+class Membrane {
+  constructor() { this.integrity = 1; this.permeability = 0.3; this.lipids = 20; this.transporters = 3; }
+  get viable() { return this.integrity > 0.15 && this.lipids >= 5; }
+  get damaged() { return this.integrity < 0.4; }
+  get transportCap() { return this.permeability * this.integrity + Math.min(this.transporters * 0.1, 0.5); }
+  get canDivide() { return this.lipids >= 25 * 1.2 && this.integrity > 0.7; }
+  decay() {
+    const loss = 0.02 * (1 + Math.random() * 0.5);
+    this.lipids = Math.max(0, this.lipids - loss);
+    this.transporters = Math.max(0, this.transporters - 0.006);
+    this.integrity = Math.min(1, this.lipids / 25);
+    return loss;
+  }
+  repair(lipidsAvail, transAvail) {
+    const maxL = 50 - this.lipids;
+    const lu = Math.min(lipidsAvail, Math.max(0, maxL));
+    this.lipids += lu;
+    const tu = Math.min(transAvail, Math.max(0, 10 - this.transporters));
+    this.transporters += tu;
+    this.integrity = Math.min(1, this.lipids / 25);
+    return { lu, tu };
+  }
+  divide() {
+    const hl = this.lipids / 2, ht = this.transporters / 2;
+    this.lipids = hl; this.transporters = ht;
+    this.integrity = Math.min(1, this.lipids / 25);
+    const d = new Membrane();
+    d.lipids = hl; d.transporters = ht;
+    d.integrity = Math.min(1, hl / 25);
+    d.permeability = this.permeability + (Math.random() - 0.5) * 0.1;
+    return d;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LIFE FORM
+// ═══════════════════════════════════════════════════════════
+let _lfId = 0;
+class LifeForm {
+  constructor(x, y, genome, gen = 0, parentId = null) {
+    this.id = 'lf' + (_lfId++);
+    this.x = x; this.y = y;
+    this.genome = genome || LifeForm.randomGenome();
+    this.generation = gen;
+    this.parentId = parentId;
+    this.membrane = new Membrane();
+    this.membrane.permeability = this.genome.perm;
+    this.age = 0;
+    this.inv = { [MOL.ENZYME]: 3, [MOL.LIPID]: 8, [MOL.TRANSPORTER]: 2 };
+    this.energy = 15;
+    this.alive = true;
+    this.autopoietic = true;
+    this._noProd = 0;
+    this._totalProd = 0;
+    this._divCool = 0;
+  }
+  static randomGenome() {
+    return {
+      metaEff: 0.7 + Math.random() * 0.6,
+      memInv: 0.3 + Math.random() * 0.4,
+      divThresh: 30 + Math.random() * 30,
+      perm: 0.2 + Math.random() * 0.3,
+      sigSens: 0.2 + Math.random() * 0.6,
+      aggro: Math.random() * 0.3,
+    };
+  }
+  static mutateGenome(g) {
+    const m = (v, lo, hi) => Math.random() < 0.08 ? Math.max(lo, Math.min(hi, v + (Math.random()-0.5)*0.2)) : v;
+    return {
+      metaEff: m(g.metaEff, 0.1, 2), memInv: m(g.memInv, 0.1, 0.9),
+      divThresh: Math.random()<0.08 ? Math.max(20, g.divThresh+(Math.random()-0.5)*6) : g.divThresh,
+      perm: m(g.perm, 0.05, 0.9), sigSens: m(g.sigSens, 0.05, 1), aggro: m(g.aggro, 0, 1),
+    };
+  }
+  get viability() {
+    if (!this.alive) return 0;
+    const ms = this.membrane.integrity;
+    const es = Math.min(1, this.energy / 20);
+    const enz = Math.min(1, (this.inv[MOL.ENZYME]||0) / 3);
+    return ms * 0.4 + es * 0.3 + enz * 0.3;
+  }
+  get size() { return 1 + this.membrane.lipids * 0.05; }
+
+  tick(bus) {
+    if (!this.alive) return;
+    this.age++;
+    if (this._divCool > 0) this._divCool--;
+    this.energy -= 0.15 + this.size * 0.02;
+    if (this.inv[MOL.ENZYME] > 0) this.inv[MOL.ENZYME] = Math.max(0, this.inv[MOL.ENZYME] - 0.04);
+    if (this.age > 300) this.energy -= (this.age - 300) * 0.002;
+
+    // Metabolize
+    const hasCat = (this.inv[MOL.CATALYST]||0) > 0;
+    const eBonus = Math.min(0.3, (this.inv[MOL.ENZYME]||0) * 0.05) * this.genome.metaEff;
+    const { delta, done } = metabolize(this.inv, this.energy, hasCat, eBonus);
+    this.energy += delta;
+    if (done.length) { this._noProd = 0; this._totalProd += done.length; bus.emit(E.PRODUCED, this.id, { reactions: done }); }
+    else { this._noProd++; }
+
+    // Membrane maintenance
+    const dmg = this.membrane.decay();
+    if (dmg > 0.05) bus.emit(E.MEMBRANE_DAMAGED, this.id, { damage: dmg });
+    const lipidsInv = this.inv[MOL.LIPID] || 0;
+    const la = this.membrane.damaged ? lipidsInv : lipidsInv * (0.3 + this.genome.memInv * 0.7);
+    const ta = (this.inv[MOL.TRANSPORTER] || 0) * 0.7;
+    const { lu, tu } = this.membrane.repair(la, ta);
+    this.inv[MOL.LIPID] = (this.inv[MOL.LIPID]||0) - lu;
+    this.inv[MOL.TRANSPORTER] = (this.inv[MOL.TRANSPORTER]||0) - tu;
+    if (lu > 0 || tu > 0) bus.emit(E.MEMBRANE_REPAIRED, this.id, { lu, tu, integrity: this.membrane.integrity });
+
+    if (this._noProd > 15 && this.autopoietic) { this.autopoietic = false; bus.emit(E.AUTOPOIESIS_LOST, this.id); }
+    else if (!this.autopoietic && this._noProd === 0) { this.autopoietic = true; bus.emit(E.AUTOPOIESIS_OK, this.id); }
+
+    if (!this.membrane.viable || this.energy <= 0) { this.die(bus); }
+  }
+  importResources(avail, bus) {
+    const consumed = {};
+    if (!this.alive) return consumed;
+    const cap = this.membrane.transportCap;
+    for (const mol of [MOL.SUB_A, MOL.SUB_B, MOL.CATALYST]) {
+      const a = avail[mol] || 0;
+      if (a <= 0) continue;
+      const t = Math.min(a, cap * 0.4);
+      if (t > 0.01) { this.inv[mol] = (this.inv[mol]||0) + t; consumed[mol] = t; }
+    }
+    return consumed;
+  }
+  canDivide() { return this._divCool <= 0 && this.energy >= this.genome.divThresh && this.membrane.canDivide && this.autopoietic && (this.inv[MOL.ENZYME]||0) >= 0.5; }
+  divide(bus) {
+    if (!this.canDivide()) return null;
+    const dm = this.membrane.divide();
+    const dg = LifeForm.mutateGenome(this.genome);
+    const di = {};
+    for (const [mol, amt] of Object.entries(this.inv)) {
+      const share = amt * (0.35 + Math.random() * 0.2);
+      di[mol] = share; this.inv[mol] -= share;
+    }
+    const de = this.energy * 0.45; this.energy -= de;
+    const child = new LifeForm(this.x + (Math.random()-0.5)*3, this.y + (Math.random()-0.5)*3, dg, this.generation + 1, this.id);
+    child.membrane = dm; child.inv = di; child.energy = de;
+    this._divCool = 20;
+    bus.emit(E.DIVIDED, this.id, { childId: child.id, gen: child.generation });
+    bus.emit(E.SPAWNED, child.id, { parentId: this.id, gen: child.generation });
+    return child;
+  }
+  die(bus) {
+    this.alive = false; this.autopoietic = false;
+    bus.emit(E.DIED, this.id, { age: this.age, gen: this.generation });
+    return this.inv;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESOURCE FIELD
+// ═══════════════════════════════════════════════════════════
+class ResourceField {
+  constructor(w, h, regen, diffuse, density) {
+    this.w = w; this.h = h; this.regen = regen; this.diff = diffuse;
+    this.grid = [];
+    for (let y = 0; y < h; y++) {
+      this.grid[y] = [];
+      for (let x = 0; x < w; x++) this.grid[y][x] = density + (Math.random()-0.5)*2;
+    }
+  }
+  get(x, y) { return this.grid[((y%this.h)+this.h)%this.h][((x%this.w)+this.w)%this.w]; }
+  consume(x, y, amt) {
+    const gy = ((y%this.h)+this.h)%this.h, gx = ((x%this.w)+this.w)%this.w;
+    const actual = Math.min(this.grid[gy][gx], amt);
+    this.grid[gy][gx] -= actual;
+    return actual;
+  }
+  deposit(x, y, amt) {
+    const gy = ((y%this.h)+this.h)%this.h, gx = ((x%this.w)+this.w)%this.w;
+    this.grid[gy][gx] = Math.min(10, this.grid[gy][gx] + amt);
+  }
+  regenerate() {
+    for (let y = 0; y < this.h; y++)
+      for (let x = 0; x < this.w; x++)
+        if (this.grid[y][x] < 10) this.grid[y][x] = Math.min(10, this.grid[y][x] + this.regen * (0.5 + Math.random()));
+  }
+  diffuse() {
+    const ng = [];
+    const dr = this.diff;
+    for (let y = 0; y < this.h; y++) {
+      ng[y] = [];
+      for (let x = 0; x < this.w; x++) {
+        const avg = (
+          this.grid[(y-1+this.h)%this.h][x] + this.grid[(y+1)%this.h][x] +
+          this.grid[y][(x-1+this.w)%this.w] + this.grid[y][(x+1)%this.w]
+        ) / 4;
+        ng[y][x] = this.grid[y][x] * (1-dr) + avg * dr;
+      }
+    }
+    this.grid = ng;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WORLD
+// ═══════════════════════════════════════════════════════════
+class World {
+  constructor(w, h) {
+    this.w = w; this.h = h;
+    this.lifeForms = [];
+    this.tickCount = 0;
+    this.res = {
+      [MOL.SUB_A]: new ResourceField(w, h, 0.15, 0.15, 5),
+      [MOL.SUB_B]: new ResourceField(w, h, 0.10, 0.10, 4),
+      [MOL.CATALYST]: new ResourceField(w, h, 0.02, 0.05, 0.8),
+    };
+    // Hotspots
+    for (let i = 0; i < 4; i++) {
+      const hx = Math.floor(Math.random()*w), hy = Math.floor(Math.random()*h);
+      for (const rf of Object.values(this.res))
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+          rf.deposit(hx+dx, hy+dy, 2 + Math.random()*4);
+    }
+  }
+  spawn(bus, x, y, genome) {
+    const lf = new LifeForm(x ?? Math.random()*this.w, y ?? Math.random()*this.h, genome);
+    this.lifeForms.push(lf);
+    bus.emit(E.SPAWNED, lf.id, { x: lf.x, y: lf.y, gen: 0 });
+    return lf;
+  }
+  resourceAt(x, y) {
+    const gx = Math.floor(x), gy = Math.floor(y);
+    const r = {};
+    for (const [mol, rf] of Object.entries(this.res)) r[mol] = rf.get(gx, gy);
+    return r;
+  }
+  consumeAt(x, y, amounts) {
+    const gx = Math.floor(x), gy = Math.floor(y);
+    for (const [mol, amt] of Object.entries(amounts)) if (this.res[mol]) this.res[mol].consume(gx, gy, amt);
+  }
+  depositAt(x, y, materials) {
+    const gx = Math.floor(x), gy = Math.floor(y);
+    for (const [mol, amt] of Object.entries(materials)) if (this.res[mol]) this.res[mol].deposit(gx, gy, amt);
+  }
+  tick(bus) {
+    this.tickCount++;
+    const aliveBefore = this.lifeForms.filter(l => l.alive).length;
+    for (const rf of Object.values(this.res)) { rf.regenerate(); rf.diffuse(); }
+
+    const newLFs = [];
+    for (const lf of this.lifeForms) {
+      if (!lf.alive) continue;
+      // Movement: random walk + chemotaxis
+      lf.x += (Math.random()-0.5)*0.6;
+      lf.y += (Math.random()-0.5)*0.6;
+      const gx = Math.floor(lf.x), gy = Math.floor(lf.y);
+      let bestD = 0, bestV = this.res[MOL.SUB_A].get(gx, gy);
+      for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const v = this.res[MOL.SUB_A].get(gx+dx, gy+dy);
+        if (v > bestV) { bestV = v; bestD = [dx*0.15, dy*0.15]; }
+      }
+      if (bestD) { lf.x += bestD[0]; lf.y += bestD[1]; }
+      lf.x = ((lf.x % this.w) + this.w) % this.w;
+      lf.y = ((lf.y % this.h) + this.h) % this.h;
+
+      // Import
+      const avail = this.resourceAt(lf.x, lf.y);
+      const consumed = lf.importResources(avail, bus);
+      this.consumeAt(lf.x, lf.y, consumed);
+
+      lf.tick(bus);
+
+      if (lf.alive && lf.canDivide()) {
+        const child = lf.divide(bus);
+        if (child) { child.x = ((child.x%this.w)+this.w)%this.w; child.y = ((child.y%this.h)+this.h)%this.h; newLFs.push(child); }
+      }
+      // Waste
+      const waste = lf.inv[MOL.WASTE] || 0;
+      if (waste > 0) { this.depositAt(lf.x, lf.y, {[MOL.WASTE]: waste}); lf.inv[MOL.WASTE] = 0; }
+    }
+    // Dead release
+    for (const lf of this.lifeForms) {
+      if (!lf.alive) {
+        const rel = {};
+        for (const [k,v] of Object.entries(lf.inv)) if (v > 0) rel[k] = v;
+        if (Object.keys(rel).length) this.depositAt(lf.x, lf.y, rel);
+        lf.inv = {};
+      }
+    }
+    this.lifeForms.push(...newLFs);
+    this.lifeForms = this.lifeForms.filter(lf => lf.alive || (this.tickCount - lf.age < 50));
+    const aliveAfter = this.lifeForms.filter(l => l.alive).length;
+    bus.emit(E.ENV_TICK, null, { tick: this.tickCount, alive: aliveAfter, born: newLFs.length });
+    return { tick: this.tickCount, alive: aliveAfter, born: newLFs.length, died: aliveBefore - aliveAfter + newLFs.length };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SIMULATION
+// ═══════════════════════════════════════════════════════════
+class Simulation {
+  constructor(w=60, h=40, initPop=15) {
+    this.bus = new EventBus();
+    this.world = new World(w, h);
+    this.stats = { ticks:0, births:0, deaths:0, peak:0, maxGen:0, popHist:[], viabHist:[], energyHist:[] };
+    this.running = false;
+    this._setupStats();
+    for (let i = 0; i < initPop; i++) this.world.spawn(this.bus);
+  }
+  _setupStats() {
+    this.bus.subscribe(E.SPAWNED, () => this.stats.births++);
+    this.bus.subscribe(E.DIED, () => this.stats.deaths++);
+  }
+  step() {
+    const result = this.world.tick(this.bus);
+    const alive = this.world.lifeForms.filter(l => l.alive);
+    this.stats.ticks++;
+    this.stats.popHist.push(alive.length);
+    if (alive.length > this.stats.peak) this.stats.peak = alive.length;
+    if (alive.length) {
+      const avgV = alive.reduce((s,l) => s+l.viability, 0) / alive.length;
+      this.stats.viabHist.push(avgV);
+      const avgE = alive.reduce((s,l) => s+l.energy, 0) / alive.length;
+      this.stats.energyHist.push(avgE);
+      const mg = Math.max(...alive.map(l => l.generation));
+      if (mg > this.stats.maxGen) this.stats.maxGen = mg;
+    } else { this.stats.viabHist.push(0); this.stats.energyHist.push(0); }
+    if (this.stats.popHist.length > 500) {
+      this.stats.popHist = this.stats.popHist.slice(-500);
+      this.stats.viabHist = this.stats.viabHist.slice(-500);
+      this.stats.energyHist = this.stats.energyHist.slice(-500);
+    }
+    this.bus.emit(E.SIM_STEP, null, { tick: this.world.tickCount, pop: alive.length });
+    return result;
+  }
+  alive() { return this.world.lifeForms.filter(l => l.alive); }
+  summary() {
+    const a = this.alive(), auto = a.filter(l => l.autopoietic);
+    return {
+      tick: this.world.tickCount, pop: a.length, auto: auto.length,
+      peak: this.stats.peak, births: this.stats.births, deaths: this.stats.deaths,
+      maxGen: this.stats.maxGen,
+      avgViab: a.length ? a.reduce((s,l) => s+l.viability, 0)/a.length : 0,
+      avgEnergy: a.length ? a.reduce((s,l) => s+l.energy, 0)/a.length : 0,
+      events: this.bus.eventCount, subs: this.bus.subscriberCount,
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDERER & UI
+// ═══════════════════════════════════════════════════════════
+const CELL = 14;
+let sim, canvas, ctx, running = false, animId = null, speed = 15;
+let hoveredLF = null;
+
+function init() {
+  sim = new Simulation(60, 40, 15);
+  canvas = document.getElementById('world-canvas');
+  ctx = canvas.getContext('2d');
+  canvas.width = sim.world.w * CELL;
+  canvas.height = sim.world.h * CELL;
+
+  // Subscribe event log
+  const logEl = document.getElementById('event-log');
+  const logTypes = [E.SPAWNED, E.DIED, E.DIVIDED, E.AUTOPOIESIS_OK, E.AUTOPOIESIS_LOST, E.MEMBRANE_BREACHED];
+  sim.bus.subscribe(logTypes, (evt) => {
+    const icons = { [E.SPAWNED]:'+ born', [E.DIED]:'✗ died', [E.DIVIDED]:'÷ divided', [E.AUTOPOIESIS_OK]:'◆ autopoiesis', [E.AUTOPOIESIS_LOST]:'◇ lost autopoiesis', [E.MEMBRANE_BREACHED]:'! breach' };
+    const cls = { [E.SPAWNED]:'born', [E.DIED]:'died', [E.DIVIDED]:'divided', [E.AUTOPOIESIS_OK]:'autopoiesis', [E.AUTOPOIESIS_LOST]:'autopoiesis', [E.MEMBRANE_BREACHED]:'breach' };
+    const src = evt.sourceId ? evt.sourceId.slice(0,8) : 'world';
+    let detail = '';
+    if (evt.type === E.DIVIDED) detail = ` → ${(evt.data.childId||'').slice(0,8)} gen${evt.data.gen||'?'}`;
+    if (evt.type === E.DIED) detail = ` age=${evt.data.age||'?'} gen${evt.data.gen||'?'}`;
+    const div = document.createElement('div');
+    div.className = `entry ${cls[evt.type]||''}`;
+    div.textContent = `[${src}] ${icons[evt.type]||evt.type}${detail}`;
+    logEl.appendChild(div);
+    if (logEl.children.length > 50) logEl.removeChild(logEl.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
+  });
+
+  // Tooltip
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) / rect.width * canvas.width;
+    const my = (e.clientY - rect.top) / rect.height * canvas.height;
+    hoveredLF = null;
+    for (const lf of sim.alive()) {
+      const lx = lf.x * CELL + CELL/2, ly = lf.y * CELL + CELL/2;
+      if (Math.abs(mx-lx) < CELL && Math.abs(my-ly) < CELL) { hoveredLF = lf; break; }
+    }
+    const tt = document.getElementById('tooltip');
+    if (hoveredLF) {
+      const lf = hoveredLF;
+      tt.innerHTML = `<div class="tt-id">${lf.id}</div>
+        <div class="tt-row"><span>Gen</span><span>${lf.generation}</span></div>
+        <div class="tt-row"><span>Age</span><span>${lf.age}</span></div>
+        <div class="tt-row"><span>Energy</span><span>${lf.energy.toFixed(1)}</span></div>
+        <div class="tt-row"><span>Viability</span><span>${lf.viability.toFixed(3)}</span></div>
+        <div class="tt-row"><span>Membrane</span><span>${(lf.membrane.integrity*100).toFixed(0)}%</span></div>
+        <div class="tt-row"><span>Lipids</span><span>${lf.membrane.lipids.toFixed(1)}</span></div>
+        <div class="tt-row"><span>Autopoietic</span><span>${lf.autopoietic?'Yes':'No'}</span></div>
+        <div class="tt-row"><span>Enzymes</span><span>${(lf.inv[MOL.ENZYME]||0).toFixed(2)}</span></div>`;
+      tt.style.display = 'block';
+      tt.style.left = Math.min(e.clientX - rect.left + 12, rect.width - 230) + 'px';
+      tt.style.top = (e.clientY - rect.top + 12) + 'px';
+    } else { tt.style.display = 'none'; }
+  });
+  canvas.addEventListener('mouseleave', () => { document.getElementById('tooltip').style.display = 'none'; hoveredLF = null; });
+
+  // Controls
+  document.getElementById('btn-pause').addEventListener('click', toggleRun);
+  document.getElementById('btn-step').addEventListener('click', () => { if (!running) { sim.step(); render(); } });
+  document.getElementById('btn-spawn').addEventListener('click', () => { sim.world.spawn(sim.bus); });
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (animId) cancelAnimationFrame(animId);
+    running = false;
+    document.getElementById('btn-pause').textContent = '▶ Run';
+    document.getElementById('btn-pause').classList.remove('active');
+    document.getElementById('event-log').innerHTML = '';
+    sim = new Simulation(60, 40, 15);
+    // re-subscribe event log
+    const logEl2 = document.getElementById('event-log');
+    sim.bus.subscribe(logTypes, (evt) => {
+      const icons2 = { [E.SPAWNED]:'+ born', [E.DIED]:'✗ died', [E.DIVIDED]:'÷ divided', [E.AUTOPOIESIS_OK]:'◆ autopoiesis', [E.AUTOPOIESIS_LOST]:'◇ lost autopoiesis', [E.MEMBRANE_BREACHED]:'! breach' };
+      const cls2 = { [E.SPAWNED]:'born', [E.DIED]:'died', [E.DIVIDED]:'divided', [E.AUTOPOIESIS_OK]:'autopoiesis', [E.AUTOPOIESIS_LOST]:'autopoiesis', [E.MEMBRANE_BREACHED]:'breach' };
+      const src2 = evt.sourceId ? evt.sourceId.slice(0,8) : 'world';
+      let detail2 = '';
+      if (evt.type === E.DIVIDED) detail2 = ` → ${(evt.data.childId||'').slice(0,8)} gen${evt.data.gen||'?'}`;
+      if (evt.type === E.DIED) detail2 = ` age=${evt.data.age||'?'} gen${evt.data.gen||'?'}`;
+      const d2 = document.createElement('div');
+      d2.className = `entry ${cls2[evt.type]||''}`;
+      d2.textContent = `[${src2}] ${icons2[evt.type]||evt.type}${detail2}`;
+      logEl2.appendChild(d2);
+      if (logEl2.children.length > 50) logEl2.removeChild(logEl2.firstChild);
+      logEl2.scrollTop = logEl2.scrollHeight;
+    });
+    render();
+  });
+  document.getElementById('speed').addEventListener('input', (e) => { speed = parseInt(e.target.value); });
+
+  render();
+}
+
+function toggleRun() {
+  running = !running;
+  const btn = document.getElementById('btn-pause');
+  btn.textContent = running ? '⏸ Pause' : '▶ Run';
+  btn.classList.toggle('active', running);
+  if (running) loop();
+}
+
+let lastTick = 0;
+function loop() {
+  if (!running) return;
+  const now = performance.now();
+  const interval = 1000 / speed;
+  if (now - lastTick >= interval) {
+    sim.step();
+    render();
+    lastTick = now;
+  }
+  animId = requestAnimationFrame(loop);
+}
+
+function render() {
+  const w = sim.world, W = w.w, H = w.h;
+
+  // Background: resource heatmap
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const sa = w.res[MOL.SUB_A].get(x, y);
+      const sb = w.res[MOL.SUB_B].get(x, y);
+      const total = sa + sb;
+      const r = 10 + Math.min(20, total * 1.5);
+      const g = 14 + Math.min(40, total * 3);
+      const b = 23 + Math.min(30, total * 2);
+      ctx.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
+      ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+    }
+  }
+
+  // Grid lines (subtle)
+  ctx.strokeStyle = 'rgba(30,50,70,0.15)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= W; x++) { ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,H*CELL); ctx.stroke(); }
+  for (let y = 0; y <= H; y++) { ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(W*CELL,y*CELL); ctx.stroke(); }
+
+  // Life forms
+  for (const lf of w.lifeForms) {
+    if (!lf.alive) continue;
+    const cx = lf.x * CELL + CELL/2, cy = lf.y * CELL + CELL/2;
+    const r = 3 + lf.size * 0.8;
+    const v = lf.viability;
+
+    // Glow
+    const grd = ctx.createRadialGradient(cx, cy, r*0.3, cx, cy, r*2.5);
+    let glowColor;
+    if (!lf.autopoietic) glowColor = 'rgba(255,82,82,';
+    else if (lf.canDivide()) glowColor = 'rgba(0,229,255,';
+    else if (v > 0.6) glowColor = 'rgba(0,230,118,';
+    else if (v > 0.3) glowColor = 'rgba(255,215,64,';
+    else glowColor = 'rgba(255,82,82,';
+    grd.addColorStop(0, glowColor + '0.4)');
+    grd.addColorStop(1, glowColor + '0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, r*2.5, 0, Math.PI*2); ctx.fill();
+
+    // Membrane ring
+    ctx.beginPath(); ctx.arc(cx, cy, r+1, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(100,180,255,${lf.membrane.integrity * 0.6})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Body
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+    if (!lf.autopoietic) ctx.fillStyle = '#ff5252';
+    else if (lf.canDivide()) ctx.fillStyle = '#00e5ff';
+    else if (v > 0.6) ctx.fillStyle = '#00e676';
+    else if (v > 0.3) ctx.fillStyle = '#ffd740';
+    else ctx.fillStyle = '#ff8a65';
+    ctx.fill();
+
+    // Inner marker for generation
+    if (lf.generation >= 3) {
+      ctx.beginPath(); ctx.arc(cx, cy, r*0.4, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fill();
+    }
+
+    // Hovered highlight
+    if (hoveredLF && hoveredLF.id === lf.id) {
+      ctx.beginPath(); ctx.arc(cx, cy, r+4, 0, Math.PI*2);
+      ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  // Stats
+  const s = sim.summary();
+  document.getElementById('s-tick').textContent = s.tick;
+  document.getElementById('s-pop').textContent = s.pop;
+  document.getElementById('s-auto').textContent = s.auto;
+  document.getElementById('s-peak').textContent = s.peak;
+  document.getElementById('s-births').textContent = s.births;
+  document.getElementById('s-deaths').textContent = s.deaths;
+  document.getElementById('s-gen').textContent = s.maxGen;
+  document.getElementById('s-events').textContent = s.events;
+  document.getElementById('s-subs').textContent = s.subs;
+
+  // Sparklines
+  drawSparkline('spark-pop', sim.stats.popHist, '#00e676');
+  drawSparkline('spark-viab', sim.stats.viabHist, '#00e5ff');
+}
+
+function drawSparkline(canvasId, data, color) {
+  const c = document.getElementById(canvasId);
+  const cx = c.getContext('2d');
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * (window.devicePixelRatio || 1);
+  c.height = rect.height * (window.devicePixelRatio || 1);
+  cx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const W = rect.width, H = rect.height;
+  cx.clearRect(0, 0, W, H);
+  if (data.length < 2) return;
+  const recent = data.slice(-200);
+  const mn = Math.min(...recent), mx = Math.max(...recent);
+  const rng = mx - mn || 1;
+  cx.beginPath();
+  cx.moveTo(0, H);
+  for (let i = 0; i < recent.length; i++) {
+    const x = (i / (recent.length - 1)) * W;
+    const y = H - ((recent[i] - mn) / rng) * (H - 4) - 2;
+    cx.lineTo(x, y);
+  }
+  cx.lineTo(W, H);
+  cx.closePath();
+  const grd = cx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, color + '44');
+  grd.addColorStop(1, color + '08');
+  cx.fillStyle = grd;
+  cx.fill();
+
+  cx.beginPath();
+  for (let i = 0; i < recent.length; i++) {
+    const x = (i / (recent.length - 1)) * W;
+    const y = H - ((recent[i] - mn) / rng) * (H - 4) - 2;
+    if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+  }
+  cx.strokeStyle = color;
+  cx.lineWidth = 1.5;
+  cx.stroke();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
