@@ -19,7 +19,7 @@ header .sub{font-size:9px;color:#5a5070;margin-left:8px}
 .cg button.dn{border-color:#ff525255}.cg button.dn:hover{background:#ff525218;color:#ff5252}
 .cg select,.cg input[type=range]{background:#1a1628;border:1px solid #2a2640;color:#a090c0;padding:2px 4px;border-radius:3px;font-family:inherit;font-size:10px}
 .cg label{font-size:9px;color:#5a5070}
-#wc{position:relative;overflow:hidden;background:#050408}
+#wc{position:relative;overflow:hidden;background:#050408;cursor:default}
 #wc canvas{display:block;width:100%;height:100%}
 #sb{background:var(--pn);border-left:1px solid var(--bd);overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:#2a2640 transparent}
 .p{background:#120f18;border:1px solid #1e1a2a;border-radius:4px;padding:6px}
@@ -41,6 +41,10 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 #tt{position:absolute;background:#120f18ee;border:1px solid #2a2640;border-radius:5px;padding:6px 8px;font-size:9px;pointer-events:none;display:none;z-index:10;max-width:280px;line-height:1.4}
 #tt .ti{color:#e8a040;font-weight:bold;font-size:10px}
 #tt .tr{display:flex;justify-content:space-between;gap:8px}
+.narrative{font-family:Georgia,'Times New Roman',serif;font-size:10px;line-height:1.6;color:#d4c8a0;background:#0d0b10;border:1px solid #2a2020;border-radius:3px;padding:4px 6px;max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#3a2a20 transparent}
+.narrative .ne{padding:2px 4px;border-bottom:1px solid #1a1510;color:#c8b880}
+.narrative .ne:nth-child(odd){background:#100e14}
+.narrative .ne:last-child{color:#e8d4a0;border-bottom:none}
 @media(max-width:800px){#app{grid-template-columns:1fr}#sb{display:none}}
 </style>
 </head>
@@ -56,6 +60,7 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <button id="ba">+Human</button>
 <button id="bd" class="dn">Disaster</button>
 <button id="bx">Reset</button>
+<button id="bmute">🔇</button>
 <label>Spd<input id="spd" type="range" min="1" max="120" value="20" style="width:60px"></label>
 <label>View<select id="vm">
 <option value="world">World</option><option value="biome">Biome</option><option value="tribe">Tribes</option>
@@ -69,7 +74,9 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <h3>World</h3>
 <div class="sr"><span class="sl">Year</span><span id="xt" class="sv vy">0</span></div>
 <div class="sr"><span class="sl">Season</span><span id="xsn" class="sv vy">—</span></div>
+<div class="sr"><span class="sl">Time</span><span id="xtod" class="sv vy">—</span></div>
 <div class="sr"><span class="sl">Population</span><span id="xp" class="sv vg">0</span></div>
+<div class="sr"><span class="sl">Animals</span><span id="xan" class="sv vo">0</span></div>
 <div class="sr"><span class="sl">Tribes</span><span id="xtr" class="sv vo">0</span></div>
 <div class="sr"><span class="sl">Structures</span><span id="xst" class="sv vw">0</span></div>
 <div class="sr"><span class="sl">Highest Tool</span><span id="xht" class="sv vc">—</span></div>
@@ -100,7 +107,11 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <div id="techtree" style="font-size:8px;line-height:1.6"></div>
 </div>
 <div class="p">
-<h3>Event Chronicle</h3>
+<h3>Chronicle</h3>
+<div id="narrative" class="narrative"></div>
+</div>
+<div class="p">
+<h3>Event Log</h3>
 <div id="elog" class="el"></div>
 </div>
 </div>
@@ -114,14 +125,16 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <span class="li"><span class="ld" style="background:#b0c8a0"></span>Fertile</span>
 <span style="color:#2a2640">|</span>
 <span class="li">🔥fire 🏠hut 🗿monument ⚔war 🤝trade 🌾farm</span>
+<span style="color:#2a2640">|</span>
+<span class="li">▲deer ◆wolf ■boar</span>
 </div>
-<div>Hover for details &bull; Watch civilizations emerge</div>
+<div>Wheel=zoom · Drag=pan · Click human=follow · Watch civilizations emerge</div>
 </footer>
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════
-//  AALF — PRIMITIVE CIVILIZATION EMERGENCE
-//  From autopoietic organisms to tribes, tools, and culture
+//  AALF — PRIMITIVE CIVILIZATION EMERGENCE (Enhanced)
+//  From autopoietic organisms to tribes, tools, culture, and nature
 // ═══════════════════════════════════════════════════════════
 const R=Math.random,F=Math.floor,mn=Math.min,mx=Math.max,abs=Math.abs,sqrt=Math.sqrt,sin=Math.sin,cos=Math.cos,PI=Math.PI,at2=Math.atan2;
 
@@ -136,7 +149,7 @@ const E={BORN:'born',DIE:'die',TRIBE_FORM:'tribe',TRIBE_MERGE:'tmerge',WAR:'war'
   MONUMENT:'monument',DOMESTICATE:'domesticate',ALLIANCE:'alliance',TEACH:'teach'};
 
 // ═══════════════════════════════════════════════════════════
-//  TERRAIN & BIOMES — Procedural world generation
+//  TERRAIN & BIOMES
 // ═══════════════════════════════════════════════════════════
 const BIOME={WATER:0,DESERT:1,PLAINS:2,FOREST:3,MOUNTAIN:4,FERTILE:5,TUNDRA:6};
 const BIOME_NAME=['water','desert','plains','forest','mountain','fertile','tundra'];
@@ -145,10 +158,9 @@ const BIOME_FOOD=[0,.5,1.8,2.2,.6,3.5,.3];
 const BIOME_WOOD=[0,0,.3,2,0,1,0];
 const BIOME_STONE=[0,.5,.2,.1,2.5,.2,.5];
 const BIOME_WATER_AV=[1,.1,.5,.7,.4,1,.15];
-const BIOME_WALK=[0,.7,1,.6,.3,.9,.5];// movement speed mult
+const BIOME_WALK=[0,.7,1,.6,.3,.9,.5];
 
 function genTerrain(w,h){
-  // Simplex-like noise via layered random
   const t=new Uint8Array(w*h);
   const noise=[];for(let i=0;i<3;i++){noise[i]=[];for(let y=0;y<h;y++){noise[i][y]=[];for(let x=0;x<w;x++)noise[i][y][x]=R()}}
   function n(x,y,sc){
@@ -161,7 +173,7 @@ function genTerrain(w,h){
   }
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const e=n(x,y,8)*.5+n(x,y,16)*.3+n(x,y,4)*.2;
-    const m=n(x+50,y+50,10)*.5+n(x+50,y+50,20)*.5;// moisture
+    const m=n(x+50,y+50,10)*.5+n(x+50,y+50,20)*.5;
     if(e<.25)t[y*w+x]=BIOME.WATER;
     else if(e>.8)t[y*w+x]=BIOME.MOUNTAIN;
     else if(e>.65&&m<.35)t[y*w+x]=BIOME.TUNDRA;
@@ -170,7 +182,6 @@ function genTerrain(w,h){
     else if(m>.5)t[y*w+x]=BIOME.FOREST;
     else t[y*w+x]=BIOME.PLAINS;
   }
-  // River: carve a fertile path
   let rx=F(R()*w),ry=0;
   for(let i=0;i<h+20;i++){
     if(ry>=0&&ry<h&&rx>=0&&rx<w){t[ry*w+rx]=BIOME.FERTILE;if(rx+1<w)t[ry*w+rx+1]=BIOME.FERTILE}
@@ -180,7 +191,7 @@ function genTerrain(w,h){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  RESOURCES at each cell
+//  RESOURCES
 // ═══════════════════════════════════════════════════════════
 class ResGrid{
   constructor(w,h,terrain){
@@ -219,16 +230,16 @@ const STRUCT_CHAR=['🏠','🔥','📦','🗿','🧱','🌾','⚱'];
 class Structure{constructor(type,x,y,tribe){this.type=type;this.x=x;this.y=y;this.tribe=tribe;this.hp=10;this.age=0}}
 
 // ═══════════════════════════════════════════════════════════
-//  TRIBE — Social organization
+//  TRIBE
 // ═══════════════════════════════════════════════════════════
 let _ti=0;
 class Tribe{
   constructor(hue){
     this.id='t'+(_ti++);this.hue=hue??R()*360;this.name=this._genName();
     this.members=new Set;this.techs={...TECHS};this.knowledge=0;
-    this.structures=[];this.relations={};// tribe_id -> value (-1 hostile to 1 friendly)
+    this.structures=[];this.relations={};
     this.homeX=0;this.homeY=0;this.wars=0;this.trades=0;this.rituals=0;
-    this.culture=R();// cultural identity factor
+    this.culture=R();
   }
   get sz(){return this.members.size}
   get color(){return`hsl(${this.hue},60%,50%)`}
@@ -240,7 +251,148 @@ class Tribe{
 }
 
 // ═══════════════════════════════════════════════════════════
-//  HUMAN — Individual agent with needs, skills, memory
+//  ANIMALS — Deer, Wolves, Boars
+// ═══════════════════════════════════════════════════════════
+const ANIMAL_TYPE={DEER:0,WOLF:1,BOAR:2};
+const ANIMAL_COLOR=['#8B5A2B','#708090','#3D2B1F'];
+const ANIMAL_FOOD=[15,0,20];// food from hunting
+let _ai=0;
+class Animal{
+  constructor(type,x,y){
+    this.id='a'+(_ai++);this.type=type;this.x=x;this.y=y;
+    this.alive=1;this.age=0;
+    this.vx=(R()-.5)*.2;this.vy=(R()-.5)*.2;
+    this.fleeTarget=null;this.attackTarget=null;
+    this._cooldown=0;
+  }
+  tick(world,timeOfDay){
+    if(!this.alive)return;
+    this.age+=0.01;if(this._cooldown>0)this._cooldown--;
+    // Age out
+    if(this.age>80+R()*40){this.alive=0;return}
+    const isNight=(timeOfDay>0.7||timeOfDay<0.05);
+    if(this.type===ANIMAL_TYPE.DEER)this._tickDeer(world,isNight);
+    else if(this.type===ANIMAL_TYPE.WOLF)this._tickWolf(world,isNight);
+    else if(this.type===ANIMAL_TYPE.BOAR)this._tickBoar(world,isNight);
+    // Wrap
+    this.x=((this.x%world.w)+world.w)%world.w;
+    this.y=((this.y%world.h)+world.h)%world.h;
+  }
+  _tickDeer(world,isNight){
+    // Flee from humans
+    let fleeX=0,fleeY=0,fleeing=false;
+    for(const h of world.humans){
+      if(!h.alive)continue;
+      const dx=this.x-h.x,dy=this.y-h.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<25){// within 5 cells
+        fleeX+=dx/(d2+.1);fleeY+=dy/(d2+.1);fleeing=true;
+      }
+    }
+    if(fleeing){
+      const fd=sqrt(fleeX*fleeX+fleeY*fleeY)||1;
+      this.vx+=(fleeX/fd)*.15;this.vy+=(fleeY/fd)*.15;
+    }else{
+      // Flock with nearby deer
+      let cx=0,cy=0,n=0,sx=0,sy=0,ax=0,ay=0;
+      for(const a of world.animals){
+        if(a.id===this.id||!a.alive||a.type!==ANIMAL_TYPE.DEER)continue;
+        const dx=a.x-this.x,dy=a.y-this.y;
+        const d2=dx*dx+dy*dy;
+        if(d2<36){cx+=dx;cy+=dy;n++;sx+=a.vx;sy+=a.vy;
+          if(d2<4){ax-=dx;ay-=dy}// separation
+        }
+      }
+      if(n>0){this.vx+=cx/n*.01+sx/n*.05+ax*.03;this.vy+=cy/n*.01+sy/n*.05+ay*.03}
+      // Random wander
+      this.vx+=(R()-.5)*.04;this.vy+=(R()-.5)*.04;
+    }
+    // Avoid water and mountains
+    const b=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(b===BIOME.WATER||b===BIOME.MOUNTAIN){this.vx*=-0.5;this.vy*=-0.5;this.vx+=(R()-.5)*.2;this.vy+=(R()-.5)*.2}
+    const spd=0.3;const v=sqrt(this.vx*this.vx+this.vy*this.vy)||1;
+    if(v>spd){this.vx=this.vx/v*spd;this.vy=this.vy/v*spd}
+    this.x+=this.vx;this.y+=this.vy;
+  }
+  _tickWolf(world,isNight){
+    // More active at night
+    const actMult=isNight?2:0.6;
+    // Hunt lone humans at night
+    let bestH=null,bestD=Infinity;
+    if(isNight&&this._cooldown<=0){
+      for(const h of world.humans){
+        if(!h.alive)continue;
+        const dx=h.x-this.x,dy=h.y-this.y;
+        const d2=dx*dx+dy*dy;
+        // Prefer lone (no tribe) or isolated humans
+        const lonely=!h.tribe||(world.nearbyHumans(h,3).length<2);
+        if(d2<64&&lonely&&d2<bestD){bestD=d2;bestH=h}
+      }
+    }
+    if(bestH&&bestD<1.5){
+      // Attack!
+      const dmg=5+R()*10;
+      bestH.hunger=mn(100,bestH.hunger+dmg*.5);
+      bestH.safety=mx(0,bestH.safety-30);
+      if(R()<.15){bestH.die(world.bus,'wolf attack')}
+      this._cooldown=80;
+      if(audioEngine)audioEngine.playWolfAttack();
+    }else if(bestH){
+      // Chase
+      const dx=bestH.x-this.x,dy=bestH.y-this.y;
+      const d=sqrt(dx*dx+dy*dy)||1;
+      this.vx+=dx/d*.1*actMult;this.vy+=dy/d*.1*actMult;
+    }else{
+      // Pack movement
+      let cx=0,cy=0,n=0;
+      for(const a of world.animals){
+        if(a.id===this.id||!a.alive||a.type!==ANIMAL_TYPE.WOLF)continue;
+        const dx=a.x-this.x,dy=a.y-this.y;
+        const d2=dx*dx+dy*dy;
+        if(d2<49){cx+=dx;cy+=dy;n++}
+      }
+      if(n>0){this.vx+=cx/n*.02;this.vy+=cy/n*.02}
+      this.vx+=(R()-.5)*.05*actMult;this.vy+=(R()-.5)*.05*actMult;
+    }
+    const b=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(b===BIOME.WATER){this.vx*=-0.5;this.vy*=-0.5}
+    const spd=0.35*actMult;const v=sqrt(this.vx*this.vx+this.vy*this.vy)||1;
+    if(v>spd){this.vx=this.vx/v*spd;this.vy=this.vy/v*spd}
+    this.x+=this.vx;this.y+=this.vy;
+  }
+  _tickBoar(world,isNight){
+    // Aggressive when humans near
+    let threat=null,threatD=Infinity;
+    for(const h of world.humans){
+      if(!h.alive)continue;
+      const dx=h.x-this.x,dy=h.y-this.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<9&&d2<threatD){threatD=d2;threat=h}// within 3 cells
+    }
+    if(threat&&this._cooldown<=0){
+      const dx=threat.x-this.x,dy=threat.y-this.y;
+      const d=sqrt(dx*dx+dy*dy)||1;
+      this.vx+=dx/d*.12;this.vy+=dy/d*.12;
+      if(threatD<1.2){
+        threat.hunger=mn(100,threat.hunger+8);
+        threat.safety=mx(0,threat.safety-20);
+        if(R()<.08){threat.die(world.bus,'boar attack')}
+        this._cooldown=60;
+      }
+    }else{
+      // Solitary wander
+      this.vx+=(R()-.5)*.05;this.vy+=(R()-.5)*.05;
+    }
+    const b=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(b===BIOME.WATER){this.vx*=-0.5;this.vy*=-0.5}
+    const spd=0.25;const v=sqrt(this.vx*this.vx+this.vy*this.vy)||1;
+    if(v>spd){this.vx=this.vx/v*spd;this.vy=this.vy/v*spd}
+    this.x+=this.vx;this.y+=this.vy;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HUMAN
 // ═══════════════════════════════════════════════════════════
 let _hi=0;
 const AGE_STAGE=['baby','child','adult','elder'];
@@ -253,10 +405,8 @@ class Human{
     this.id='h'+(_hi++);this.x=x;this.y=y;this.tribe=tribe;
     this.sex=R()<.5?'m':'f';
     this.name=(this.sex==='m'?NAMES_M:NAMES_F)[F(R()*(this.sex==='m'?NAMES_M:NAMES_F).length)];
-    this.age=parentA?0:5+F(R()*30);this.alive=1;// wide age distribution
-    // Needs (0-100)
+    this.age=parentA?0:5+F(R()*30);this.alive=1;
     this.hunger=30;this.thirst=20;this.warmth=50;this.social=50;this.safety=60;
-    // Skills (0-1, inherited + learned)
     this.skills={
       hunt:parentA?mn(1,(parentA.skills.hunt+((parentB||{}).skills||{}).hunt||0)/2+R()*.15):R()*.3,
       gather:parentA?mn(1,(parentA.skills.gather+((parentB||{}).skills||{}).gather||0)/2+R()*.15):R()*.3,
@@ -266,11 +416,10 @@ class Human{
       build:parentA?mn(1,(parentA.skills.build+((parentB||{}).skills||{}).build||0)/2+R()*.1):R()*.15,
       farm:parentA?mn(1,(parentA.skills.farm+((parentB||{}).skills||{}).farm||0)/2+R()*.1):R()*.05,
     };
-    // State
-    this.tool=parentA?mn(parentA.tool,1):0;// tool level
+    this.tool=parentA?mn(parentA.tool,1):0;
     this.carrying={food:0,wood:0,stone:0};
     this.partner=null;this.children=0;this._mateCool=0;
-    this.task=null;// current activity
+    this.task=null;
     this.tx=[];this.ty=[];
     this.kills=0;this.taught=0;
     if(tribe)tribe.members.add(this.id);
@@ -286,51 +435,48 @@ class Human{
     if(!this.alive)return;
     this.age+=0.02;if(this._mateCool>0)this._mateCool--;
 
-    // Needs decay
     this.hunger=mn(100,this.hunger+.28+(this.stage===2?.05:0));
     this.thirst=mn(100,this.thirst+.15);
     if(world.season==='winter')this.warmth=mx(0,this.warmth-.5);else this.warmth=mn(80,this.warmth+.2);
     this.social=mx(0,this.social-.15);
 
-    // Baby/child passive — fed by tribe
     if(this.stage===0){
       this.hunger+=.1;
-      if(this.tribe){this.hunger=mx(0,this.hunger-1);this.thirst=mx(0,this.thirst-.5)}// tribe feeds babies
+      if(this.tribe){this.hunger=mx(0,this.hunger-1);this.thirst=mx(0,this.thirst-.5)}
       if(this.hunger>95||this.thirst>95){this.die(bus,'infant mortality');return}
-      return;// babies don't act
+      return;
     }
-    // Children eat less, tribe helps
     if(this.stage===1&&this.tribe){this.hunger=mx(0,this.hunger-.1);this.thirst=mx(0,this.thirst-.05)}
 
-    // Death checks
     if(this.hunger>=100){this.die(bus,'starvation');return}
     if(this.thirst>=100){this.die(bus,'dehydration');return}
     if(this.warmth<5&&world.season==='winter'){this.die(bus,'cold');return}
     if(this.age>55+R()*20){this.die(bus,'old age');return}
 
-    // Elder becomes knowledge keeper
-    if(this.stage===3&&this.tribe&&R()<.01){
-      this._teach(bus,world);
-    }
-
+    if(this.stage===3&&this.tribe&&R()<.01)this._teach(bus,world);
     if(!this.canWork)return;
 
-    // ── Decision making (priority-based AI) ──
     const gx=F(this.x),gy=F(this.y);
     const biome=world.terrain[world.ix(gx,gy)];
+    const isNight=(world.timeOfDay>0.7||world.timeOfDay<0.05);
+
+    // Night behavior: seek fire/shelter
+    if(isNight&&this.tribe&&this.tribe.hasTech('fire')){
+      const nearFire=world.structures.find(s=>s.type===STRUCT.FIRE_PIT&&abs(s.x-this.x)<4&&abs(s.y-this.y)<4);
+      if(!nearFire){this._goHome(world);return}
+    }
 
     if(this.thirst>50){this._seekWater(world,bus);return}
     if(this.hunger>50){this._seekFood(world,bus);return}
     if(this.warmth<30&&this.tribe&&this.tribe.hasTech('fire')){this._goHome(world);return}
     if(this.social<40&&this.tribe){this._socialize(world,bus);return}
 
-    // Proactive activities
     const roll=R();
     if(roll<.12&&this.skills.craft>.2)this._craft(bus,world);
     else if(roll<.2&&this.skills.build>.2&&this.tribe)this._build(bus,world);
     else if(roll<.28&&this.skills.farm>.2&&this.tribe&&this.tribe.hasTech('farming'))this._doFarm(bus,world);
     else if(roll<.45)this._seekFood(world,bus);
-    else if(roll<.65&&this.tribe)this._socialize(world,bus);// more social time = more mating
+    else if(roll<.65&&this.tribe)this._socialize(world,bus);
     else this._explore(world,bus);
   }
 
@@ -347,16 +493,41 @@ class Human{
 
   _seekFood(world,bus){
     this.task='foraging';
-    // Try to gather from current tile
+    // Try to hunt nearby animals first (if skilled)
+    if(this.skills.hunt>.25&&this.tool>=1&&R()<.15){
+      const prey=world.animals.find(a=>a.alive&&a.type!==ANIMAL_TYPE.WOLF&&abs(a.x-this.x)<2&&abs(a.y-this.y)<2);
+      if(prey){
+        const catchChance=.2+this.skills.hunt*.5+(this.tool>=3?.2:0);
+        if(R()<catchChance){
+          const foodGain=ANIMAL_FOOD[prey.type];
+          prey.alive=0;
+          this.hunger=mx(0,this.hunger-foodGain);
+          this.skills.hunt=mn(1,this.skills.hunt+.005);
+          this.kills++;
+          bus.emit(E.HUNT,this.id,{name:this.name,animal:['deer','wolf','boar'][prey.type]});
+          if(audioEngine)audioEngine.playHunt();
+          return;
+        }
+      }
+    }
     const got=world.res.take(this.x,this.y,'food',0.8+this.skills.gather*.8+(this.tool>=2?.5:0));
     if(got>.05){this.hunger=mx(0,this.hunger-got*20);this.skills.gather=mn(1,this.skills.gather+.002);
       if(this.carrying.food<5)this.carrying.food+=got*.3;return}
-    // Hunt (if skilled enough)
     if(this.skills.hunt>.3&&this.tool>=1&&R()<.1){
       this.hunger=mx(0,this.hunger-20);this.skills.hunt=mn(1,this.skills.hunt+.003);
       this.kills++;bus.emit(E.HUNT,this.id,{name:this.name});return}
-    // Move toward food
+    // Move toward prey or food
     let bx=0,by=0,bv=0;
+    // Check for nearby animals
+    if(this.skills.hunt>.25&&this.tool>=1){
+      for(const a of world.animals){
+        if(!a.alive||a.type===ANIMAL_TYPE.WOLF)continue;
+        const dx=a.x-this.x,dy=a.y-this.y;
+        const d2=dx*dx+dy*dy;
+        if(d2<16&&d2>0){const sc=ANIMAL_FOOD[a.type]/sqrt(d2);if(sc>bv){bv=sc;bx=dx/sqrt(d2)*2;by=dy/sqrt(d2)*2}}
+      }
+    }
+    if(bv>0){this._move(this.x+bx,this.y+by,world);return}
     for(const[dx,dy]of[[-2,0],[2,0],[0,-2],[0,2],[-1,-1],[1,1]]){
       const v=world.res.get(this.x+dx,this.y+dy,'food');if(v>bv){bv=v;bx=dx;by=dy}}
     if(bv>0)this._move(this.x+bx,this.y+by,world);
@@ -376,7 +547,6 @@ class Human{
   _explore(world,bus){
     this.task='exploring';
     this._move(this.x+(R()-0.5)*4,this.y+(R()-0.5)*4,world);
-    // Chance to discover things
     if(R()<.003&&!this.tribe?.hasTech('fire')){
       if(this.tribe){this.tribe.learnTech('fire',bus);bus.emit(E.FIRE,this.id,{name:this.name,tribe:this.tribe.name})}
     }
@@ -390,7 +560,6 @@ class Human{
         this.tool=mn(5,this.tool+1);
         this.skills.craft=mn(1,this.skills.craft+.01);
         bus.emit(E.TOOL,this.id,{name:this.name,tool:TOOL_NAME[this.tool]});
-        // Share with tribe
         if(this.tribe){for(const mid of this.tribe.members){
           const m=world.humans.find(h=>h.id===mid&&h.alive&&h.tool<this.tool);
           if(m&&R()<.3){m.tool=mx(m.tool,this.tool-1);m.skills.craft=mn(1,m.skills.craft+.005)}
@@ -431,37 +600,32 @@ class Human{
   _socialize(world,bus){
     this.task='socializing';
     this.social=mn(100,this.social+10);
-    // Find nearby tribe members
     const nearby=world.nearbyHumans(this,3);
     for(const n of nearby){
       if(!n.alive)continue;
       n.social=mn(100,n.social+5);
-      // Mating
       if(this.sex!==n.sex&&this.stage===2&&n.stage===2&&this._mateCool<=0&&n._mateCool<=0
         &&this.tribe===n.tribe&&this.hunger<40&&this.children<3&&R()<.015){
         this.partner=n.id;n.partner=this.id;this._mateCool=200;n._mateCool=200;
-        // Baby
         const baby=new Human(this.x+(R()-.5),this.y+(R()-.5),this.tribe,this,n);
         world.humans.push(baby);this.children++;n.children++;
         bus.emit(E.BORN,baby.id,{name:baby.name,mother:this.sex==='f'?this.name:n.name,father:this.sex==='m'?this.name:n.name,tribe:this.tribe?.name});
+        if(audioEngine)audioEngine.playBirth();
       }
-      // Teaching
       if(this.stage>=2&&n.stage===1&&R()<.05){
         const sk=Object.keys(this.skills);const s=sk[F(R()*sk.length)];
         if(this.skills[s]>n.skills[s]+.1){n.skills[s]=mn(1,n.skills[s]+.02);this.taught++;
           bus.emit(E.TEACH,this.id,{teacher:this.name,student:n.name,skill:s})}
       }
-      // Knowledge sharing between tribes (trade/diplomacy)
       if(n.tribe&&this.tribe&&n.tribe.id!==this.tribe.id){
         const rel=this.tribe.relation(n.tribe.id);
-        if(rel>-.3&&R()<.02){// trade
+        if(rel>-.3&&R()<.02){
           if(this.carrying.food>1&&n.carrying.food<1){
             this.carrying.food--;n.carrying.food++;
             this.tribe.adjustRelation(n.tribe.id,.05);n.tribe.adjustRelation(this.tribe.id,.05);
             this.tribe.trades++;n.tribe.trades++;
             bus.emit(E.TRADE,this.id,{a:this.tribe.name,b:n.tribe.name});
           }
-          // Tech sharing
           for(const t of Object.keys(this.tribe.techs)){
             if(this.tribe.hasTech(t)&&!n.tribe.hasTech(t)&&R()<.01){
               n.tribe.learnTech(t,bus);
@@ -471,12 +635,10 @@ class Human{
         }
       }
     }
-    // Ritual (group activity)
     if(this.tribe&&this.tribe.sz>3&&R()<.005){
       this.tribe.rituals++;
       this.tribe.culture=mn(1,this.tribe.culture+.01);
       bus.emit(E.RITUAL,this.id,{tribe:this.tribe.name});
-      // Rituals can lead to discoveries
       if(R()<.05&&!this.tribe.hasTech('burial')){this.tribe.learnTech('burial',bus)}
       if(R()<.03&&!this.tribe.hasTech('language')&&this.tribe.sz>5){this.tribe.learnTech('language',bus);bus.emit(E.LANGUAGE,this.id,{tribe:this.tribe.name})}
     }
@@ -485,7 +647,6 @@ class Human{
   _goHome(world){
     this.task='going home';
     if(this.tribe){this._move(this.tribe.homeX,this.tribe.homeY,world);
-      // Warm up near fire pit
       const nearFire=world.structures.find(s=>s.type===STRUCT.FIRE_PIT&&abs(s.x-this.x)<2&&abs(s.y-this.y)<2);
       if(nearFire)this.warmth=mn(100,this.warmth+3);
     }
@@ -503,7 +664,6 @@ class Human{
   die(bus,cause){
     this.alive=0;if(this.tribe)this.tribe.members.delete(this.id);
     bus.emit(E.DIE,this.id,{name:this.name,age:F(this.age),cause,tribe:this.tribe?.name});
-    // Burial
     if(this.tribe&&this.tribe.hasTech('burial')&&R()<.5){
       bus.emit(E.BURY,this.id,{name:this.name,tribe:this.tribe.name});
     }
@@ -519,8 +679,10 @@ class World{
     this.w=w;this.h=h;this.tick=0;
     this.terrain=genTerrain(w,h);
     this.res=new ResGrid(w,h,this.terrain);
-    this.humans=[];this.tribes=[];this.structures=[];
+    this.humans=[];this.tribes=[];this.structures=[];this.animals=[];
     this.season='spring';this.sMult=1;this.year=0;
+    this.timeOfDay=0.3;// start at morning
+    this.bus=null;// set by Sim
   }
   ix(x,y){return((F(y)%this.h+this.h)%this.h)*this.w+((F(x)%this.w+this.w)%this.w)}
   biomeAt(x,y){return this.terrain[this.ix(F(x),F(y))]}
@@ -532,50 +694,69 @@ class World{
       if(dx*dx+dy*dy<=r*r)res.push(o)}return res;
   }
   spawnHuman(bus,x,y,tribe){
-    // Find valid land
     if(x==null||y==null){for(let i=0;i<100;i++){
       x=R()*this.w;y=R()*this.h;if(this.terrain[this.ix(x,y)]!==BIOME.WATER)break}}
     const h=new Human(x,y,tribe);this.humans.push(h);
     bus.emit(E.BORN,h.id,{name:h.name,tribe:tribe?.name});return h;
+  }
+  spawnAnimal(type,x,y){
+    if(x==null||y==null){for(let i=0;i<100;i++){
+      x=R()*this.w;y=R()*this.h;
+      const b=this.terrain[this.ix(x,y)];
+      if(b!==BIOME.WATER&&b!==BIOME.MOUNTAIN)break;
+    }}
+    const a=new Animal(type,x,y);this.animals.push(a);return a;
+  }
+  countAnimals(){
+    let deer=0,wolf=0,boar=0;
+    for(const a of this.animals)if(a.alive){if(a.type===ANIMAL_TYPE.DEER)deer++;else if(a.type===ANIMAL_TYPE.WOLF)wolf++;else boar++}
+    return{deer,wolf,boar,total:deer+wolf+boar};
   }
 
   step(bus){
     this.tick++;
     this.season=SEASONS[F((this.tick%200)/50)];
     this.sMult=.6+.8*(.5+.5*sin((this.tick%200)/200*PI*2));
-    this.year=F(this.tick/50);// ~50 ticks per year
+    this.year=F(this.tick/50);
 
-    // Resource regen
+    // Day/Night cycle: 100 ticks per full day
+    this.timeOfDay=(this.tick%100)/100;
+
     this.res.regen(this.terrain,this.sMult);
 
-    // Farm structures produce food
     for(const s of this.structures){s.age++;
       if(s.type===STRUCT.FARM)this.res.add(s.x,s.y,'food',.15*this.sMult);
-      if(s.hp<=0)continue;s.hp-=.01;// decay
+      if(s.hp<=0)continue;s.hp-=.01;
     }
     this.structures=this.structures.filter(s=>s.hp>0);
 
     // Tick all humans
     for(const h of this.humans){if(h.alive)h.tick(bus,this)}
-
-    // Remove dead (keep recent for rendering)
     this.humans=this.humans.filter(h=>h.alive);
 
-    // ── Tribe formation ──
-    if(this.tick%20===0)this._updateTribes(bus);
+    // Tick all animals
+    for(const a of this.animals){if(a.alive)a.tick(this,this.timeOfDay)}
+    this.animals=this.animals.filter(a=>a.alive);
 
-    // ── Warfare ──
+    // Animal population regen
+    if(this.tick%50===0){
+      const ac=this.countAnimals();
+      if(ac.deer<30&&R()<.4){const a=this.spawnAnimal(ANIMAL_TYPE.DEER);if(a){// herd spawning
+        for(let i=0;i<F(R()*3);i++)this.spawnAnimal(ANIMAL_TYPE.DEER,a.x+(R()-.5)*3,a.y+(R()-.5)*3)}}
+      if(ac.wolf<10&&R()<.2)this.spawnAnimal(ANIMAL_TYPE.WOLF);
+      if(ac.boar<8&&R()<.25)this.spawnAnimal(ANIMAL_TYPE.BOAR);
+    }
+
+    if(this.tick%20===0)this._updateTribes(bus);
     if(this.tick%30===0)this._checkWar(bus);
 
-    // ── Farming discovery ──
     for(const tribe of this.tribes){
       if(!tribe.hasTech('farming')&&tribe.sz>6){
-        const farmers=0;let fertile=0;
+        let fertile=0;
         for(const mid of tribe.members){const m=this.humans.find(h=>h.id===mid);
           if(m&&this.biomeAt(m.x,m.y)===BIOME.FERTILE)fertile++}
         if(fertile>2&&R()<.003){tribe.learnTech('farming',bus);bus.emit(E.FARM,tribe.id,{tribe:tribe.name})}
       }
-      // Domestication
       if(!tribe.hasTech('domestication')&&tribe.hasTech('farming')&&tribe.sz>8&&R()<.002){
         tribe.learnTech('domestication',bus);bus.emit(E.DOMESTICATE,tribe.id,{tribe:tribe.name})}
     }
@@ -584,14 +765,11 @@ class World{
   }
 
   _updateTribes(bus){
-    // Lone humans form or join tribes
     for(const h of this.humans){
       if(!h.alive||h.tribe||h.stage<1)continue;
-      // Try to join nearby tribe
       const nearby=this.nearbyHumans(h,4);
       const tribalNeighbor=nearby.find(n=>n.tribe&&n.tribe.sz<20);
       if(tribalNeighbor){h.tribe=tribalNeighbor.tribe;h.tribe.members.add(h.id);continue}
-      // Form new tribe with nearby lone humans
       const loners=nearby.filter(n=>!n.tribe&&n.stage>=1);
       if(loners.length>=2){
         const tribe=new Tribe();tribe.homeX=h.x;tribe.homeY=h.y;
@@ -601,15 +779,12 @@ class World{
         bus.emit(E.TRIBE_FORM,tribe.id,{name:tribe.name,size:tribe.sz});
       }
     }
-    // Update tribe homes (centroid)
     for(const tribe of this.tribes){
       let cx=0,cy=0,n=0;
       for(const mid of tribe.members){const m=this.humans.find(h=>h.id===mid&&h.alive);if(m){cx+=m.x;cy+=m.y;n++}}
       if(n>0){tribe.homeX=cx/n;tribe.homeY=cy/n}
     }
-    // Remove empty tribes
     this.tribes=this.tribes.filter(t=>t.sz>0);
-    // Merge very close small tribes
     for(let i=0;i<this.tribes.length;i++){
       for(let j=i+1;j<this.tribes.length;j++){
         const a=this.tribes[i],b=this.tribes[j];
@@ -618,7 +793,6 @@ class World{
           if(dx<5&&dy<5){
             for(const mid of b.members){const m=this.humans.find(h=>h.id===mid);if(m){m.tribe=a;a.members.add(m.id)}}
             b.members.clear();
-            // Merge techs
             for(const t of Object.keys(a.techs))if(b.techs[t])a.techs[t]=1;
             bus.emit(E.TRIBE_MERGE,a.id,{name:a.name,absorbed:b.name});
           }
@@ -633,15 +807,13 @@ class World{
       for(const b of this.tribes){
         if(a.id===b.id)continue;
         const dx=abs(a.homeX-b.homeX),dy=abs(a.homeY-b.homeY);
-        if(dx>10||dy>10)continue;// too far
+        if(dx>10||dy>10)continue;
         const rel=a.relation(b.id);
         if(rel<-.3&&a.sz>=3&&b.sz>=3&&R()<.02){
-          // WAR
           const aPow=a.sz*([...a.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
           const bPow=b.sz*([...b.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
           const aWin=R()*aPow>R()*bPow;
           const loser=aWin?b:a;const winner=aWin?a:b;
-          // Casualties
           const casualties=F(mn(loser.sz-1,1+R()*3));
           const members=[...loser.members];
           for(let i=0;i<casualties&&members.length;i++){
@@ -651,9 +823,8 @@ class World{
           }
           winner.wars++;loser.wars++;
           a.adjustRelation(b.id,-.3);b.adjustRelation(a.id,-.3);
-          // Winner takes some resources
           bus.emit(E.WAR,winner.id,{winner:winner.name,loser:loser.name,casualties});
-          // War drives tech improvement (fight skills)
+          if(audioEngine)audioEngine.playWar();
           for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m)m.skills.fight=mn(1,m.skills.fight+.02)}
         }
       }
@@ -684,16 +855,181 @@ class World{
 }
 
 // ═══════════════════════════════════════════════════════════
+//  AUDIO ENGINE (Web Audio API, no files)
+// ═══════════════════════════════════════════════════════════
+class AudioEngine{
+  constructor(){
+    this.ctx=null;this.muted=true;this.masterGain=null;
+    this._windNode=null;this._nightNode=null;this._windActive=false;this._nightActive=false;
+  }
+  _init(){
+    if(this.ctx)return;
+    try{
+      this.ctx=new(window.AudioContext||window.webkitAudioContext)();
+      this.masterGain=this.ctx.createGain();this.masterGain.gain.value=0.08;
+      this.masterGain.connect(this.ctx.destination);
+    }catch(e){this.ctx=null}
+  }
+  enable(){
+    this._init();if(!this.ctx)return;
+    this.muted=false;this.masterGain.gain.value=0.08;
+    this._startWind();
+  }
+  disable(){
+    this.muted=true;if(this.masterGain)this.masterGain.gain.value=0;
+    this._stopNight();
+  }
+  _noise(){
+    // Create buffer of white noise
+    const buf=this.ctx.createBuffer(1,this.ctx.sampleRate*.5,this.ctx.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=R()*2-1;
+    const src=this.ctx.createBufferSource();src.buffer=buf;src.loop=true;return src;
+  }
+  _startWind(){
+    if(!this.ctx||this._windActive)return;
+    try{
+      const noise=this._noise();
+      const filt=this.ctx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=180;filt.Q.value=0.5;
+      const gain=this.ctx.createGain();gain.gain.value=0.12;
+      noise.connect(filt);filt.connect(gain);gain.connect(this.masterGain);
+      noise.start();this._windNode={noise,filt,gain};this._windActive=true;
+    }catch(e){}
+  }
+  startNight(){
+    if(!this.ctx||this._nightActive||this.muted)return;
+    try{
+      const osc=this.ctx.createOscillator();osc.type='sine';osc.frequency.value=55;
+      const gain=this.ctx.createGain();gain.gain.value=0.04;
+      const filt=this.ctx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=200;
+      osc.connect(filt);filt.connect(gain);gain.connect(this.masterGain);
+      osc.start();this._nightNode={osc,gain};this._nightActive=true;
+    }catch(e){}
+  }
+  _stopNight(){
+    if(this._nightNode&&this._nightActive){
+      try{this._nightNode.gain.gain.setTargetAtTime(0,this.ctx.currentTime,.5);
+        setTimeout(()=>{try{this._nightNode.osc.stop()}catch(e){}},600);}catch(e){}
+      this._nightNode=null;this._nightActive=false;
+    }
+  }
+  updateTimeOfDay(t){
+    if(!this.ctx||this.muted)return;
+    const isNight=(t>0.7||t<0.05);
+    if(isNight&&!this._nightActive)this.startNight();
+    else if(!isNight&&this._nightActive)this._stopNight();
+  }
+  _shortBurst(freq,dur,vol,type='sine',startFreq){
+    if(!this.ctx||this.muted)return;
+    try{
+      const osc=this.ctx.createOscillator();osc.type=type;
+      osc.frequency.value=startFreq||freq;
+      const gain=this.ctx.createGain();gain.gain.value=vol;
+      gain.gain.setTargetAtTime(0,this.ctx.currentTime+dur*.3,dur*.2);
+      if(startFreq)osc.frequency.setTargetAtTime(freq,this.ctx.currentTime,dur*.3);
+      osc.connect(gain);gain.connect(this.masterGain);
+      osc.start();osc.stop(this.ctx.currentTime+dur+.1);
+    }catch(e){}
+  }
+  playBirth(){this._shortBurst(880,.15,.07,'sine')}
+  playWar(){this._shortBurst(60,.3,.12,'sawtooth',80)}
+  playHunt(){this._shortBurst(200,.1,.05,'triangle',300)}
+  playWolfAttack(){this._shortBurst(80,.25,.1,'sawtooth',120)}
+  playCrackle(){
+    // brief noise burst near fire
+    if(!this.ctx||this.muted)return;
+    try{
+      const buf=this.ctx.createBuffer(1,F(this.ctx.sampleRate*.05),this.ctx.sampleRate);
+      const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(R()*2-1)*mx(0,1-i/d.length*3);
+      const src=this.ctx.createBufferSource();src.buffer=buf;
+      const filt=this.ctx.createBiquadFilter();filt.type='bandpass';filt.frequency.value=800;filt.Q.value=2;
+      const gain=this.ctx.createGain();gain.gain.value=0.06;
+      src.connect(filt);filt.connect(gain);gain.connect(this.masterGain);
+      src.start();
+    }catch(e){}
+  }
+}
+let audioEngine=null;
+
+// ═══════════════════════════════════════════════════════════
+//  NARRATIVE HISTORY
+// ═══════════════════════════════════════════════════════════
+const narrativeEntries=[];
+const maxNarrative=8;
+function addNarrative(text){
+  narrativeEntries.push(text);
+  if(narrativeEntries.length>maxNarrative)narrativeEntries.shift();
+  const el=document.getElementById('narrative');
+  if(el){
+    el.innerHTML=narrativeEntries.map((t,i)=>`<div class="ne">${t}</div>`).join('');
+    el.scrollTop=el.scrollHeight;
+  }
+}
+function setupNarrative(bus,world){
+  bus.sub(E.FIRE,(ev)=>{
+    const d=ev.d;
+    addNarrative(`In Year ${world.year}, ${d.name} of the ${d.tribe} discovered how to tame fire, forever changing their people.`);
+  });
+  bus.sub(E.TRIBE_FORM,(ev)=>{
+    const d=ev.d;
+    addNarrative(`The ${d.name} tribe was founded, ${d.size} souls bound by kinship and shared struggle.`);
+  });
+  bus.sub(E.WAR,(ev)=>{
+    const d=ev.d;
+    addNarrative(`The ${d.winner} and ${d.loser} clashed in Year ${world.year}. ${d.casualties} warrior${d.casualties===1?'':'s'} fell in battle.`);
+  });
+  bus.sub(E.MONUMENT,(ev)=>{
+    const d=ev.d;
+    addNarrative(`A great monument was raised by the ${d.tribe} tribe in Year ${world.year}, a testament to their growing power.`);
+  });
+  bus.sub(E.FARM,(ev)=>{
+    const d=ev.d;
+    addNarrative(`The ${d.tribe} invented farming in Year ${world.year}, securing their place in the fertile land.`);
+  });
+  bus.sub(E.LANGUAGE,(ev)=>{
+    const d=ev.d;
+    addNarrative(`Language emerged among the ${d.tribe} in Year ${world.year}. Stories could now be told across generations.`);
+  });
+  bus.sub(E.DOMESTICATE,(ev)=>{
+    const d=ev.d;
+    addNarrative(`The ${d.tribe} domesticated animals in Year ${world.year}, forging a new bond between humanity and nature.`);
+  });
+  bus.sub(E.TRIBE_MERGE,(ev)=>{
+    const d=ev.d;
+    addNarrative(`The ${d.absorbed} were absorbed into the ${d.name}, growing stronger through unity.`);
+  });
+  bus.sub(E.DISASTER,(ev)=>{
+    const d=ev.d;
+    const msgs={flood:`A great flood swept the land in Year ${world.year}, washing away harvests and memories alike.`,
+      drought:`Drought gripped the world in Year ${world.year}. Springs ran dry and hunger stalked the tribes.`,
+      wildfire:`Wildfire raged across the land in Year ${world.year}, leaving ash where forests once stood.`,
+      'bountiful harvest':`A bountiful harvest blessed the land in Year ${world.year}. Songs of plenty filled the camps.`};
+    addNarrative(msgs[d.type]||`A great event shook the world in Year ${world.year}.`);
+  });
+  bus.sub(E.TOOL,(ev)=>{
+    const d=ev.d;
+    if(d.tool&&['spear','bow','pottery'].includes(d.tool)){
+      addNarrative(`${d.name} crafted the first ${d.tool} in Year ${world.year}, a leap forward in human ingenuity.`);
+    }
+  });
+  bus.sub(E.ELDER,(ev)=>{
+    if(R()<.04){// rarely narrate elders
+      const d=ev.d;
+      addNarrative(`The elder ${d.name} of the ${d.tribe} passed knowledge to the young in Year ${world.year}.`);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 //  SIMULATION
 // ═══════════════════════════════════════════════════════════
 class Sim{
   constructor(w=80,h=55,n=30){
     this.bus=new Bus;this.world=new World(w,h);
+    this.world.bus=this.bus;
     this.st={b:0,d:0,wars:0,trades:0,rituals:0,pH:[],tH:[],techH:[]};
     this.bus.sub(E.BORN,()=>this.st.b++);this.bus.sub(E.DIE,()=>this.st.d++);
     this.bus.sub(E.WAR,()=>this.st.wars++);this.bus.sub(E.TRADE,()=>this.st.trades++);
     this.bus.sub(E.RITUAL,()=>this.st.rituals++);
-    // Seed initial humans in clusters (proto-tribes)
     for(let g=0;g<4;g++){
       const cx=10+R()*(w-20),cy=10+R()*(h-20);
       for(let i=0;i<F(n/4)+2;i++){
@@ -701,6 +1037,27 @@ class Sim{
         if(this.world.biomeAt(x,y)!==BIOME.WATER)this.world.spawnHuman(this.bus,x,y,null);
       }
     }
+    // Spawn initial animals
+    for(let i=0;i<25;i++){// deer herds
+      const hx=R()*w,hy=R()*h;
+      const hSize=3+F(R()*6);
+      for(let j=0;j<hSize;j++){
+        const x=hx+(R()-.5)*5,y=hy+(R()-.5)*5;
+        const b=this.world.biomeAt(x,y);
+        if(b!==BIOME.WATER&&b!==BIOME.MOUNTAIN)this.world.spawnAnimal(ANIMAL_TYPE.DEER,x,y);
+      }
+      if(i>=4)break;// spawn about 4 herds
+    }
+    // Spawn remaining deer individually for ~25 total
+    while(this.world.countAnimals().deer<25)this.world.spawnAnimal(ANIMAL_TYPE.DEER);
+    for(let i=0;i<8;i++){// wolves in packs
+      const px=R()*w,py=R()*h;
+      const pSize=2+F(R()*3);
+      for(let j=0;j<pSize;j++)this.world.spawnAnimal(ANIMAL_TYPE.WOLF,px+(R()-.5)*4,py+(R()-.5)*4);
+      if(i>=2)break;
+    }
+    while(this.world.countAnimals().wolf<8)this.world.spawnAnimal(ANIMAL_TYPE.WOLF);
+    for(let i=0;i<5;i++)this.world.spawnAnimal(ANIMAL_TYPE.BOAR);// solitary boars
   }
   step(){
     const r=this.world.step(this.bus);
@@ -717,25 +1074,120 @@ class Sim{
     const maxTool=a.reduce((m,h)=>mx(m,h.tool),0);
     const anyFire=this.world.tribes.some(t=>t.hasTech('fire'));
     const anyFarm=this.world.tribes.some(t=>t.hasTech('farming'));
+    const ac=this.world.countAnimals();
+    // Time of day label
+    const t=this.world.timeOfDay;
+    let todLabel;
+    if(t<0.05||t>0.95)todLabel='Night';
+    else if(t<0.15)todLabel='Dawn';
+    else if(t<0.35)todLabel='Morning';
+    else if(t<0.5)todLabel='Midday';
+    else if(t<0.65)todLabel='Afternoon';
+    else if(t<0.75)todLabel='Dusk';
+    else todLabel='Night';
     return{tick:this.world.tick,year:this.world.year,season:this.world.season,pop:a.length,
       tribes:this.world.tribes.length,structs:this.world.structures.length,
       maxTool:TOOL_NAME[maxTool],fire:anyFire,farm:anyFarm,
       b:this.st.b,d:this.st.d,wars:this.st.wars,trades:this.st.trades,rituals:this.st.rituals,
-      ev:this.bus.c};
+      ev:this.bus.c,animals:ac,tod:todLabel,timeOfDay:this.world.timeOfDay};
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CAMERA / ZOOM / PAN
+// ═══════════════════════════════════════════════════════════
+let camX=0,camY=0,camZoom=1;
+let camDragging=false,camDragStartX=0,camDragStartY=0,camDragCamX=0,camDragCamY=0;
+let followTarget=null;// human id to follow
+
+function setupCamera(cv){
+  cv.addEventListener('wheel',(e)=>{
+    e.preventDefault();
+    const rect=cv.getBoundingClientRect();
+    const mx2=(e.clientX-rect.left),my2=(e.clientY-rect.top);
+    // Zoom toward mouse position
+    const oldZoom=camZoom;
+    camZoom=mn(3,mx(.5,camZoom*(e.deltaY<0?1.1:.91)));
+    // Adjust cam offset so zoom centers on mouse
+    const C=cs0();
+    const wx=camX+mx2/(C*oldZoom);
+    const wy=camY+my2/(C*oldZoom);
+    camX=wx-mx2/(C*camZoom);
+    camY=wy-my2/(C*camZoom);
+  },{passive:false});
+
+  cv.addEventListener('mousedown',(e)=>{
+    if(e.button===0){
+      camDragging=true;
+      camDragStartX=e.clientX;camDragStartY=e.clientY;
+      camDragCamX=camX;camDragCamY=camY;
+      cv.style.cursor='grabbing';
+    }
+  });
+  cv.addEventListener('mousemove',(e)=>{
+    if(camDragging){
+      const C=cs0();
+      camX=camDragCamX-(e.clientX-camDragStartX)/(C*camZoom);
+      camY=camDragCamY-(e.clientY-camDragStartY)/(C*camZoom);
+      if(camDragging&&(abs(e.clientX-camDragStartX)>3||abs(e.clientY-camDragStartY)>3)){
+        camDragging=true;// still dragging, suppress click
+      }
+    }
+  });
+  let mouseDownX=0,mouseDownY=0;
+  cv.addEventListener('mousedown',(e2)=>{mouseDownX=e2.clientX;mouseDownY=e2.clientY},{capture:true});
+  cv.addEventListener('mouseup',(e)=>{
+    const moved=abs(e.clientX-mouseDownX)+abs(e.clientY-mouseDownY);
+    camDragging=false;cv.style.cursor='default';
+    if(moved<5){// it was a click, not a drag
+      // Check if clicking on a human
+      const rect=cv.getBoundingClientRect();
+      const C=cs0();
+      const wx=(e.clientX-rect.left)/(C*camZoom)+camX;
+      const wy=(e.clientY-rect.top)/(C*camZoom)+camY;
+      let found=null;
+      if(sim){for(const h of sim.world.humans){
+        if(!h.alive)continue;
+        if(abs(wx-h.x)<1.2&&abs(wy-h.y)<1.2){found=h;break}
+      }}
+      if(found){
+        followTarget=found.id;
+        cv.style.cursor='crosshair';
+      }else{
+        followTarget=null;
+        cv.style.cursor='default';
+      }
+    }
+  });
+  cv.addEventListener('mouseleave',()=>{camDragging=false;cv.style.cursor='default'});
+}
+
+function cs0(){// base cell size without zoom
+  const c=document.getElementById('wc');
+  if(!sim)return 10;
+  return mn(c.clientWidth/sim.world.w,c.clientHeight/sim.world.h);
+}
+function cs(){// legacy: returns effective cell size with zoom
+  return cs0()*camZoom;
 }
 
 // ═══════════════════════════════════════════════════════════
 //  RENDERER
 // ═══════════════════════════════════════════════════════════
 let sim,cv,cx2,run=0,anim=null,spd=20,vm='world',hov=null,dpr=1;
+
 function init(){
+  audioEngine=new AudioEngine();
   sim=new Sim(60,40,28);cv=document.getElementById('cv');cx2=cv.getContext('2d');
   dpr=window.devicePixelRatio||1;rsz();window.addEventListener('resize',rsz);
+  setupCamera(cv);
   elog();ttip();ctrl();tabs();draw();toggle();
+  setupNarrative(sim.bus,sim.world);
+  // Center camera initially
+  camX=0;camY=0;camZoom=1;
 }
+
 function rsz(){const c=document.getElementById('wc');const w=c.clientWidth,h=c.clientHeight;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';cx2.setTransform(dpr,0,0,dpr,0,0)}
-function cs(){const c=document.getElementById('wc');return mn(c.clientWidth/sim.world.w,c.clientHeight/sim.world.h)}
 
 function elog(){
   const el=document.getElementById('elog');
@@ -773,13 +1225,14 @@ function elog(){
 
 function ttip(){
   cv.addEventListener('mousemove',(e)=>{
-    const C=cs(),rect=cv.getBoundingClientRect();
-    const mx2=(e.clientX-rect.left)/C,my2=(e.clientY-rect.top)/C;
+    if(camDragging)return;
+    const C=cs0(),rect=cv.getBoundingClientRect();
+    const mx2=(e.clientX-rect.left)/(C*camZoom)+camX;
+    const my2=(e.clientY-rect.top)/(C*camZoom)+camY;
     hov=null;
-    for(const h of sim.world.humans){if(!h.alive)continue;if(abs(mx2-h.x)<1&&abs(my2-h.y)<1){hov=h;break}}
-    // Also check structures
+    for(const h of sim.world.humans){if(!h.alive)continue;if(abs(mx2-h.x)<1.2&&abs(my2-h.y)<1.2){hov=h;break}}
     let hovS=null;
-    if(!hov){for(const s of sim.world.structures){if(abs(mx2-s.x)<1&&abs(my2-s.y)<1){hovS=s;break}}}
+    if(!hov){for(const s of sim.world.structures){if(abs(mx2-s.x)<1.2&&abs(my2-s.y)<1.2){hovS=s;break}}}
     const tt=document.getElementById('tt');
     if(hov){const h=hov;
       tt.innerHTML=`<div class="ti">${h.name} (${h.sex}) <span style="color:${h.tribe?.color||'#888'}">${h.tribe?.name||'lone'}</span></div>
@@ -818,12 +1271,23 @@ function ctrl(){
   document.getElementById('ba').onclick=()=>sim.world.spawnHuman(sim.bus);
   document.getElementById('bd').onclick=()=>{const t=['flood','drought','fire','bounty'];sim.world.disaster(sim.bus,t[F(R()*t.length)])};
   document.getElementById('bx').onclick=()=>{
-    if(anim)cancelAnimationFrame(anim);run=0;_hi=0;_ti=0;
-    document.getElementById('bp').textContent='▶';document.getElementById('elog').innerHTML='';
-    sim=new Sim(60,40,28);elog();draw();toggle();
+    if(anim)cancelAnimationFrame(anim);run=0;_hi=0;_ti=0;_ai=0;
+    document.getElementById('bp').textContent='▶';
+    document.getElementById('elog').innerHTML='';
+    document.getElementById('narrative').innerHTML='';
+    narrativeEntries.length=0;
+    followTarget=null;camX=0;camY=0;camZoom=1;
+    sim=new Sim(60,40,28);
+    setupNarrative(sim.bus,sim.world);
+    elog();draw();toggle();
   };
   document.getElementById('spd').oninput=(e)=>{spd=+e.target.value};
   document.getElementById('vm').onchange=(e)=>{vm=e.target.value};
+  document.getElementById('bmute').onclick=()=>{
+    if(!audioEngine)return;
+    if(audioEngine.muted){audioEngine.enable();document.getElementById('bmute').textContent='🔊'}
+    else{audioEngine.disable();document.getElementById('bmute').textContent='🔇'}
+  };
 }
 function tabs(){for(const b of document.querySelectorAll('.tb button'))b.onclick=()=>{
   const p=b.closest('.p');p.querySelectorAll('.tb button').forEach(x=>x.classList.remove('on'));
@@ -837,12 +1301,48 @@ let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1
 //  DRAW
 // ═══════════════════════════════════════════════════════════
 function draw(){
-  const w=sim.world,W=w.w,H=w.h,C=cs();
-  const cw=document.getElementById('wc').clientWidth;
-  cx2.clearRect(0,0,cw,document.getElementById('wc').clientHeight);
+  const w=sim.world,W=w.w,H=w.h;
+  const container=document.getElementById('wc');
+  const cw=container.clientWidth,ch=container.clientHeight;
+  cx2.clearRect(0,0,cw,ch);
+
+  // Update audio time of day
+  if(audioEngine)audioEngine.updateTimeOfDay(w.timeOfDay);
+
+  // Follow target camera
+  if(followTarget){
+    const fh=w.humans.find(h=>h.id===followTarget);
+    if(fh&&fh.alive){
+      const C=cs0();
+      camX=fh.x-cw/(2*C*camZoom);
+      camY=fh.y-ch/(2*C*camZoom);
+    }else followTarget=null;
+  }
+
+  const C=cs0();
+
+  // Day/Night tinting
+  const tod=w.timeOfDay;
+  let nightAlpha=0,dawnDusk='';
+  // Night: tod > 0.72 or < 0.05
+  if(tod>0.72||tod<0.05)nightAlpha=0.58;
+  else if(tod<0.12)nightAlpha=0.58*(1-(tod-0.05)/0.07);// fade dawn
+  else if(tod>0.65)nightAlpha=(tod-0.65)/0.07*0.58;// fade dusk
+  const isDawn=(tod>0.05&&tod<0.2);
+  const isDusk=(tod>0.6&&tod<0.75);
+
+  cx2.save();
+  // Apply camera transform
+  cx2.translate(-camX*C*camZoom,-camY*C*camZoom);
+  cx2.scale(camZoom,camZoom);
 
   const sTC={spring:[5,10,0],summer:[10,5,0],autumn:[8,3,0],winter:[-5,-3,5]};
   const st=sTC[w.season]||[0,0,0];
+
+  // Night tint modifiers
+  const nightR= nightAlpha>0?-20*nightAlpha:0;
+  const nightG= nightAlpha>0?-10*nightAlpha:0;
+  const nightB= nightAlpha>0? 30*nightAlpha:0;
 
   // ── Terrain ──
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
@@ -853,21 +1353,46 @@ function draw(){
       const f=w.res.get(x,y,'food');
       col=`rgb(${mn(255,F(20+f*30))},${mn(255,F(15+f*25))},${mn(255,F(10+f*10))})`;
     }else{
-      // World view: terrain + resource overlay
       const base=BIOME_COL[b];const r2=parseInt(base.slice(1,3),16),g2=parseInt(base.slice(3,5),16),b2=parseInt(base.slice(5,7),16);
       const food=w.res.get(x,y,'food');
       const dim=.4+food*.08;
-      col=`rgb(${mn(255,F(r2*dim+st[0]))},${mn(255,F(g2*dim+st[1]))},${mn(255,F(b2*dim+st[2]))})`;
+      col=`rgb(${mn(255,mx(0,F(r2*dim+st[0]+nightR)))},${mn(255,mx(0,F(g2*dim+st[1]+nightG)))},${mn(255,mx(0,F(b2*dim+st[2]+nightB)))})`;
     }
     cx2.fillStyle=col;cx2.fillRect(x*C,y*C,C+.5,C+.5);
   }
 
+  // ── Night: fire pit glow (warm orange circles) ──
+  if(nightAlpha>0.1){
+    for(const s of w.structures){
+      if(s.type!==STRUCT.FIRE_PIT)continue;
+      const px=s.x*C+C/2,py=s.y*C+C/2;
+      const glowR=C*6;
+      const grd=cx2.createRadialGradient(px,py,C*.3,px,py,glowR);
+      grd.addColorStop(0,`rgba(255,160,40,${nightAlpha*.6})`);
+      grd.addColorStop(0.3,`rgba(200,100,20,${nightAlpha*.25})`);
+      grd.addColorStop(1,'rgba(0,0,0,0)');
+      cx2.fillStyle=grd;cx2.beginPath();cx2.arc(px,py,glowR,0,PI*2);cx2.fill();
+      // Occasional crackle sound
+      if(R()<.003&&audioEngine)audioEngine.playCrackle();
+    }
+  }
+
+  // ── Dawn/Dusk tint overlay ──
+  if(isDawn){
+    const p=(tod-0.05)/0.15;
+    cx2.fillStyle=`rgba(200,80,30,${0.18*(1-p)})`;
+    cx2.fillRect(0,0,W*C,H*C);
+  }else if(isDusk){
+    const p=(tod-0.6)/0.15;
+    cx2.fillStyle=`rgba(160,50,80,${0.15*p})`;
+    cx2.fillRect(0,0,W*C,H*C);
+  }
+
   // ── Structures ──
-  const fontSize=mx(10, mn(C*.8,16));
+  const fontSize=mx(10,mn(C*.8,16));
   cx2.font=`${fontSize}px serif`;cx2.textAlign='center';cx2.textBaseline='middle';
   for(const s of w.structures){
     const px=s.x*C+C/2,py=s.y*C+C/2;
-    // Background glow
     const tribe=w.tribes.find(t=>t.id===s.tribe);
     if(tribe&&vm==='tribe'){
       cx2.fillStyle=tribe.color.replace('50%','50%').replace(')',',0.2)').replace('hsl','hsla');
@@ -876,24 +1401,40 @@ function draw(){
     cx2.fillText(STRUCT_CHAR[s.type],px,py);
   }
 
-  // ── Tribe territories — always shown ──
+  // ── Tribe territories ──
   for(const tribe of w.tribes){
     if(tribe.sz<1)continue;
     const alpha=vm==='tribe'?.12:.06;
     cx2.fillStyle=tribe.color.replace(')',`,${alpha})`).replace('hsl','hsla');
     cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*7,0,PI*2);cx2.fill();
-    // Tribe name label
     cx2.fillStyle=tribe.color;cx2.font=`bold ${mx(10,F(C*.7))}px monospace`;cx2.textAlign='center';
     cx2.fillText(`${tribe.name} (${tribe.sz})`,tribe.homeX*C+C/2,tribe.homeY*C-C*4);
+  }
+
+  // ── Animals ──
+  for(const a of w.animals){
+    if(!a.alive)continue;
+    const px=a.x*C+C/2,py=a.y*C+C/2;
+    const sz=mx(3,C*.28);
+    cx2.fillStyle=ANIMAL_COLOR[a.type];
+    cx2.strokeStyle='rgba(0,0,0,0.5)';cx2.lineWidth=.6;
+    cx2.beginPath();
+    if(a.type===ANIMAL_TYPE.DEER){// triangle pointing up
+      cx2.moveTo(px,py-sz);cx2.lineTo(px+sz*.8,py+sz*.7);cx2.lineTo(px-sz*.8,py+sz*.7);cx2.closePath();
+    }else if(a.type===ANIMAL_TYPE.WOLF){// diamond
+      cx2.moveTo(px,py-sz);cx2.lineTo(px+sz,py);cx2.lineTo(px,py+sz);cx2.lineTo(px-sz,py);cx2.closePath();
+    }else{// boar: square
+      cx2.rect(px-sz*.7,py-sz*.7,sz*1.4,sz*1.4);
+    }
+    cx2.fill();cx2.stroke();
   }
 
   // ── Humans ──
   for(const h of w.humans){
     if(!h.alive)continue;
     const px=h.x*C+C/2,py=h.y*C+C/2;
-    const rr=mx(3, C*.35)*(h.stage===0?.5:h.stage===1?.75:h.stage===3?1.15:1);
+    const rr=mx(3,C*.35)*(h.stage===0?.5:h.stage===1?.75:h.stage===3?1.15:1);
 
-    // Trail
     if(h.tx.length>2){
       cx2.beginPath();cx2.moveTo(h.tx[0]*C+C/2,h.ty[0]*C+C/2);
       for(let i=1;i<h.tx.length;i++)cx2.lineTo(h.tx[i]*C+C/2,h.ty[i]*C+C/2);
@@ -901,54 +1442,41 @@ function draw(){
       cx2.lineWidth=.8;cx2.stroke();
     }
 
-    // Color by view mode
     let body;
     if(vm==='tribe'){body=h.tribe?h.tribe.color:'#808080'}
-    else if(vm==='tool'){
-      const tc=['#555','#888','#aaa','#cc8844','#dd6644','#4488cc'];body=tc[h.tool]||'#555';
-    }else if(vm==='social'){
-      body=h.tribe?h.tribe.color:`hsl(0,0%,40%)`;
-    }else{
+    else if(vm==='tool'){const tc=['#555','#888','#aaa','#cc8844','#dd6644','#4488cc'];body=tc[h.tool]||'#555'}
+    else if(vm==='social'){body=h.tribe?h.tribe.color:`hsl(0,0%,40%)`}
+    else{
       if(h.stage===0)body='#ffe0c0';
       else if(h.stage===1)body='#e0c8a0';
       else if(h.stage===3)body='#c0b8b0';
       else body=h.sex==='m'?'#d4a060':'#c88060';
     }
 
-    // Glow — bright and visible
     cx2.beginPath();cx2.arc(px,py,rr*3.5,0,PI*2);
     const gr=cx2.createRadialGradient(px,py,rr*.3,px,py,rr*3.5);
-    const bc=body;
-    gr.addColorStop(0,'rgba(255,240,200,0.6)');gr.addColorStop(0.3,bc+'88');gr.addColorStop(1,bc+'00');
+    gr.addColorStop(0,'rgba(255,240,200,0.6)');gr.addColorStop(0.3,body+'88');gr.addColorStop(1,body+'00');
     cx2.fillStyle=gr;cx2.fill();
 
-    // Body shape by stage
     cx2.beginPath();
-    if(h.stage===0){// baby: tiny circle
-      cx2.arc(px,py,rr*.6,0,PI*2);
-    }else if(h.stage===1){// child: small circle
-      cx2.arc(px,py,rr*.8,0,PI*2);
-    }else if(h.stage===3){// elder: diamond
-      cx2.moveTo(px,py-rr);cx2.lineTo(px+rr,py);cx2.lineTo(px,py+rr);cx2.lineTo(px-rr,py);cx2.closePath();
-    }else{// adult: circle
-      cx2.arc(px,py,rr,0,PI*2);
-    }
+    if(h.stage===0)cx2.arc(px,py,rr*.6,0,PI*2);
+    else if(h.stage===1)cx2.arc(px,py,rr*.8,0,PI*2);
+    else if(h.stage===3){cx2.moveTo(px,py-rr);cx2.lineTo(px+rr,py);cx2.lineTo(px,py+rr);cx2.lineTo(px-rr,py);cx2.closePath()}
+    else cx2.arc(px,py,rr,0,PI*2);
     cx2.fillStyle=body;cx2.fill();
-    // Outline so humans always visible against terrain
     cx2.strokeStyle='rgba(0,0,0,0.6)';cx2.lineWidth=1.2;cx2.stroke();
 
-    // Tool indicator (spear/bow line)
     if(h.tool>=3){cx2.beginPath();cx2.moveTo(px+rr+1,py-rr*1.2);cx2.lineTo(px+rr+1,py+rr*1.2);
       cx2.strokeStyle='#ddbb55';cx2.lineWidth=1.2;cx2.stroke()}
-
-    // Hunger indicator (red ring when starving)
     if(h.hunger>60){cx2.beginPath();cx2.arc(px,py,rr+3,0,PI*2);cx2.strokeStyle=`rgba(255,50,50,${mn(1,(h.hunger-60)/30)})`;cx2.lineWidth=1.5;cx2.stroke()}
-
-    // Hover
     if(hov&&hov.id===h.id){cx2.beginPath();cx2.arc(px,py,rr+4,0,PI*2);cx2.strokeStyle='#fff6';cx2.lineWidth=1.5;cx2.stroke()}
+    // Follow indicator
+    if(followTarget&&followTarget===h.id){
+      cx2.beginPath();cx2.arc(px,py,rr+6,0,PI*2);cx2.strokeStyle='rgba(255,220,50,0.7)';cx2.lineWidth=1.5;cx2.setLineDash([3,3]);cx2.stroke();cx2.setLineDash([]);
+    }
   }
 
-  // ── Social bonds (in social view) ──
+  // ── Social bonds ──
   if(vm==='social'){
     cx2.lineWidth=.3;
     for(const h of w.humans){
@@ -959,6 +1487,14 @@ function draw(){
     }
   }
 
+  cx2.restore();
+
+  // ── Night overlay (over entire canvas, outside camera transform) ──
+  if(nightAlpha>0){
+    cx2.fillStyle=`rgba(5,5,30,${nightAlpha*.7})`;
+    cx2.fillRect(0,0,cw,ch);
+  }
+
   ui();
 }
 
@@ -967,7 +1503,11 @@ function ui(){
   document.getElementById('xt').textContent=`Y${s.year} T${s.tick}`;
   document.getElementById('xsn').textContent=s.season;
   document.getElementById('xsn').className='sv '+(s.season==='winter'?'vb':s.season==='summer'?'vo':'vy');
+  document.getElementById('xtod').textContent=s.tod;
+  const todColClass=(s.tod==='Night')?'vb':(s.tod==='Dawn'||s.tod==='Dusk')?'vo':'vy';
+  document.getElementById('xtod').className='sv '+todColClass;
   document.getElementById('xp').textContent=s.pop;
+  document.getElementById('xan').textContent=`🦌${s.animals.deer} 🐺${s.animals.wolf} 🐗${s.animals.boar}`;
   document.getElementById('xtr').textContent=s.tribes;
   document.getElementById('xst').textContent=s.structs;
   document.getElementById('xht').textContent=s.maxTool;
@@ -980,7 +1520,6 @@ function ui(){
   document.getElementById('xtd').textContent=s.trades;
   document.getElementById('xri').textContent=s.rituals;
 
-  // Tribe bar
   const bar=document.getElementById('trb'),leg=document.getElementById('trl');
   bar.innerHTML='';leg.innerHTML='';
   const tot=mx(1,s.pop);
@@ -988,12 +1527,10 @@ function ui(){
   for(const t of sorted){const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;bar.appendChild(d)}
   leg.innerHTML=sorted.slice(0,4).map(t=>`<span style="color:${t.color}">■</span>${t.name}(${t.sz})`).join(' ');
 
-  // Sparklines
   spark('s1',sim.st.pH,'#7dce82');
   if(document.getElementById('tt2').classList.contains('on'))spark('s2',sim.st.tH,'#e09040');
   if(document.getElementById('tch').classList.contains('on'))spark('s3',sim.st.techH,'#55b8e0');
 
-  // Tech tree
   const tt=document.getElementById('techtree');
   const allTechs=Object.keys(TECHS);
   let techHTML='';
