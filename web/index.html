@@ -1844,7 +1844,11 @@ function draw(){
 
     cx2.beginPath();cx2.arc(px,py,rr*3.5,0,PI*2);
     const gr=cx2.createRadialGradient(px,py,rr*.3,px,py,rr*3.5);
-    gr.addColorStop(0,'rgba(255,240,200,0.6)');gr.addColorStop(0.3,body+'88');gr.addColorStop(1,body+'00');
+    gr.addColorStop(0,'rgba(255,240,200,0.6)');
+    // Convert body color to rgba for gradient stops
+    const gBody=body.startsWith('hsl')?body.replace('hsl','hsla').replace(')',',0.5)'):(body+'88');
+    const gBody0=body.startsWith('hsl')?body.replace('hsl','hsla').replace(')',',0)'):(body+'00');
+    gr.addColorStop(0.3,gBody);gr.addColorStop(1,gBody0);
     cx2.fillStyle=gr;cx2.fill();
 
     cx2.beginPath();
