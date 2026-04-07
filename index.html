@@ -3,48 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AALF — Autopoietic Artificial Life Forms</title>
+<title>AALF — Primitive Civilization Emergence</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#05080e;--panel:#0a1018;--border:#152035;--dim:#3a4a5a;--text:#b0c4d8}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;overflow:hidden;font-size:11px}
-#app{display:grid;grid-template-columns:1fr 330px;grid-template-rows:auto 1fr auto;height:100vh}
-header{grid-column:1/-1;padding:6px 12px;background:linear-gradient(90deg,#080e18,#0e1828);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
-header h1{font-size:15px;color:#00e5ff;letter-spacing:2px}
-header .sub{font-size:9px;color:#3a4a5a;margin-left:6px}
+:root{--bg:#08060a;--pn:#0e0c12;--bd:#1e1a28;--dm:#4a4460;--tx:#c8c0d8}
+body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;overflow:hidden;font-size:11px}
+#app{display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;height:100vh}
+header{grid-column:1/-1;padding:6px 14px;background:linear-gradient(90deg,#0c0a14,#141020);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
+header h1{font-size:15px;color:#e8a040;letter-spacing:2px}
+header .sub{font-size:9px;color:#5a5070;margin-left:8px}
 .cg{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.cg button{background:#12203a;border:1px solid #1e3050;color:#7ab8d8;padding:3px 8px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:10px;transition:all .12s}
-.cg button:hover{background:#1e3050;color:#00e5ff}
-.cg button.on{background:#00e5ff18;border-color:#00e5ff55;color:#00e5ff}
+.cg button{background:#1a1628;border:1px solid #2a2640;color:#a090c0;padding:3px 8px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:10px;transition:all .12s}
+.cg button:hover{background:#2a2640;color:#e8a040}
+.cg button.on{background:#e8a04018;border-color:#e8a04055;color:#e8a040}
 .cg button.dn{border-color:#ff525255}.cg button.dn:hover{background:#ff525218;color:#ff5252}
-.cg select,.cg input[type=range]{background:#12203a;border:1px solid #1e3050;color:#7ab8d8;padding:2px 4px;border-radius:3px;font-family:inherit;font-size:10px}
-.cg label{font-size:9px;color:#3a4a5a}
-#wc{position:relative;overflow:hidden;background:#030508}
+.cg select,.cg input[type=range]{background:#1a1628;border:1px solid #2a2640;color:#a090c0;padding:2px 4px;border-radius:3px;font-family:inherit;font-size:10px}
+.cg label{font-size:9px;color:#5a5070}
+#wc{position:relative;overflow:hidden;background:#050408}
 #wc canvas{display:block;width:100%;height:100%}
-#sb{background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:#1e3050 transparent}
-.p{background:#0c1520;border:1px solid #152030;border-radius:4px;padding:6px}
-.p h3{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#3a5a7a;margin-bottom:4px;border-bottom:1px solid #15202e;padding-bottom:3px}
-.sr{display:flex;justify-content:space-between;padding:1px 0}.sl{color:#3a4a5a}.sv{font-weight:bold}
-.vg{color:#00e676}.vr{color:#ff5252}.vc{color:#00e5ff}.vy{color:#ffd740}.vm{color:#e040fb}.vo{color:#ff9100}.vb{color:#448aff}
+#sb{background:var(--pn);border-left:1px solid var(--bd);overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:#2a2640 transparent}
+.p{background:#120f18;border:1px solid #1e1a2a;border-radius:4px;padding:6px}
+.p h3{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#6a5a8a;margin-bottom:4px;border-bottom:1px solid #1a1628;padding-bottom:3px}
+.sr{display:flex;justify-content:space-between;padding:1px 0}.sl{color:#5a5070}.sv{font-weight:bold}
+.vg{color:#7dce82}.vr{color:#e05555}.vc{color:#55b8e0}.vy{color:#e0c050}.vm{color:#c060e0}.vo{color:#e09040}.vb{color:#5588dd}.vw{color:#d0c8b0}
 .sc{height:28px;margin-top:3px;position:relative}.sc canvas{width:100%;height:100%}
-.el{max-height:120px;overflow-y:auto;font-size:9px;line-height:1.4;scrollbar-width:thin}
+.el{max-height:130px;overflow-y:auto;font-size:9px;line-height:1.4;scrollbar-width:thin}
 .el .e{padding:1px 2px;border-radius:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.el .e:nth-child(odd){background:#060a14}
-.sb{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:3px}.sb div{min-width:1px;transition:width .3s}
-.gm{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;margin-top:3px}
-.gm .gc{height:14px;border-radius:1px;position:relative;background:#080c18}
-.gm .gc .gb{position:absolute;bottom:0;left:0;right:0;border-radius:1px}
+.el .e:nth-child(odd){background:#0a0814}
+.sb2{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:3px}.sb2 div{min-width:1px;transition:width .3s}
 .tb{display:flex;gap:1px;margin-bottom:4px}
-.tb button{flex:1;background:#080e1a;border:1px solid #152030;color:#3a5a7a;padding:2px;border-radius:2px 2px 0 0;cursor:pointer;font-size:8px;font-family:inherit}
-.tb button.on{background:#0c1520;border-bottom-color:#0c1520;color:#7ab8d8}
+.tb button{flex:1;background:#0a0814;border:1px solid #1a1628;color:#5a5080;padding:2px;border-radius:2px 2px 0 0;cursor:pointer;font-size:8px;font-family:inherit}
+.tb button.on{background:#120f18;border-bottom-color:#120f18;color:#a090c0}
 .tc{display:none}.tc.on{display:block}
-.nn-vis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:3px}
-.nn-node{width:100%;aspect-ratio:1;border-radius:50%;border:1px solid #1e3050}
-footer{grid-column:1/-1;padding:3px 12px;background:var(--panel);border-top:1px solid var(--border);font-size:9px;color:#2a3a4a;display:flex;justify-content:space-between;align-items:center}
-.lg{display:flex;gap:10px;align-items:center}.li{display:flex;align-items:center;gap:2px}
+footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px solid var(--bd);font-size:9px;color:#3a3450;display:flex;justify-content:space-between;align-items:center}
+.lg{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.li{display:flex;align-items:center;gap:2px}
 .ld{width:7px;height:7px;border-radius:50%;display:inline-block}
-#tt{position:absolute;background:#0c1525ee;border:1px solid #2a3a55;border-radius:5px;padding:6px 8px;font-size:9px;pointer-events:none;display:none;z-index:10;max-width:260px;line-height:1.4}
-#tt .ti{color:#00e5ff;font-weight:bold;font-size:10px}
+#tt{position:absolute;background:#120f18ee;border:1px solid #2a2640;border-radius:5px;padding:6px 8px;font-size:9px;pointer-events:none;display:none;z-index:10;max-width:280px;line-height:1.4}
+#tt .ti{color:#e8a040;font-weight:bold;font-size:10px}
 #tt .tr{display:flex;justify-content:space-between;gap:8px}
 @media(max-width:800px){#app{grid-template-columns:1fr}#sb{display:none}}
 </style>
@@ -53,744 +48,637 @@ footer{grid-column:1/-1;padding:3px 12px;background:var(--panel);border-top:1px 
 <div id="app">
 <header>
 <div style="display:flex;align-items:baseline">
-<h1>AALF</h1><span class="sub">Autopoietic Artificial Life &mdash; Emergent Neural Ecosystem</span>
+<h1>AALF</h1><span class="sub">Primitive Civilization Emergence &mdash; From Autopoiesis to Society</span>
 </div>
 <div class="cg">
 <button id="bp" class="on">&#9654;</button>
 <button id="bs">Step</button>
-<button id="ba">+Life</button>
-<button id="br">+Pred</button>
-<button id="bd" class="dn">Cataclysm</button>
+<button id="ba">+Human</button>
+<button id="bd" class="dn">Disaster</button>
 <button id="bx">Reset</button>
-<label>Spd<input id="spd" type="range" min="1" max="200" value="30" style="width:60px"></label>
-<label>View<select id="vm"><option value="eco">Ecosystem</option><option value="sp">Species</option><option value="nn">Neural</option><option value="nrg">Energy</option><option value="tr">Trophic</option><option value="ph">Pheromone</option><option value="ter">Territory</option><option value="age">Life Stage</option></select></label>
+<label>Spd<input id="spd" type="range" min="1" max="120" value="20" style="width:60px"></label>
+<label>View<select id="vm">
+<option value="world">World</option><option value="biome">Biome</option><option value="tribe">Tribes</option>
+<option value="tool">Technology</option><option value="heat">Heatmap</option><option value="social">Social</option>
+</select></label>
 </div>
 </header>
 <div id="wc"><canvas id="cv"></canvas><div id="tt"></div></div>
 <div id="sb">
 <div class="p">
-<h3>Ecosystem</h3>
-<div class="sr"><span class="sl">Tick</span><span id="xt" class="sv vc">0</span></div>
+<h3>World</h3>
+<div class="sr"><span class="sl">Year</span><span id="xt" class="sv vy">0</span></div>
 <div class="sr"><span class="sl">Season</span><span id="xsn" class="sv vy">—</span></div>
 <div class="sr"><span class="sl">Population</span><span id="xp" class="sv vg">0</span></div>
-<div class="sr"><span class="sl">Species</span><span id="xs" class="sv vm">0</span></div>
-<div class="sr"><span class="sl">Prod / Pred / Scav / Para</span><span id="xtr" class="sv">—</span></div>
-<div class="sr"><span class="sl">Colonies</span><span id="xco" class="sv vy">0</span></div>
-<div class="sr"><span class="sl">Dormant</span><span id="xdo" class="sv vb">0</span></div>
+<div class="sr"><span class="sl">Tribes</span><span id="xtr" class="sv vo">0</span></div>
+<div class="sr"><span class="sl">Structures</span><span id="xst" class="sv vw">0</span></div>
+<div class="sr"><span class="sl">Highest Tool</span><span id="xht" class="sv vc">—</span></div>
+<div class="sr"><span class="sl">Fire Known</span><span id="xfi" class="sv vr">—</span></div>
+<div class="sr"><span class="sl">Farming Known</span><span id="xfa" class="sv vg">—</span></div>
 <div class="sr"><span class="sl">Births / Deaths</span><span id="xbd" class="sv">0/0</span></div>
-<div class="sr"><span class="sl">Sexual / Asex</span><span id="xrp" class="sv">0/0</span></div>
-<div class="sr"><span class="sl">HGT Events</span><span id="xhgt" class="sv vo">0</span></div>
-<div class="sr"><span class="sl">Max Gen</span><span id="xg" class="sv vy">0</span></div>
-<div class="sr"><span class="sl">Events</span><span id="xev" class="sv">0</span></div>
+<div class="sr"><span class="sl">Wars</span><span id="xwa" class="sv vr">0</span></div>
+<div class="sr"><span class="sl">Trades</span><span id="xtd" class="sv vc">0</span></div>
+<div class="sr"><span class="sl">Rituals</span><span id="xri" class="sv vm">0</span></div>
 </div>
 <div class="p">
-<h3>Species</h3>
-<div id="spb" class="sb"></div>
-<div id="spl" style="margin-top:2px;font-size:8px"></div>
+<h3>Tribes</h3>
+<div id="trb" class="sb2"></div>
+<div id="trl" style="margin-top:2px;font-size:8px"></div>
 </div>
 <div class="p">
 <div class="tb">
 <button class="on" data-t="pt">Pop</button>
-<button data-t="dt">Diversity</button>
-<button data-t="tt2">Trophic</button>
-<button data-t="st">Season</button>
+<button data-t="tt2">Tribes</button>
+<button data-t="tch">Tech</button>
 </div>
 <div id="pt" class="tc on"><div class="sc"><canvas id="s1"></canvas></div></div>
-<div id="dt" class="tc"><div class="sc"><canvas id="s2"></canvas></div></div>
-<div id="tt2" class="tc"><div class="sc"><canvas id="s3"></canvas></div></div>
-<div id="st" class="tc"><div class="sc"><canvas id="s4"></canvas></div></div>
+<div id="tt2" class="tc"><div class="sc"><canvas id="s2"></canvas></div></div>
+<div id="tch" class="tc"><div class="sc"><canvas id="s3"></canvas></div></div>
 </div>
 <div class="p">
-<h3>Genome Traits</h3>
-<div id="gmap" class="gm"></div>
-<div style="margin-top:2px;font-size:7px;color:#2a3a4a;display:flex;justify-content:space-between"><span>Agg</span><span>Tox</span><span>Cop</span><span>Spd</span><span>Arm</span><span>Nic</span><span>Par</span><span>Dor</span></div>
+<h3>Technology Tree</h3>
+<div id="techtree" style="font-size:8px;line-height:1.6"></div>
 </div>
 <div class="p">
-<h3>Neural Activity</h3>
-<div id="nnv" class="nn-vis"></div>
-<div id="nnl" style="margin-top:2px;font-size:8px;color:#3a4a5a"></div>
-</div>
-<div class="p">
-<h3>Event Log</h3>
+<h3>Event Chronicle</h3>
 <div id="elog" class="el"></div>
 </div>
 </div>
 <footer>
 <div class="lg">
-<span class="li"><span class="ld" style="background:#00e676"></span>Prod</span>
-<span class="li"><span class="ld" style="background:#ff5252"></span>Pred</span>
-<span class="li"><span class="ld" style="background:#ffd740"></span>Scav</span>
-<span class="li"><span class="ld" style="background:#e040fb"></span>Para</span>
-<span class="li"><span class="ld" style="background:#448aff"></span>Dormant</span>
-<span class="li"><span class="ld" style="background:#ffffff55"></span>Egg</span>
-<span class="li" style="color:#1e3050">|</span>
-<span class="li" style="color:#2a3a4a">🧠=neural 🔗=bonds 💠=quorum ⚡=HGT</span>
+<span class="li"><span class="ld" style="background:#5a8a3a"></span>Forest</span>
+<span class="li"><span class="ld" style="background:#8aaa50"></span>Plains</span>
+<span class="li"><span class="ld" style="background:#c8b870"></span>Desert</span>
+<span class="li"><span class="ld" style="background:#90a0b0"></span>Mountain</span>
+<span class="li"><span class="ld" style="background:#4070a0"></span>Water</span>
+<span class="li"><span class="ld" style="background:#b0c8a0"></span>Fertile</span>
+<span style="color:#2a2640">|</span>
+<span class="li">🔥fire 🏠hut 🗿monument ⚔war 🤝trade 🌾farm</span>
 </div>
-<div>Hover for details</div>
+<div>Hover for details &bull; Watch civilizations emerge</div>
 </footer>
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════
-//  CORE ENGINE
+//  AALF — PRIMITIVE CIVILIZATION EMERGENCE
+//  From autopoietic organisms to tribes, tools, and culture
 // ═══════════════════════════════════════════════════════════
-const R=Math.random,F=Math.floor,mn=Math.min,mx=Math.max,abs=Math.abs,sqrt=Math.sqrt,sin=Math.sin,cos=Math.cos,PI=Math.PI,atan2=Math.atan2;
-class EventBus{constructor(){this.s=new Map;this.w=[];this.c=0}
-sub(t,cb,f){const s={id:(R()*1e9|0).toString(36),t:t?new Set(Array.isArray(t)?t:[t]):null,cb,f,a:1};if(!s.t)this.w.push(s);else for(const tt of s.t){if(!this.s.has(tt))this.s.set(tt,[]);this.s.get(tt).push(s)}return s}
-emit(t,src,d={}){this.c++;const e={t,src,d};for(const s of(this.s.get(t)||[]))if(s.a&&(!s.f||s.f(e)))s.cb(e);for(const s of this.w)if(s.a&&(!s.f||s.f(e)))s.cb(e)}
-get ct(){return this.c}}
-const E={SPAWN:'sp',DIE:'di',DIVIDE:'dv',SEXUAL:'sx',PREY:'pr',TOXIN:'tx',PARASITE:'pa',
-COL_FORM:'cf',COL_MERGE:'cm',QUORUM:'qu',QUORUM_OFF:'qo',SPEC:'spec',NICHE:'ni',
-AUTO_OK:'ao',AUTO_LOST:'al',BREACH:'br',CATA:'ca',HGT:'hgt',DORMANT_IN:'din',DORMANT_OUT:'dout',
-BIOFILM:'bf',TERRITORY:'ter',SCAV:'sc',COOP:'co'};
+const R=Math.random,F=Math.floor,mn=Math.min,mx=Math.max,abs=Math.abs,sqrt=Math.sqrt,sin=Math.sin,cos=Math.cos,PI=Math.PI,at2=Math.atan2;
+
+// ── Event Bus ──
+class Bus{constructor(){this.s=new Map;this.w=[];this.c=0}
+  sub(t,cb){const s={id:(R()*1e9|0).toString(36),t:t?new Set(Array.isArray(t)?t:[t]):null,cb,a:1};
+    if(!s.t)this.w.push(s);else for(const tt of s.t){if(!this.s.has(tt))this.s.set(tt,[]);this.s.get(tt).push(s)}return s}
+  emit(t,src,d={}){this.c++;const e={t,src,d};for(const s of(this.s.get(t)||[]))if(s.a)s.cb(e);for(const s of this.w)if(s.a)s.cb(e)}}
+const E={BORN:'born',DIE:'die',TRIBE_FORM:'tribe',TRIBE_MERGE:'tmerge',WAR:'war',TRADE:'trade',
+  TOOL:'tool',FIRE:'fire',BUILD:'build',FARM:'farm',RITUAL:'ritual',HUNT:'hunt',GATHER:'gather',
+  DISASTER:'disaster',MIGRATE:'migrate',LANGUAGE:'lang',BURY:'bury',ELDER:'elder',
+  MONUMENT:'monument',DOMESTICATE:'domesticate',ALLIANCE:'alliance',TEACH:'teach'};
 
 // ═══════════════════════════════════════════════════════════
-//  NEURAL NETWORK — Evolved brains controlling behavior
+//  TERRAIN & BIOMES — Procedural world generation
 // ═══════════════════════════════════════════════════════════
-//  Inputs (8): resourceHere, resourceGrad, predNear, preyNear, signalStr, energy%, membrane%, ageNorm
-//  Hidden (6): fully connected + bias
-//  Outputs (6): moveAngle, moveSpeed, aggression, signalEmit, reproduce, dormancy
-class Brain{
-  constructor(w1,b1,w2,b2){
-    const NI=8,NH=6,NO=6;
-    this.NI=NI;this.NH=NH;this.NO=NO;
-    this.w1=w1||Brain.randMat(NH,NI);
-    this.b1=b1||Brain.randVec(NH);
-    this.w2=w2||Brain.randMat(NO,NH);
-    this.b2=b2||Brain.randVec(NO);
-    this.lastH=new Float32Array(NH);
-    this.lastO=new Float32Array(NO);
+const BIOME={WATER:0,DESERT:1,PLAINS:2,FOREST:3,MOUNTAIN:4,FERTILE:5,TUNDRA:6};
+const BIOME_NAME=['water','desert','plains','forest','mountain','fertile','tundra'];
+const BIOME_COL=['#2a5080','#c8b060','#7a9a40','#3a6a2a','#808898','#5a9a3a','#a0b0c0'];
+const BIOME_FOOD=[0,.5,1.8,2.2,.6,3.5,.3];
+const BIOME_WOOD=[0,0,.3,2,0,1,0];
+const BIOME_STONE=[0,.5,.2,.1,2.5,.2,.5];
+const BIOME_WATER_AV=[1,.1,.5,.7,.4,1,.15];
+const BIOME_WALK=[0,.7,1,.6,.3,.9,.5];// movement speed mult
+
+function genTerrain(w,h){
+  // Simplex-like noise via layered random
+  const t=new Uint8Array(w*h);
+  const noise=[];for(let i=0;i<3;i++){noise[i]=[];for(let y=0;y<h;y++){noise[i][y]=[];for(let x=0;x<w;x++)noise[i][y][x]=R()}}
+  function n(x,y,sc){
+    const sx=x/sc,sy=y/sc;
+    const x0=F(sx)%w,y0=F(sy)%h,x1=(x0+1)%w,y1=(y0+1)%h;
+    const fx=sx-F(sx),fy=sy-F(sy);
+    const fx2=fx*fx*(3-2*fx),fy2=fy*fy*(3-2*fy);
+    return noise[0][(y0+h)%h][(x0+w)%w]*(1-fx2)*(1-fy2)+noise[0][(y0+h)%h][(x1+w)%w]*fx2*(1-fy2)+
+           noise[0][(y1+h)%h][(x0+w)%w]*(1-fx2)*fy2+noise[0][(y1+h)%h][(x1+w)%w]*fx2*fy2;
   }
-  static randMat(r,c){const m=new Float32Array(r*c);for(let i=0;i<m.length;i++)m[i]=(R()-0.5)*1.5;return m}
-  static randVec(n){const v=new Float32Array(n);for(let i=0;i<n;i++)v[i]=(R()-0.5)*0.5;return v}
-  forward(inputs){
-    const{NI,NH,NO,w1,b1,w2,b2}=this;
-    // Hidden layer
-    for(let j=0;j<NH;j++){let s=b1[j];for(let i=0;i<NI;i++)s+=w1[j*NI+i]*inputs[i];this.lastH[j]=Math.tanh(s)}
-    // Output layer
-    for(let j=0;j<NO;j++){let s=b2[j];for(let i=0;i<NH;i++)s+=w2[j*NH+i]*this.lastH[i];this.lastO[j]=1/(1+Math.exp(-s))}// sigmoid
-    return this.lastO;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const e=n(x,y,8)*.5+n(x,y,16)*.3+n(x,y,4)*.2;
+    const m=n(x+50,y+50,10)*.5+n(x+50,y+50,20)*.5;// moisture
+    if(e<.25)t[y*w+x]=BIOME.WATER;
+    else if(e>.8)t[y*w+x]=BIOME.MOUNTAIN;
+    else if(e>.65&&m<.35)t[y*w+x]=BIOME.TUNDRA;
+    else if(m<.3)t[y*w+x]=BIOME.DESERT;
+    else if(m>.65&&e<.5)t[y*w+x]=BIOME.FERTILE;
+    else if(m>.5)t[y*w+x]=BIOME.FOREST;
+    else t[y*w+x]=BIOME.PLAINS;
   }
-  mutate(rate=0.12){
-    const m=a=>{const n=new Float32Array(a.length);for(let i=0;i<a.length;i++)n[i]=R()<rate?a[i]+(R()-0.5)*0.6:a[i];return n};
-    return new Brain(m(this.w1),m(this.b1),m(this.w2),m(this.b2));
+  // River: carve a fertile path
+  let rx=F(R()*w),ry=0;
+  for(let i=0;i<h+20;i++){
+    if(ry>=0&&ry<h&&rx>=0&&rx<w){t[ry*w+rx]=BIOME.FERTILE;if(rx+1<w)t[ry*w+rx+1]=BIOME.FERTILE}
+    ry++;rx+=F(R()*3)-1;rx=mx(0,mn(w-1,rx));if(ry>=h)break;
   }
-  static crossover(a,b){
-    const cx=arr1=>{ const n=new Float32Array(arr1.length);for(let i=0;i<n.length;i++)n[i]=R()<0.5?a.w1[i]??0:b.w1[i]??0;return n};
-    // Actually do proper crossover per weight matrix
-    const cross=(m1,m2)=>{const n=new Float32Array(m1.length);const cp=F(R()*m1.length);for(let i=0;i<n.length;i++)n[i]=i<cp?m1[i]:m2[i];return n};
-    return new Brain(cross(a.w1,b.w1),cross(a.b1,b.b1),cross(a.w2,b.w2),cross(a.b2,b.b2));
-  }
+  return t;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  CHEMISTRY
+//  RESOURCES at each cell
 // ═══════════════════════════════════════════════════════════
-const M={A:0,B:1,C:2,L:3,Z:4,T:5,S:6,N:7,W:8,X:9,D:10,PH0:11,PH1:12,PH2:13};
-// PH0=food pheromone, PH1=danger pheromone, PH2=mating pheromone
-const RX=[
-  {n:'nrg',i:{[M.A]:1},o:{[M.N]:4,[M.W]:1},c:-4,cat:0,r:.95},
-  {n:'lip',i:{[M.B]:1,[M.N]:1},o:{[M.L]:3},c:1,cat:0,r:.85},
-  {n:'enz',i:{[M.A]:1,[M.B]:1,[M.N]:2},o:{[M.Z]:1},c:2,cat:1,r:.45},
-  {n:'trn',i:{[M.B]:2,[M.N]:1},o:{[M.T]:1},c:1.5,cat:0,r:.5},
-  {n:'sig',i:{[M.A]:1,[M.N]:1},o:{[M.S]:3},c:1,cat:0,r:.35},
-  {n:'tox',i:{[M.A]:1,[M.B]:1,[M.N]:3},o:{[M.X]:2},c:3,cat:1,r:.2},
-  {n:'wst',i:{[M.W]:3},o:{},c:.5,cat:0,r:.8},
-  {n:'scv',i:{[M.D]:2},o:{[M.N]:2,[M.A]:1},c:-2,cat:0,r:.6},
-  {n:'ph0',i:{[M.S]:1,[M.N]:1},o:{[M.PH0]:4},c:1,cat:0,r:.4},
-  {n:'ph1',i:{[M.S]:1,[M.N]:1},o:{[M.PH1]:3},c:1,cat:0,r:.3},
-  {n:'ph2',i:{[M.S]:1,[M.N]:1},o:{[M.PH2]:3},c:1,cat:0,r:.25},
-];
-function metab(inv,nrg,hasCat,bonus,g){
-  let d=0;const done=[];
-  let order=[0,6,1,3,2,4,8]; // default priority
-  if(g.toxicity>.5)order=[0,5,6,1,3,2,4];
-  if(g.scavenger>.5)order=[7,0,6,1,3,2,4];
-  for(const ri of order){if(ri>=RX.length)continue;const rx=RX[ri];
-    if(rx.cat&&!hasCat)continue;
-    let ok=1;if(nrg+d<rx.c)ok=0;
-    if(ok)for(const[m,a]of Object.entries(rx.i))if((inv[m]||0)<a){ok=0;break}
-    if(ok&&R()<mn(1,rx.r+bonus)){
-      for(const[m,a]of Object.entries(rx.i))inv[m]=(inv[m]||0)-a;
-      for(const[m,a]of Object.entries(rx.o))inv[m]=(inv[m]||0)+a;
-      d-=rx.c;done.push(rx.n);
+class ResGrid{
+  constructor(w,h,terrain){
+    this.w=w;this.h=h;this.food=new Float32Array(w*h);this.wood=new Float32Array(w*h);
+    this.stone=new Float32Array(w*h);this.water=new Float32Array(w*h);
+    for(let i=0;i<w*h;i++){const b=terrain[i];
+      this.food[i]=BIOME_FOOD[b]*(2+R()*2);this.wood[i]=BIOME_WOOD[b]*(2+R()*2);
+      this.stone[i]=BIOME_STONE[b]*(1+R()*2);this.water[i]=BIOME_WATER_AV[b]*(2+R())}
+  }
+  ix(x,y){return((F(y)%this.h+this.h)%this.h)*this.w+((F(x)%this.w+this.w)%this.w)}
+  get(x,y,type){return this[type][this.ix(x,y)]}
+  take(x,y,type,amt){const i=this.ix(x,y);const a=mn(this[type][i],amt);this[type][i]-=a;return a}
+  add(x,y,type,amt){this[type][this.ix(x,y)]=mn(10,this[type][this.ix(x,y)]+amt)}
+  regen(terrain,sMult){
+    for(let i=0;i<this.w*this.h;i++){const b=terrain[i];
+      this.food[i]=mn(BIOME_FOOD[b]*6,this.food[i]+BIOME_FOOD[b]*.15*sMult);
+      this.wood[i]=mn(BIOME_WOOD[b]*5,this.wood[i]+BIOME_WOOD[b]*.03*sMult);
+      this.water[i]=mn(6,this.water[i]+BIOME_WATER_AV[b]*.12*sMult);
     }
   }
-  return{d,done};
 }
 
 // ═══════════════════════════════════════════════════════════
-//  MEMBRANE
+//  TECHNOLOGY TREE
 // ═══════════════════════════════════════════════════════════
-class Mem{
-  constructor(){this.int=1;this.pm=.3;this.lip=20;this.tr=3;this.ar=0}
-  get ok(){return this.int>.12&&this.lip>=4}
-  get dmg(){return this.int<.4}
-  get cap(){return this.pm*this.int+mn(this.tr*.1,.5)}
-  get canDiv(){return this.lip>=30&&this.int>.7}
-  decay(){const l=.02*(1+R()*.5);this.lip=mx(0,this.lip-l);this.tr=mx(0,this.tr-.006);this.ar=mx(0,this.ar-.003);this.int=mn(1,this.lip/25);return l}
-  repair(la,ta){const lu=mn(la,mx(0,50-this.lip));this.lip+=lu;const tu=mn(ta,mx(0,10-this.tr));this.tr+=tu;this.int=mn(1,this.lip/25);return{lu,tu}}
-  divide(){const h=this.lip/2,ht=this.tr/2,ha=this.ar/2;this.lip=h;this.tr=ht;this.ar=ha;this.int=mn(1,h/25);
-    const d=new Mem;d.lip=h;d.tr=ht;d.ar=ha;d.int=mn(1,h/25);d.pm=mx(.05,mn(.9,this.pm+(R()-.5)*.1));return d}
-  hit(a){const act=mx(0,a-this.ar*.5);this.lip=mx(0,this.lip-act);this.int=mn(1,this.lip/25);return act}
-}
+const TOOL_LEVEL={NONE:0,SHARP_STONE:1,HAND_AXE:2,SPEAR:3,BOW:4,POTTERY:5};
+const TOOL_NAME=['none','sharp stone','hand axe','spear','bow','pottery'];
+const TECHS={fire:0,hut:0,farming:0,burial:0,language:0,pottery:0,domestication:0,monument:0,boat:0,wall:0};
 
 // ═══════════════════════════════════════════════════════════
-//  GENOME — 18 evolvable traits
+//  STRUCTURES
 // ═══════════════════════════════════════════════════════════
-const GT=['metaEff','memInv','divThresh','perm','sigSens','aggro','toxicity','armor','speed',
-  'cooperation','scavenger','parasitism','quorumTh','nicheEng','hue','dormancy','sexPref','immunity'];
-function rg(preset){
-  const g={metaEff:.7+R()*.6,memInv:.3+R()*.4,divThresh:30+R()*30,perm:.2+R()*.3,
-    sigSens:.2+R()*.6,aggro:R()*.15,toxicity:R()*.1,armor:R()*.1,speed:.3+R()*.4,
-    cooperation:.2+R()*.5,scavenger:R()*.15,parasitism:R()*.05,quorumTh:3+R()*5,
-    nicheEng:R()*.2,hue:R()*360,dormancy:R()*.15,sexPref:.3+R()*.4,immunity:R()};
-  if(preset==='pred'){g.aggro=.6+R()*.3;g.speed=.6+R()*.3;g.toxicity=.3+R()*.4;g.armor=.3+R()*.3;g.cooperation=R()*.2;g.hue=R()*30}
-  return g;
-}
-function mg(g,rate=.12){
-  const m=(v,lo,hi)=>R()<rate?mx(lo,mn(hi,v+(R()-.5)*.3)):v;
-  return{metaEff:m(g.metaEff,.1,2),memInv:m(g.memInv,.1,.9),
-    divThresh:R()<rate?mx(15,g.divThresh+(R()-.5)*10):g.divThresh,
-    perm:m(g.perm,.05,.9),sigSens:m(g.sigSens,0,1),aggro:m(g.aggro,0,1),
-    toxicity:m(g.toxicity,0,1),armor:m(g.armor,0,1),speed:m(g.speed,.05,1),
-    cooperation:m(g.cooperation,0,1),scavenger:m(g.scavenger,0,1),
-    parasitism:m(g.parasitism,0,1),quorumTh:m(g.quorumTh,2,15),
-    nicheEng:m(g.nicheEng,0,1),hue:g.hue+(R()<rate*3?(R()-.5)*30:0),
-    dormancy:m(g.dormancy,0,1),sexPref:m(g.sexPref,0,1),immunity:m(g.immunity,0,1)};
-}
-function crossGenome(a,b){
-  const c={};const cp=F(R()*GT.length);
-  for(let i=0;i<GT.length;i++){const k=GT[i];c[k]=i<cp?a[k]:b[k];if(k==='hue')c[k]=(a[k]+b[k])/2+(R()-.5)*20}
-  return c;
-}
-function gDist(a,b){let d=0;for(const k of GT){
-  if(k==='hue'){let dh=abs(a.hue-b.hue);d+=mn(dh,360-dh)/360}
-  else if(k==='divThresh')d+=abs(a[k]-b[k])/60;
-  else if(k==='quorumTh')d+=abs(a[k]-b[k])/15;
-  else d+=abs((a[k]||0)-(b[k]||0));
-}return d/GT.length}
-function tRole(g){if(g.aggro>.4&&g.toxicity>.2)return'pred';if(g.parasitism>.4)return'para';if(g.scavenger>.4)return'scav';return'prod'}
-function tCol(r){return{prod:'#00e676',pred:'#ff5252',scav:'#ffd740',para:'#e040fb'}[r]||'#8ecae6'}
+const STRUCT={HUT:0,FIRE_PIT:1,STORAGE:2,MONUMENT:3,WALL:4,FARM:5,BURIAL:6};
+const STRUCT_NAME=['hut','fire pit','storage','monument','wall','farm','burial mound'];
+const STRUCT_CHAR=['🏠','🔥','📦','🗿','🧱','🌾','⚱'];
+class Structure{constructor(type,x,y,tribe){this.type=type;this.x=x;this.y=y;this.tribe=tribe;this.hp=10;this.age=0}}
 
 // ═══════════════════════════════════════════════════════════
-//  LIFE STAGES: egg(0) → juvenile(1) → adult(2) → elder(3)
+//  TRIBE — Social organization
 // ═══════════════════════════════════════════════════════════
-const STAGE_NAMES=['egg','juv','adult','elder'];
-function getStage(age){if(age<8)return 0;if(age<40)return 1;if(age<350)return 2;return 3}
-
-// ═══════════════════════════════════════════════════════════
-//  LIFE FORM — Neural-driven autopoietic entity
-// ═══════════════════════════════════════════════════════════
-let _id=0;
-class LF{
-  constructor(x,y,genome,brain,gen=0,pid=null){
-    this.id='l'+(_id++);this.x=x;this.y=y;
-    this.g=genome||rg();this.brain=brain||new Brain;
-    this.gen=gen;this.pid=pid;
-    this.mem=new Mem;this.mem.pm=this.g.perm;
-    this.age=0;this.inv={[M.Z]:3,[M.L]:8,[M.T]:2};this.nrg=18;
-    this.alive=1;this.auto=1;this._np=0;this._dc=0;
-    // Emergent state
-    this.colId=null;this.symId=null;this.qActive=0;
-    this.sigStr=0;this.toxStr=0;this.kills=0;this.spId=null;
-    this.trophic=tRole(this.g);
-    this.tx=[];this.ty=[];// trail
-    this.dormant=0;this.dormTick=0;
-    this.territory={x:x,y:y,str:0};// territory center
-    this.biofilm=0;// biofilm investment
-    this.lastNN=null;// last neural output for visualization
-    this.hgtCount=0;
-    this.matings=0;
-    this.stage=0;
-    this.phEm=[0,0,0];// pheromone emission [food,danger,mating]
-    this.immune=new Float32Array(4);// immune memory vs toxin types
-    this.immune[F(this.g.immunity*3.99)]=.5;
+let _ti=0;
+class Tribe{
+  constructor(hue){
+    this.id='t'+(_ti++);this.hue=hue??R()*360;this.name=this._genName();
+    this.members=new Set;this.techs={...TECHS};this.knowledge=0;
+    this.structures=[];this.relations={};// tribe_id -> value (-1 hostile to 1 friendly)
+    this.homeX=0;this.homeY=0;this.wars=0;this.trades=0;this.rituals=0;
+    this.culture=R();// cultural identity factor
   }
-  get v(){if(!this.alive)return 0;return this.mem.int*.4+mn(1,this.nrg/20)*.3+mn(1,(this.inv[M.Z]||0)/3)*.3}
-  get sz(){return 1+this.mem.lip*.04+(this.trophic==='pred'?.5:0)+(this.stage===0?-0.5:0)+(this.stage===3?0.3:0)}
-  get hue(){let h=this.g.hue%360;if(h<0)h+=360;return h}
+  get sz(){return this.members.size}
+  get color(){return`hsl(${this.hue},60%,50%)`}
+  _genName(){const s='Ka,Na,Zu,Mo,Ta,Ri,Ba,Lo,Ga,Su,Wa,Di,Fe,Ko,Mu'.split(',');return s[F(R()*s.length)]+s[F(R()*s.length)].toLowerCase()}
+  hasTech(t){return this.techs[t]>0}
+  learnTech(t,bus){if(!this.techs[t]){this.techs[t]=1;this.knowledge++;bus.emit(E.TOOL,this.id,{tech:t,tribe:this.name})}}
+  relation(otherId){return this.relations[otherId]||0}
+  adjustRelation(otherId,delta){this.relations[otherId]=mx(-1,mn(1,(this.relations[otherId]||0)+delta))}
+}
 
-  tick(bus,nbrs,world){
+// ═══════════════════════════════════════════════════════════
+//  HUMAN — Individual agent with needs, skills, memory
+// ═══════════════════════════════════════════════════════════
+let _hi=0;
+const AGE_STAGE=['baby','child','adult','elder'];
+function ageStage(a){if(a<5)return 0;if(a<15)return 1;if(a<50)return 2;return 3}
+const NAMES_M='Ug,Grok,Thak,Bor,Krug,Mog,Dak,Tor,Ruk,Zal,Fen,Nok,Gar,Hul,Jax'.split(',');
+const NAMES_F='Ana,Kora,Zela,Uma,Nira,Suki,Rona,Laya,Fina,Oba,Dara,Tuli,Maha,Isha,Yuki'.split(',');
+
+class Human{
+  constructor(x,y,tribe,parentA,parentB){
+    this.id='h'+(_hi++);this.x=x;this.y=y;this.tribe=tribe;
+    this.sex=R()<.5?'m':'f';
+    this.name=(this.sex==='m'?NAMES_M:NAMES_F)[F(R()*(this.sex==='m'?NAMES_M:NAMES_F).length)];
+    this.age=parentA?0:5+F(R()*30);this.alive=1;// wide age distribution
+    // Needs (0-100)
+    this.hunger=30;this.thirst=20;this.warmth=50;this.social=50;this.safety=60;
+    // Skills (0-1, inherited + learned)
+    this.skills={
+      hunt:parentA?mn(1,(parentA.skills.hunt+((parentB||{}).skills||{}).hunt||0)/2+R()*.15):R()*.3,
+      gather:parentA?mn(1,(parentA.skills.gather+((parentB||{}).skills||{}).gather||0)/2+R()*.15):R()*.3,
+      craft:parentA?mn(1,(parentA.skills.craft+((parentB||{}).skills||{}).craft||0)/2+R()*.1):R()*.2,
+      fight:parentA?mn(1,(parentA.skills.fight+((parentB||{}).skills||{}).fight||0)/2+R()*.1):R()*.2,
+      social:parentA?mn(1,(parentA.skills.social+((parentB||{}).skills||{}).social||0)/2+R()*.15):R()*.3,
+      build:parentA?mn(1,(parentA.skills.build+((parentB||{}).skills||{}).build||0)/2+R()*.1):R()*.15,
+      farm:parentA?mn(1,(parentA.skills.farm+((parentB||{}).skills||{}).farm||0)/2+R()*.1):R()*.05,
+    };
+    // State
+    this.tool=parentA?mn(parentA.tool,1):0;// tool level
+    this.carrying={food:0,wood:0,stone:0};
+    this.partner=null;this.children=0;this._mateCool=0;
+    this.task=null;// current activity
+    this.tx=[];this.ty=[];
+    this.kills=0;this.taught=0;
+    if(tribe)tribe.members.add(this.id);
+  }
+  get stage(){return ageStage(this.age)}
+  get stageName(){return AGE_STAGE[this.stage]}
+  get strength(){return this.stage===2?1:this.stage===3?.6:this.stage===1?.4:.1}
+  get speed(){return BIOME_WALK[0]*(this.stage>=1?.6+this.skills.hunt*.3:.15)*(this.hunger<80?1:.5)}
+  get toolName(){return TOOL_NAME[this.tool]}
+  get canWork(){return this.stage>=1&&this.alive}
+
+  tick(bus,world){
     if(!this.alive)return;
-    this.age++;this.stage=getStage(this.age);
-    if(this._dc>0)this._dc--;
+    this.age+=0.02;if(this._mateCool>0)this._mateCool--;
 
-    // ── Dormancy ──
-    if(this.dormant){
-      this.nrg-=0.02;// minimal upkeep
-      this.dormTick++;
-      // Wake conditions: resources available or time elapsed
-      const resHere=world.resAt(this.x,this.y,M.A);
-      if(resHere>3||this.dormTick>200||world.season==='spring'){
-        this.dormant=0;this.dormTick=0;
-        bus.emit(E.DORMANT_OUT,this.id);
-      }
-      if(this.nrg<=0){this.alive=0;bus.emit(E.DIE,this.id,{age:this.age,cause:'dormant_starve'})}
-      return;
+    // Needs decay
+    this.hunger=mn(100,this.hunger+.28+(this.stage===2?.05:0));
+    this.thirst=mn(100,this.thirst+.15);
+    if(world.season==='winter')this.warmth=mx(0,this.warmth-.5);else this.warmth=mn(80,this.warmth+.2);
+    this.social=mx(0,this.social-.15);
+
+    // Baby/child passive — fed by tribe
+    if(this.stage===0){
+      this.hunger+=.1;
+      if(this.tribe){this.hunger=mx(0,this.hunger-1);this.thirst=mx(0,this.thirst-.5)}// tribe feeds babies
+      if(this.hunger>95||this.thirst>95){this.die(bus,'infant mortality');return}
+      return;// babies don't act
+    }
+    // Children eat less, tribe helps
+    if(this.stage===1&&this.tribe){this.hunger=mx(0,this.hunger-.1);this.thirst=mx(0,this.thirst-.05)}
+
+    // Death checks
+    if(this.hunger>=100){this.die(bus,'starvation');return}
+    if(this.thirst>=100){this.die(bus,'dehydration');return}
+    if(this.warmth<5&&world.season==='winter'){this.die(bus,'cold');return}
+    if(this.age>55+R()*20){this.die(bus,'old age');return}
+
+    // Elder becomes knowledge keeper
+    if(this.stage===3&&this.tribe&&R()<.01){
+      this._teach(bus,world);
     }
 
-    // ── Eggs don't do much ──
-    if(this.stage===0){this.nrg-=0.05;if(this.nrg<=0){this.alive=0;bus.emit(E.DIE,this.id,{age:this.age,cause:'egg_fail'})}return}
+    if(!this.canWork)return;
 
-    // ── Neural network decision ──
+    // ── Decision making (priority-based AI) ──
     const gx=F(this.x),gy=F(this.y);
-    const resHere=(world.resAt(this.x,this.y,M.A)+world.resAt(this.x,this.y,M.B))/10;
-    let resGrad=0;
-    for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){
-      const v=world.resAt(gx+dx,gy+dy,M.A);if(v>resHere*5)resGrad=.5;
+    const biome=world.terrain[world.ix(gx,gy)];
+
+    if(this.thirst>50){this._seekWater(world,bus);return}
+    if(this.hunger>50){this._seekFood(world,bus);return}
+    if(this.warmth<30&&this.tribe&&this.tribe.hasTech('fire')){this._goHome(world);return}
+    if(this.social<40&&this.tribe){this._socialize(world,bus);return}
+
+    // Proactive activities
+    const roll=R();
+    if(roll<.12&&this.skills.craft>.2)this._craft(bus,world);
+    else if(roll<.2&&this.skills.build>.2&&this.tribe)this._build(bus,world);
+    else if(roll<.28&&this.skills.farm>.2&&this.tribe&&this.tribe.hasTech('farming'))this._doFarm(bus,world);
+    else if(roll<.45)this._seekFood(world,bus);
+    else if(roll<.65&&this.tribe)this._socialize(world,bus);// more social time = more mating
+    else this._explore(world,bus);
+  }
+
+  _move(tx,ty,world){
+    const dx=tx-this.x,dy=ty-this.y;
+    const d=sqrt(dx*dx+dy*dy);if(d<.5)return;
+    const spd=this.speed*.5;
+    const biome=world.terrain[world.ix(F(this.x),F(this.y))];
+    const bSpd=BIOME_WALK[biome];
+    this.x+=dx/d*spd*bSpd;this.y+=dy/d*spd*bSpd;
+    this.x=((this.x%world.w)+world.w)%world.w;this.y=((this.y%world.h)+world.h)%world.h;
+    this.tx.push(this.x);this.ty.push(this.y);if(this.tx.length>10){this.tx.shift();this.ty.shift()}
+  }
+
+  _seekFood(world,bus){
+    this.task='foraging';
+    // Try to gather from current tile
+    const got=world.res.take(this.x,this.y,'food',0.8+this.skills.gather*.8+(this.tool>=2?.5:0));
+    if(got>.05){this.hunger=mx(0,this.hunger-got*20);this.skills.gather=mn(1,this.skills.gather+.002);
+      if(this.carrying.food<5)this.carrying.food+=got*.3;return}
+    // Hunt (if skilled enough)
+    if(this.skills.hunt>.3&&this.tool>=1&&R()<.1){
+      this.hunger=mx(0,this.hunger-20);this.skills.hunt=mn(1,this.skills.hunt+.003);
+      this.kills++;bus.emit(E.HUNT,this.id,{name:this.name});return}
+    // Move toward food
+    let bx=0,by=0,bv=0;
+    for(const[dx,dy]of[[-2,0],[2,0],[0,-2],[0,2],[-1,-1],[1,1]]){
+      const v=world.res.get(this.x+dx,this.y+dy,'food');if(v>bv){bv=v;bx=dx;by=dy}}
+    if(bv>0)this._move(this.x+bx,this.y+by,world);
+    else this._explore(world,bus);
+  }
+
+  _seekWater(world,bus){
+    this.task='drinking';
+    const got=world.res.take(this.x,this.y,'water',.5);
+    if(got>.1){this.thirst=mx(0,this.thirst-got*20);return}
+    let bx=0,by=0,bv=0;
+    for(const[dx,dy]of[[-2,0],[2,0],[0,-2],[0,2]]){
+      const v=world.res.get(this.x+dx,this.y+dy,'water');if(v>bv){bv=v;bx=dx;by=dy}}
+    if(bv>0)this._move(this.x+bx,this.y+by,world);
+  }
+
+  _explore(world,bus){
+    this.task='exploring';
+    this._move(this.x+(R()-0.5)*4,this.y+(R()-0.5)*4,world);
+    // Chance to discover things
+    if(R()<.003&&!this.tribe?.hasTech('fire')){
+      if(this.tribe){this.tribe.learnTech('fire',bus);bus.emit(E.FIRE,this.id,{name:this.name,tribe:this.tribe.name})}
     }
-    const predNear=nbrs.filter(n=>n.trophic==='pred'&&n.sz>this.sz).length>0?1:0;
-    const preyNear=nbrs.filter(n=>n.trophic!=='pred'&&n.sz<this.sz).length>0?1:0;
-    const sigHere=world.phAt(this.x,this.y,0)/5;
-    const nrgPct=mn(1,this.nrg/50);
-    const memPct=this.mem.int;
-    const ageN=mn(1,this.age/400);
-    const inputs=[resHere,resGrad,predNear,preyNear,sigHere,nrgPct,memPct,ageN];
-    const out=this.brain.forward(inputs);
-    this.lastNN=out;
+  }
 
-    // Decode neural outputs
-    const nnMoveAngle=out[0]*PI*2;
-    const nnMoveSpd=out[1];
-    const nnAggro=out[2];
-    const nnSignal=out[3];
-    const nnRepro=out[4];
-    const nnDormancy=out[5];
-
-    // ── Energy cost ──
-    const baseCost=.12+this.sz*.02+(this.g.toxicity>.3?.05:0)+(this.g.armor>.3?.03:0)+(this.stage===1?-.03:0);
-    this.nrg-=baseCost;
-    if(this.age>350)this.nrg-=(this.age-350)*.004;// elder decline
-    if(this.inv[M.Z]>0)this.inv[M.Z]=mx(0,this.inv[M.Z]-.04);
-
-    // ── Metabolism ──
-    const hasCat=(this.inv[M.C]||0)>0;
-    const eBonus=mn(.3,(this.inv[M.Z]||0)*.05)*this.g.metaEff+(this.qActive?.15:0);
-    const{d,done}=metab(this.inv,this.nrg,hasCat,eBonus,this.g);
-    this.nrg+=d;
-    if(done.length)this._np=0;else this._np++;
-
-    // ── Membrane ──
-    this.mem.decay();
-    const la=this.mem.dmg?(this.inv[M.L]||0):(this.inv[M.L]||0)*(.3+this.g.memInv*.7);
-    const ta=(this.inv[M.T]||0)*.7;
-    const{lu,tu}=this.mem.repair(la,ta);
-    this.inv[M.L]=(this.inv[M.L]||0)-lu;this.inv[M.T]=(this.inv[M.T]||0)-tu;
-    if(this.g.armor>.2)this.mem.ar=mn(1,this.mem.ar+this.g.armor*.01);
-
-    // ── Autopoiesis ──
-    if(this._np>20&&this.auto){this.auto=0;bus.emit(E.AUTO_LOST,this.id)}
-    else if(!this.auto&&this._np===0){this.auto=1;bus.emit(E.AUTO_OK,this.id)}
-
-    // ── Pheromone emission (neural-driven) ──
-    if(nnSignal>.3){
-      this.phEm[0]=nnSignal*(resHere>.5?1:0)*2;// emit food pheromone when near food
-      this.phEm[1]=nnSignal*(predNear?1:0)*2;// emit danger pheromone when predator near
-      this.phEm[2]=nnSignal*(nnRepro>.5?1:0)*2;// emit mating pheromone when wanting to reproduce
-    }else{this.phEm=[0,0,0]}
-    this.sigStr=(this.inv[M.S]||0)*this.g.sigSens;
-    this.toxStr=(this.inv[M.X]||0)*this.g.toxicity;
-
-    // ── Predation (neural aggression modulated) ──
-    if(this.g.aggro>.25&&nnAggro>.4&&this.stage>=2&&nbrs.length>0)this._hunt(bus,nbrs,nnAggro);
-
-    // ── Parasitism ──
-    if(this.g.parasitism>.3&&this.stage>=2)this._parasite(bus,nbrs);
-
-    // ── Toxin warfare ──
-    if(this.toxStr>1&&nbrs.length>0)this._toxAttack(bus,nbrs);
-
-    // ── Quorum sensing ──
-    const kin=nbrs.filter(n=>n.spId===this.spId);
-    if(kin.length>=this.g.quorumTh&&!this.qActive){this.qActive=1;bus.emit(E.QUORUM,this.id,{n:kin.length})}
-    else if(kin.length<this.g.quorumTh-1&&this.qActive){this.qActive=0;bus.emit(E.QUORUM_OFF,this.id)}
-
-    // ── Cooperation ──
-    if(this.g.cooperation>.4&&kin.length>0){
-      const neediest=kin.reduce((a,b)=>a.nrg<b.nrg?a:b);
-      if(neediest.nrg<this.nrg*.4&&this.nrg>12){
-        const share=mn(2.5,this.nrg*.12);this.nrg-=share;neediest.nrg+=share;
-        bus.emit(E.COOP,this.id,{to:neediest.id,amt:share});
+  _craft(bus,world){
+    this.task='crafting';
+    const stone=world.res.take(this.x,this.y,'stone',.3);
+    if(stone>.1&&this.tool<5){
+      if(R()<this.skills.craft*.15){
+        this.tool=mn(5,this.tool+1);
+        this.skills.craft=mn(1,this.skills.craft+.01);
+        bus.emit(E.TOOL,this.id,{name:this.name,tool:TOOL_NAME[this.tool]});
+        // Share with tribe
+        if(this.tribe){for(const mid of this.tribe.members){
+          const m=world.humans.find(h=>h.id===mid&&h.alive&&h.tool<this.tool);
+          if(m&&R()<.3){m.tool=mx(m.tool,this.tool-1);m.skills.craft=mn(1,m.skills.craft+.005)}
+        }}
       }
     }
+  }
 
-    // ── Niche construction ──
-    if(this.g.nicheEng>.3&&this.nrg>15&&R()<this.g.nicheEng*.08){
-      world.dep(this.x,this.y,M.A,this.g.nicheEng*.5);
-      world.dep(this.x,this.y,M.B,this.g.nicheEng*.3);
-      this.nrg-=.5;bus.emit(E.NICHE,this.id);
+  _build(bus,world){
+    this.task='building';
+    const wood=world.res.take(this.x,this.y,'wood',.5);
+    const stone=world.res.take(this.x,this.y,'stone',.3);
+    if(wood<.2&&stone<.1)return;
+    if(R()<this.skills.build*.1){
+      let type=STRUCT.HUT;
+      if(this.tribe?.hasTech('fire')&&R()<.3)type=STRUCT.FIRE_PIT;
+      if(this.tribe?.hasTech('farming')&&R()<.2)type=STRUCT.FARM;
+      if(this.tribe?.knowledge>3&&R()<.1)type=STRUCT.MONUMENT;
+      if(wood>.3)type=R()<.5?STRUCT.STORAGE:type;
+      const s=new Structure(type,F(this.x),F(this.y),this.tribe?.id);
+      world.structures.push(s);this.tribe?.structures.push(s);
+      this.skills.build=mn(1,this.skills.build+.01);
+      bus.emit(E.BUILD,this.id,{name:this.name,type:STRUCT_NAME[type],tribe:this.tribe?.name});
+      if(type===STRUCT.MONUMENT)bus.emit(E.MONUMENT,this.id,{tribe:this.tribe?.name});
     }
+  }
 
-    // ── Territory marking ──
-    if(this.g.aggro>.2&&this.stage>=2){
-      this.territory.str=mn(1,this.territory.str+.02);
-      this.territory.x+=(this.x-this.territory.x)*.05;
-      this.territory.y+=(this.y-this.territory.y)*.05;
+  _doFarm(bus,world){
+    this.task='farming';
+    const biome=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(biome===BIOME.FERTILE||biome===BIOME.PLAINS){
+      world.res.add(this.x,this.y,'food',this.skills.farm*.3);
+      this.skills.farm=mn(1,this.skills.farm+.003);
+      this.hunger=mx(0,this.hunger-5);
     }
+  }
 
-    // ── Biofilm building ──
-    if(this.g.cooperation>.5&&this.colId&&this.nrg>10){
-      this.biofilm=mn(1,this.biofilm+.005);
-      // Biofilm provides defense bonus to colony members
-      this.mem.ar=mn(1,this.mem.ar+this.biofilm*.005);
-    }
-
-    // ── Dormancy decision (neural-driven) ──
-    if(nnDormancy>.7&&this.g.dormancy>.3&&this.nrg<8&&resHere<.2&&this.stage>=2){
-      this.dormant=1;this.dormTick=0;
-      bus.emit(E.DORMANT_IN,this.id);
-      return;
-    }
-
-    // ── Horizontal gene transfer ──
-    if(nbrs.length>0&&R()<.005){
-      const donor=nbrs[F(R()*nbrs.length)];
-      if(donor.alive&&donor.spId!==this.spId){
-        // Transfer one random trait
-        const trait=GT[F(R()*GT.length)];
-        if(trait!=='hue'&&trait!=='divThresh'){
-          this.g[trait]=(this.g[trait]+donor.g[trait])/2;
-          this.hgtCount++;
-          bus.emit(E.HGT,this.id,{from:donor.id,trait});
+  _socialize(world,bus){
+    this.task='socializing';
+    this.social=mn(100,this.social+10);
+    // Find nearby tribe members
+    const nearby=world.nearbyHumans(this,3);
+    for(const n of nearby){
+      if(!n.alive)continue;
+      n.social=mn(100,n.social+5);
+      // Mating
+      if(this.sex!==n.sex&&this.stage===2&&n.stage===2&&this._mateCool<=0&&n._mateCool<=0
+        &&this.tribe===n.tribe&&this.hunger<40&&this.children<3&&R()<.015){
+        this.partner=n.id;n.partner=this.id;this._mateCool=200;n._mateCool=200;
+        // Baby
+        const baby=new Human(this.x+(R()-.5),this.y+(R()-.5),this.tribe,this,n);
+        world.humans.push(baby);this.children++;n.children++;
+        bus.emit(E.BORN,baby.id,{name:baby.name,mother:this.sex==='f'?this.name:n.name,father:this.sex==='m'?this.name:n.name,tribe:this.tribe?.name});
+      }
+      // Teaching
+      if(this.stage>=2&&n.stage===1&&R()<.05){
+        const sk=Object.keys(this.skills);const s=sk[F(R()*sk.length)];
+        if(this.skills[s]>n.skills[s]+.1){n.skills[s]=mn(1,n.skills[s]+.02);this.taught++;
+          bus.emit(E.TEACH,this.id,{teacher:this.name,student:n.name,skill:s})}
+      }
+      // Knowledge sharing between tribes (trade/diplomacy)
+      if(n.tribe&&this.tribe&&n.tribe.id!==this.tribe.id){
+        const rel=this.tribe.relation(n.tribe.id);
+        if(rel>-.3&&R()<.02){// trade
+          if(this.carrying.food>1&&n.carrying.food<1){
+            this.carrying.food--;n.carrying.food++;
+            this.tribe.adjustRelation(n.tribe.id,.05);n.tribe.adjustRelation(this.tribe.id,.05);
+            this.tribe.trades++;n.tribe.trades++;
+            bus.emit(E.TRADE,this.id,{a:this.tribe.name,b:n.tribe.name});
+          }
+          // Tech sharing
+          for(const t of Object.keys(this.tribe.techs)){
+            if(this.tribe.hasTech(t)&&!n.tribe.hasTech(t)&&R()<.01){
+              n.tribe.learnTech(t,bus);
+              bus.emit(E.TEACH,this.id,{from:this.tribe.name,to:n.tribe.name,tech:t});
+            }
+          }
         }
       }
     }
-
-    // ── Immune adaptation ──
-    // Exposure to toxins builds immunity
-    const toxHere=world.toxAt(this.x,this.y);
-    if(toxHere>.3){
-      for(let i=0;i<4;i++)this.immune[i]=mn(1,this.immune[i]+.002);
-    }
-
-    // ── Death check ──
-    if(!this.mem.ok||this.nrg<=0){this.alive=0;bus.emit(E.DIE,this.id,{age:this.age,gen:this.gen,trophic:this.trophic,kills:this.kills,cause:this.nrg<=0?'starve':'breach'})}
-  }
-
-  _hunt(bus,nbrs,nnAggro){
-    for(const prey of nbrs){
-      if(!prey.alive)continue;
-      if(prey.trophic==='pred'&&prey.sz>=this.sz)continue;
-      if(prey.spId===this.spId&&this.g.cooperation>.3)continue;
-      if(prey.dormant)continue;
-      const atk=this.g.aggro*this.sz*(1+this.kills*.03)*nnAggro;
-      const def=prey.mem.ar+prey.sz*.3+prey.g.speed*.5+(prey.biofilm*.3);
-      if(atk>def&&R()<.12){
-        const stolen=mn(prey.nrg*.6,15);
-        this.nrg+=stolen;prey.nrg-=stolen;
-        prey.mem.hit(3+this.g.aggro*5);
-        this.kills++;
-        bus.emit(E.PREY,this.id,{prey:prey.id,amt:stolen});
-        if(!prey.mem.ok||prey.nrg<=0){prey.alive=0;bus.emit(E.DIE,prey.id,{age:prey.age,cause:'predation'})}
-        break;
-      }
+    // Ritual (group activity)
+    if(this.tribe&&this.tribe.sz>3&&R()<.005){
+      this.tribe.rituals++;
+      this.tribe.culture=mn(1,this.tribe.culture+.01);
+      bus.emit(E.RITUAL,this.id,{tribe:this.tribe.name});
+      // Rituals can lead to discoveries
+      if(R()<.05&&!this.tribe.hasTech('burial')){this.tribe.learnTech('burial',bus)}
+      if(R()<.03&&!this.tribe.hasTech('language')&&this.tribe.sz>5){this.tribe.learnTech('language',bus);bus.emit(E.LANGUAGE,this.id,{tribe:this.tribe.name})}
     }
   }
-  _parasite(bus,nbrs){
-    const host=nbrs.find(n=>n.alive&&n.spId!==this.spId&&n.nrg>5&&!n.dormant);
-    if(!host)return;
-    if(R()<this.g.parasitism*.2){
-      const stolen=mn(host.nrg*.08,3);
-      this.nrg+=stolen*.7;host.nrg-=stolen;
-      bus.emit(E.PARASITE,this.id,{host:host.id,amt:stolen});
+
+  _goHome(world){
+    this.task='going home';
+    if(this.tribe){this._move(this.tribe.homeX,this.tribe.homeY,world);
+      // Warm up near fire pit
+      const nearFire=world.structures.find(s=>s.type===STRUCT.FIRE_PIT&&abs(s.x-this.x)<2&&abs(s.y-this.y)<2);
+      if(nearFire)this.warmth=mn(100,this.warmth+3);
     }
   }
-  _toxAttack(bus,nbrs){
-    for(const n of nbrs){
-      if(n.spId===this.spId||!n.alive||n.dormant)continue;
-      const immIdx=F(this.g.immunity*3.99);// toxin "type" based on producer's immunity gene
-      const resist=n.immune[immIdx]||0;
-      const dmg=this.toxStr*.1*(1-n.mem.ar*.5)*(1-resist*.5);
-      if(dmg>.1){n.mem.hit(dmg);n.nrg-=dmg*.5;
-        if(!n.mem.ok||n.nrg<=0){n.alive=0;bus.emit(E.TOXIN,this.id,{v:n.id});bus.emit(E.DIE,n.id,{age:n.age,cause:'toxin'})}
-      }
+
+  _teach(bus,world){
+    const nearby=world.nearbyHumans(this,3).filter(n=>n.alive&&n.stage<=2&&n.tribe===this.tribe);
+    for(const n of nearby){
+      const sk=Object.keys(this.skills);const s=sk[F(R()*sk.length)];
+      if(this.skills[s]>n.skills[s]){n.skills[s]=mn(1,n.skills[s]+.03);this.taught++}
     }
-    this.inv[M.X]=mx(0,(this.inv[M.X]||0)-.1);
+    bus.emit(E.ELDER,this.id,{name:this.name,tribe:this.tribe?.name});
   }
 
-  impRes(avail){
-    const consumed={};if(!this.alive||this.dormant)return consumed;
-    const cap=this.mem.cap;
-    const imports=[M.A,M.B,M.C];
-    if(this.g.scavenger>.3)imports.push(M.D);
-    for(const mol of imports){const a=avail[mol]||0;if(a<=0)continue;const t=mn(a,cap*.4);if(t>.01){this.inv[mol]=(this.inv[mol]||0)+t;consumed[mol]=t}}
-    return consumed;
-  }
-
-  canDiv(){return this._dc<=0&&this.nrg>=this.g.divThresh&&this.mem.canDiv&&this.auto&&(this.inv[M.Z]||0)>=.5&&this.stage>=2&&!this.dormant}
-
-  // Asexual division
-  divide(bus){
-    if(!this.canDiv())return null;
-    const dm=this.mem.divide();const dg=mg(this.g);const db=this.brain.mutate();
-    const di={};for(const[k,v]of Object.entries(this.inv)){const s=v*(.35+R()*.2);di[k]=s;this.inv[k]-=s}
-    const de=this.nrg*.45;this.nrg-=de;
-    const c=new LF(this.x+(R()-.5)*3,this.y+(R()-.5)*3,dg,db,this.gen+1,this.id);
-    c.mem=dm;c.inv=di;c.nrg=de;c.colId=this.colId;
-    c.immune=new Float32Array(this.immune);// inherit immunity
-    this._dc=25;
-    bus.emit(E.DIVIDE,this.id,{child:c.id,gen:c.gen});bus.emit(E.SPAWN,c.id,{pid:this.id,gen:c.gen});
-    return c;
-  }
-
-  // Sexual reproduction
-  mate(partner,bus){
-    if(!this.canDiv()||!partner.canDiv())return null;
-    if(gDist(this.g,partner.g)>.4)return null;// too genetically distant
-    const dg=mg(crossGenome(this.g,partner.g),.08);
-    const db=Brain.crossover(this.brain,partner.brain).mutate(.08);
-    const dm=this.mem.divide();partner.mem.divide();// both contribute membrane
-    const di={};
-    for(const[k,v]of Object.entries(this.inv)){const s=v*.25;di[k]=(di[k]||0)+s;this.inv[k]-=s}
-    for(const[k,v]of Object.entries(partner.inv)){const s=v*.25;di[k]=(di[k]||0)+s;partner.inv[k]-=s}
-    const de=this.nrg*.3+partner.nrg*.3;this.nrg*=.7;partner.nrg*=.7;
-    const c=new LF((this.x+partner.x)/2+(R()-.5)*2,(this.y+partner.y)/2+(R()-.5)*2,dg,db,mx(this.gen,partner.gen)+1);
-    c.mem=dm;c.inv=di;c.nrg=de;
-    // Inherit better immunity from both parents
-    c.immune=new Float32Array(4);for(let i=0;i<4;i++)c.immune[i]=mx(this.immune[i],partner.immune[i]);
-    this._dc=30;partner._dc=30;
-    this.matings++;partner.matings++;
-    bus.emit(E.SEXUAL,this.id,{mate:partner.id,child:c.id,gen:c.gen});
-    bus.emit(E.SPAWN,c.id,{p1:this.id,p2:partner.id,gen:c.gen});
-    return c;
+  die(bus,cause){
+    this.alive=0;if(this.tribe)this.tribe.members.delete(this.id);
+    bus.emit(E.DIE,this.id,{name:this.name,age:F(this.age),cause,tribe:this.tribe?.name});
+    // Burial
+    if(this.tribe&&this.tribe.hasTech('burial')&&R()<.5){
+      bus.emit(E.BURY,this.id,{name:this.name,tribe:this.tribe.name});
+    }
   }
 }
-
-// ═══════════════════════════════════════════════════════════
-//  FIELD — Spatial resource/pheromone/toxin layer
-// ═══════════════════════════════════════════════════════════
-class Fld{
-  constructor(w,h,regen,diff,init,mx2=10){this.w=w;this.h=h;this.rg=regen;this.df=diff;this.mx2=mx2;this.g=new Float32Array(w*h);for(let i=0;i<w*h;i++)this.g[i]=mx(0,init+(R()-.5)*2)}
-  ix(x,y){return((y%this.h+this.h)%this.h)*this.w+((x%this.w+this.w)%this.w)}
-  get(x,y){return this.g[this.ix(F(x),F(y))]}
-  eat(x,y,a){const i=this.ix(F(x),F(y));const r=mn(this.g[i],a);this.g[i]-=r;return r}
-  add(x,y,a){const i=this.ix(F(x),F(y));this.g[i]=mn(this.mx2,this.g[i]+a)}
-  tick(seasonMult=1){
-    for(let i=0;i<this.g.length;i++)if(this.g[i]<this.mx2)this.g[i]=mn(this.mx2,this.g[i]+this.rg*(.5+R())*seasonMult);
-    const ng=new Float32Array(this.g.length);const dr=this.df;
-    for(let y=0;y<this.h;y++)for(let x=0;x<this.w;x++){
-      const i=y*this.w+x;
-      const avg=(this.g[((y-1+this.h)%this.h)*this.w+x]+this.g[((y+1)%this.h)*this.w+x]+this.g[y*this.w+(x-1+this.w)%this.w]+this.g[y*this.w+(x+1)%this.w])/4;
-      ng[i]=this.g[i]*(1-dr)+avg*dr;
-    }
-    this.g=ng;
-  }
-  decay(r){for(let i=0;i<this.g.length;i++)this.g[i]=mx(0,this.g[i]*r)}
-}
-
-// ═══════════════════════════════════════════════════════════
-//  SEASONS — Environmental oscillation
-// ═══════════════════════════════════════════════════════════
-const SEASONS=['spring','summer','autumn','winter'];
-function getSeason(tick){return SEASONS[F((tick%400)/100)]}
-function seasonMult(tick){const p=(tick%400)/400;return .6+.8*(.5+.5*sin(p*PI*2))} // 0.6 - 1.4
-
-// ═══════════════════════════════════════════════════════════
-//  SPECIES CLUSTERING
-// ═══════════════════════════════════════════════════════════
-function cluster(lfs,th=.13){
-  const alive=lfs.filter(l=>l.alive);if(!alive.length)return[];
-  const sp=[];const done=new Set;
-  for(const lf of alive){if(done.has(lf.id))continue;
-    const cl=[lf];done.add(lf.id);lf.spId=sp.length;
-    for(const o of alive){if(done.has(o.id))continue;
-      for(const m of cl){if(gDist(m.g,o.g)<th){cl.push(o);done.add(o.id);o.spId=sp.length;break}}}
-    sp.push({id:sp.length,m:cl,c:`hsl(${cl[0].hue},70%,55%)`});
-  }return sp;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  COLONY
-// ═══════════════════════════════════════════════════════════
-let _ci=0;
-class Col{constructor(){this.id='c'+(_ci++);this.m=new Set;this.t=0}
-  get sz(){return this.m.size}add(l){this.m.add(l.id);l.colId=this.id}rm(l){this.m.delete(l.id);if(l.colId===this.id)l.colId=null}}
 
 // ═══════════════════════════════════════════════════════════
 //  WORLD
 // ═══════════════════════════════════════════════════════════
+const SEASONS=['spring','summer','autumn','winter'];
 class World{
   constructor(w,h){
-    this.w=w;this.h=h;this.lfs=[];this.tick=0;
-    this.res={[M.A]:new Fld(w,h,.12,.12,5),[M.B]:new Fld(w,h,.08,.10,4),[M.C]:new Fld(w,h,.015,.05,.7),[M.D]:new Fld(w,h,0,.08,0,15)};
-    this.ph=[new Fld(w,h,0,.2,0,8),new Fld(w,h,0,.15,0,6),new Fld(w,h,0,.18,0,6)];// food,danger,mating pheromones
-    this.toxF=new Fld(w,h,0,.12,0,8);
-    this.terF=new Fld(w,h,0,.02,0,3);// territory field
-    this.cols=new Map;this.species=[];
-    this.season='spring';this.sMult=1;
-    // Hotspots
-    for(let i=0;i<6;i++){const hx=R()*w|0,hy=R()*h|0;
-      for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const d=sqrt(dx*dx+dy*dy);
-        if(d<=3){this.res[M.A].add(hx+dx,hy+dy,(4-d)*2);this.res[M.B].add(hx+dx,hy+dy,(4-d)*1.5)}}}
+    this.w=w;this.h=h;this.tick=0;
+    this.terrain=genTerrain(w,h);
+    this.res=new ResGrid(w,h,this.terrain);
+    this.humans=[];this.tribes=[];this.structures=[];
+    this.season='spring';this.sMult=1;this.year=0;
   }
-  resAt(x,y,mol){return this.res[mol]?this.res[mol].get(x,y):0}
-  phAt(x,y,i){return this.ph[i].get(x,y)}
-  toxAt(x,y){return this.toxF.get(x,y)}
-  dep(x,y,mol,a){if(this.res[mol])this.res[mol].add(x,y,a)}
-  spawn(bus,x,y,genome,brain){
-    const l=new LF(x??R()*this.w,y??R()*this.h,genome,brain);
-    this.lfs.push(l);bus.emit(E.SPAWN,l.id,{x:l.x,y:l.y,trophic:l.trophic});return l;
-  }
-  nbOf(lf,radius=2.5){
-    const r=[];for(const o of this.lfs){
-      if(o.id===lf.id||!o.alive)continue;
-      let dx=abs(lf.x-o.x),dy=abs(lf.y-o.y);
+  ix(x,y){return((F(y)%this.h+this.h)%this.h)*this.w+((F(x)%this.w+this.w)%this.w)}
+  biomeAt(x,y){return this.terrain[this.ix(F(x),F(y))]}
+  nearbyHumans(h,r){
+    const res=[];for(const o of this.humans){
+      if(o.id===h.id||!o.alive)continue;
+      let dx=abs(h.x-o.x),dy=abs(h.y-o.y);
       dx=mn(dx,this.w-dx);dy=mn(dy,this.h-dy);
-      if(dx*dx+dy*dy<=radius*radius)r.push(o);
-    }return r;
+      if(dx*dx+dy*dy<=r*r)res.push(o)}return res;
+  }
+  spawnHuman(bus,x,y,tribe){
+    // Find valid land
+    if(x==null||y==null){for(let i=0;i<100;i++){
+      x=R()*this.w;y=R()*this.h;if(this.terrain[this.ix(x,y)]!==BIOME.WATER)break}}
+    const h=new Human(x,y,tribe);this.humans.push(h);
+    bus.emit(E.BORN,h.id,{name:h.name,tribe:tribe?.name});return h;
   }
 
   step(bus){
     this.tick++;
-    this.season=getSeason(this.tick);
-    this.sMult=seasonMult(this.tick);
-    const ab=this.lfs.filter(l=>l.alive).length;
+    this.season=SEASONS[F((this.tick%200)/50)];
+    this.sMult=.6+.8*(.5+.5*sin((this.tick%200)/200*PI*2));
+    this.year=F(this.tick/50);// ~50 ticks per year
 
-    // Resource dynamics with seasonal modulation
-    for(const rf of Object.values(this.res))rf.tick(this.sMult);
-    for(const pf of this.ph)pf.decay(.82);
-    this.toxF.decay(.88);
-    this.terF.decay(.995);
+    // Resource regen
+    this.res.regen(this.terrain,this.sMult);
 
-    const nw=[];
-    for(const lf of this.lfs){
-      if(!lf.alive)continue;
-      if(lf.dormant){lf.tick(bus,[],this);continue}
+    // Farm structures produce food
+    for(const s of this.structures){s.age++;
+      if(s.type===STRUCT.FARM)this.res.add(s.x,s.y,'food',.15*this.sMult);
+      if(s.hp<=0)continue;s.hp-=.01;// decay
+    }
+    this.structures=this.structures.filter(s=>s.hp>0);
 
-      // ── Movement (neural-driven + pheromone following) ──
-      if(lf.stage>0){
-        const spd=lf.g.speed*.6;
-        const nn=lf.lastNN;
-        if(nn){
-          const ang=nn[0]*PI*2;const mag=nn[1]*spd;
-          lf.x+=cos(ang)*mag;lf.y+=sin(ang)*mag;
-        }else{lf.x+=(R()-.5)*spd;lf.y+=(R()-.5)*spd}
+    // Tick all humans
+    for(const h of this.humans){if(h.alive)h.tick(bus,this)}
 
-        // Pheromone chemotaxis
-        const gx2=F(lf.x),gy2=F(lf.y);
-        if(lf.trophic==='prod'){
-          // Follow food pheromone, flee danger pheromone
-          let bx2=0,by2=0;
-          for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){
-            const food=this.ph[0].get(gx2+dx,gy2+dy);
-            const danger=this.ph[1].get(gx2+dx,gy2+dy);
-            bx2+=dx*(food*.1-danger*.2);by2+=dy*(food*.1-danger*.2);
-          }
-          lf.x+=bx2;lf.y+=by2;
-        }else if(lf.trophic==='pred'){
-          // Predators ignore food pheromone, attracted to prey concentrations
-          let closest=null,cD=Infinity;
-          for(const o of this.lfs){
-            if(o.id===lf.id||!o.alive||o.sz>=lf.sz||o.dormant)continue;
-            let dx2=lf.x-o.x,dy2=lf.y-o.y;const d2=dx2*dx2+dy2*dy2;
-            if(d2<cD&&d2<36){cD=d2;closest=o}
-          }
-          if(closest){const ang2=atan2(closest.y-lf.y,closest.x-lf.x);lf.x+=cos(ang2)*spd*.4;lf.y+=sin(ang2)*spd*.4}
-        }
+    // Remove dead (keep recent for rendering)
+    this.humans=this.humans.filter(h=>h.alive);
 
-        // Colony cohesion
-        if(lf.colId&&this.cols.has(lf.colId)){
-          const col=this.cols.get(lf.colId);
-          let cx2=0,cy2=0,cn=0;
-          for(const mid of col.m){const m2=this.lfs.find(l2=>l2.id===mid&&l2.alive);if(m2){cx2+=m2.x;cy2+=m2.y;cn++}}
-          if(cn>1){cx2/=cn;cy2/=cn;lf.x+=(cx2-lf.x)*.04;lf.y+=(cy2-lf.y)*.04}
-        }
+    // ── Tribe formation ──
+    if(this.tick%20===0)this._updateTribes(bus);
 
-        // Wrap toroidal
-        lf.x=((lf.x%this.w)+this.w)%this.w;lf.y=((lf.y%this.h)+this.h)%this.h;
-        lf.tx.push(lf.x);lf.ty.push(lf.y);if(lf.tx.length>12){lf.tx.shift();lf.ty.shift()}
+    // ── Warfare ──
+    if(this.tick%30===0)this._checkWar(bus);
+
+    // ── Farming discovery ──
+    for(const tribe of this.tribes){
+      if(!tribe.hasTech('farming')&&tribe.sz>6){
+        const farmers=0;let fertile=0;
+        for(const mid of tribe.members){const m=this.humans.find(h=>h.id===mid);
+          if(m&&this.biomeAt(m.x,m.y)===BIOME.FERTILE)fertile++}
+        if(fertile>2&&R()<.003){tribe.learnTech('farming',bus);bus.emit(E.FARM,tribe.id,{tribe:tribe.name})}
       }
-
-      // Import resources
-      const avail={};for(const[mol,rf]of Object.entries(this.res))avail[mol]=rf.get(F(lf.x),F(lf.y));
-      const consumed=lf.impRes(avail);
-      for(const[mol,amt]of Object.entries(consumed))if(this.res[mol])this.res[mol].eat(lf.x,lf.y,amt);
-
-      // Emit pheromones to fields
-      for(let i=0;i<3;i++)if(lf.phEm[i]>.1)this.ph[i].add(F(lf.x),F(lf.y),lf.phEm[i]*.15);
-      if(lf.toxStr>.1)this.toxF.add(F(lf.x),F(lf.y),lf.toxStr*.12);
-      if(lf.territory.str>.1)this.terF.add(F(lf.territory.x),F(lf.territory.y),lf.territory.str*.1);
-
-      // Tick with neighbors
-      const nbrs=this.nbOf(lf);
-      lf.tick(bus,nbrs,this);
-
-      // ── Reproduction ──
-      if(lf.alive&&lf.canDiv()&&lf.stage>=2){
-        const nnRepro=lf.lastNN?lf.lastNN[4]:0;
-        if(nnRepro>.4||lf.nrg>lf.g.divThresh*1.3){
-          // Try sexual first if preference is high
-          if(lf.g.sexPref>.4){
-            const mate=nbrs.find(n=>n.alive&&n.canDiv()&&n.spId===lf.spId&&n.stage>=2&&gDist(lf.g,n.g)<.35);
-            if(mate){const child=lf.mate(mate,bus);if(child){child.x=((child.x%this.w)+this.w)%this.w;child.y=((child.y%this.h)+this.h)%this.h;nw.push(child);continue}}
-          }
-          // Fall back to asexual
-          const child=lf.divide(bus);
-          if(child){child.x=((child.x%this.w)+this.w)%this.w;child.y=((child.y%this.h)+this.h)%this.h;nw.push(child)}
-        }
-      }
-
-      // Waste & dead matter
-      const wst=lf.inv[M.W]||0;if(wst>0){this.res[M.A].add(F(lf.x),F(lf.y),wst*.08);lf.inv[M.W]=0}
+      // Domestication
+      if(!tribe.hasTech('domestication')&&tribe.hasTech('farming')&&tribe.sz>8&&R()<.002){
+        tribe.learnTech('domestication',bus);bus.emit(E.DOMESTICATE,tribe.id,{tribe:tribe.name})}
     }
 
-    // Dead release
-    for(const lf of this.lfs){
-      if(!lf.alive){
-        for(const[k,v]of Object.entries(lf.inv))if(v>0&&this.res[k])this.res[k].add(F(lf.x),F(lf.y),v);
-        this.res[M.D].add(F(lf.x),F(lf.y),2+lf.mem.lip*.1);
-        lf.inv={};
-      }
-    }
-
-    this.lfs.push(...nw);
-    this.lfs=this.lfs.filter(l=>l.alive);
-
-    if(this.tick%10===0)this._updCols(bus);
-    if(this.tick%20===0)this.species=cluster(this.lfs);
-
-    return{tick:this.tick,alive:this.lfs.length,born:nw.length,died:ab-this.lfs.length+nw.length};
+    return{tick:this.tick,alive:this.humans.filter(h=>h.alive).length};
   }
 
-  _updCols(bus){
-    for(const[id,col]of this.cols){
-      for(const mid of col.m){const m2=this.lfs.find(l=>l.id===mid);if(!m2||!m2.alive)col.rm({id:mid,colId:id})}
-      if(col.sz===0)this.cols.delete(id);
-    }
-    for(const lf of this.lfs){
-      if(!lf.alive||lf.colId||lf.g.cooperation<.4)continue;
-      const nb=this.nbOf(lf,2);
-      const compat=nb.filter(n=>n.alive&&!n.colId&&n.spId===lf.spId&&n.g.cooperation>.4);
-      if(compat.length>=2){
-        const col=new Col;col.t=this.tick;col.add(lf);
-        for(const n of compat.slice(0,6))col.add(n);
-        this.cols.set(col.id,col);bus.emit(E.COL_FORM,col.id,{sz:col.sz});
+  _updateTribes(bus){
+    // Lone humans form or join tribes
+    for(const h of this.humans){
+      if(!h.alive||h.tribe||h.stage<1)continue;
+      // Try to join nearby tribe
+      const nearby=this.nearbyHumans(h,4);
+      const tribalNeighbor=nearby.find(n=>n.tribe&&n.tribe.sz<20);
+      if(tribalNeighbor){h.tribe=tribalNeighbor.tribe;h.tribe.members.add(h.id);continue}
+      // Form new tribe with nearby lone humans
+      const loners=nearby.filter(n=>!n.tribe&&n.stage>=1);
+      if(loners.length>=2){
+        const tribe=new Tribe();tribe.homeX=h.x;tribe.homeY=h.y;
+        this.tribes.push(tribe);
+        h.tribe=tribe;tribe.members.add(h.id);
+        for(const l of loners.slice(0,4)){l.tribe=tribe;tribe.members.add(l.id)}
+        bus.emit(E.TRIBE_FORM,tribe.id,{name:tribe.name,size:tribe.sz});
       }
     }
-    for(const[,col]of this.cols){
-      const members=[...col.m].map(mid=>this.lfs.find(l=>l.id===mid&&l.alive)).filter(Boolean);
-      for(const m2 of members){const nb2=this.nbOf(m2,2);
-        for(const n of nb2)if(n.alive&&!n.colId&&n.spId===m2.spId&&n.g.cooperation>.3&&col.sz<15)col.add(n);
+    // Update tribe homes (centroid)
+    for(const tribe of this.tribes){
+      let cx=0,cy=0,n=0;
+      for(const mid of tribe.members){const m=this.humans.find(h=>h.id===mid&&h.alive);if(m){cx+=m.x;cy+=m.y;n++}}
+      if(n>0){tribe.homeX=cx/n;tribe.homeY=cy/n}
+    }
+    // Remove empty tribes
+    this.tribes=this.tribes.filter(t=>t.sz>0);
+    // Merge very close small tribes
+    for(let i=0;i<this.tribes.length;i++){
+      for(let j=i+1;j<this.tribes.length;j++){
+        const a=this.tribes[i],b=this.tribes[j];
+        if(a.sz<3&&b.sz<3){
+          const dx=abs(a.homeX-b.homeX),dy=abs(a.homeY-b.homeY);
+          if(dx<5&&dy<5){
+            for(const mid of b.members){const m=this.humans.find(h=>h.id===mid);if(m){m.tribe=a;a.members.add(m.id)}}
+            b.members.clear();
+            // Merge techs
+            for(const t of Object.keys(a.techs))if(b.techs[t])a.techs[t]=1;
+            bus.emit(E.TRIBE_MERGE,a.id,{name:a.name,absorbed:b.name});
+          }
+        }
+      }
+    }
+    this.tribes=this.tribes.filter(t=>t.sz>0);
+  }
+
+  _checkWar(bus){
+    for(const a of this.tribes){
+      for(const b of this.tribes){
+        if(a.id===b.id)continue;
+        const dx=abs(a.homeX-b.homeX),dy=abs(a.homeY-b.homeY);
+        if(dx>10||dy>10)continue;// too far
+        const rel=a.relation(b.id);
+        if(rel<-.3&&a.sz>=3&&b.sz>=3&&R()<.02){
+          // WAR
+          const aPow=a.sz*([...a.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
+          const bPow=b.sz*([...b.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
+          const aWin=R()*aPow>R()*bPow;
+          const loser=aWin?b:a;const winner=aWin?a:b;
+          // Casualties
+          const casualties=F(mn(loser.sz-1,1+R()*3));
+          const members=[...loser.members];
+          for(let i=0;i<casualties&&members.length;i++){
+            const mid=members[F(R()*members.length)];
+            const m=this.humans.find(h=>h.id===mid);
+            if(m){m.die(bus,'killed in war');members.splice(members.indexOf(mid),1)}
+          }
+          winner.wars++;loser.wars++;
+          a.adjustRelation(b.id,-.3);b.adjustRelation(a.id,-.3);
+          // Winner takes some resources
+          bus.emit(E.WAR,winner.id,{winner:winner.name,loser:loser.name,casualties});
+          // War drives tech improvement (fight skills)
+          for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m)m.skills.fight=mn(1,m.skills.fight+.02)}
+        }
       }
     }
   }
 
-  cata(bus,type){
-    if(type==='meteor'){const cx2=R()*this.w,cy2=R()*this.h,r=7;
-      for(let y=cy2-r;y<=cy2+r;y++)for(let x=cx2-r;x<=cx2+r;x++){const d=sqrt((x-cx2)**2+(y-cy2)**2);
-        if(d<r){for(const rf of Object.values(this.res))rf.eat(x,y,8);this.toxF.add(F(x),F(y),5)}}
-      for(const lf of this.lfs){if(!lf.alive)continue;const d=sqrt((lf.x-cx2)**2+(lf.y-cy2)**2);
-        if(d<r){lf.mem.hit(10*(1-d/r));lf.nrg-=12*(1-d/r);if(lf.nrg<=0||!lf.mem.ok){lf.alive=0;bus.emit(E.DIE,lf.id,{cause:'meteor'})}}}
-      bus.emit(E.CATA,null,{type:'meteor',x:cx2,y:cy2});
-    }else if(type==='plague'){
-      for(const lf of this.lfs){if(!lf.alive)continue;if(R()<.3){lf.nrg*=.25;lf.mem.hit(6);if(!lf.mem.ok){lf.alive=0;bus.emit(E.DIE,lf.id,{cause:'plague'})}}}
-      bus.emit(E.CATA,null,{type:'plague'});
-    }else if(type==='bloom'){
-      for(let i=0;i<this.w*this.h;i++){this.res[M.A].g[i]=mn(10,this.res[M.A].g[i]+5);this.res[M.B].g[i]=mn(10,this.res[M.B].g[i]+4)}
-      bus.emit(E.CATA,null,{type:'bloom'});
-    }else if(type==='ice'){// ice age
-      for(let i=0;i<this.w*this.h;i++){this.res[M.A].g[i]*=.3;this.res[M.B].g[i]*=.3}
-      bus.emit(E.CATA,null,{type:'ice_age'});
+  disaster(bus,type){
+    if(type==='flood'){
+      for(let i=0;i<this.w*this.h;i++){if(this.terrain[i]===BIOME.FERTILE||this.terrain[i]===BIOME.PLAINS){this.res.food[i]*=.2}}
+      for(const h of this.humans){if(h.alive&&(this.biomeAt(h.x,h.y)===BIOME.FERTILE)&&R()<.2){h.die(bus,'flood')}}
+      bus.emit(E.DISASTER,null,{type:'flood'});
+    }else if(type==='drought'){
+      for(let i=0;i<this.w*this.h;i++){this.res.food[i]*=.4;this.res.water[i]*=.3}
+      bus.emit(E.DISASTER,null,{type:'drought'});
+    }else if(type==='fire'){
+      const cx2=R()*this.w,cy2=R()*this.h,r=8;
+      for(let y=cy2-r;y<=cy2+r;y++)for(let x=cx2-r;x<=cx2+r;x++){
+        const d=sqrt((x-cx2)**2+(y-cy2)**2);if(d<r){
+          const i=this.ix(x,y);this.res.food[i]*=.1;this.res.wood[i]*=.1;
+          for(const h of this.humans){if(h.alive&&abs(h.x-x)<1&&abs(h.y-y)<1&&R()<.3)h.die(bus,'wildfire')}
+        }}
+      bus.emit(E.DISASTER,null,{type:'wildfire'});
+    }else if(type==='bounty'){
+      for(let i=0;i<this.w*this.h;i++){this.res.food[i]=mn(8,this.res.food[i]+3)}
+      bus.emit(E.DISASTER,null,{type:'bountiful harvest'});
     }
   }
 }
@@ -799,81 +687,87 @@ class World{
 //  SIMULATION
 // ═══════════════════════════════════════════════════════════
 class Sim{
-  constructor(w=80,h=50,n=22){
-    this.bus=new EventBus;this.world=new World(w,h);
-    this.st={t:0,b:0,d:0,pk:0,mg:0,sx:0,ax:0,hgt:0,
-      pH:[],vH:[],spH:[],prH:[],pdH:[],sH:[]};
-    this.bus.sub(E.SPAWN,()=>this.st.b++);
-    this.bus.sub(E.DIE,()=>this.st.d++);
-    this.bus.sub(E.SEXUAL,()=>this.st.sx++);
-    this.bus.sub(E.DIVIDE,()=>this.st.ax++);
-    this.bus.sub(E.HGT,()=>this.st.hgt++);
-    for(let i=0;i<n;i++)this.world.spawn(this.bus);
-    for(let i=0;i<3;i++)this.world.spawn(this.bus,null,null,rg('pred'));
-    this.world.species=cluster(this.world.lfs);
+  constructor(w=80,h=55,n=30){
+    this.bus=new Bus;this.world=new World(w,h);
+    this.st={b:0,d:0,wars:0,trades:0,rituals:0,pH:[],tH:[],techH:[]};
+    this.bus.sub(E.BORN,()=>this.st.b++);this.bus.sub(E.DIE,()=>this.st.d++);
+    this.bus.sub(E.WAR,()=>this.st.wars++);this.bus.sub(E.TRADE,()=>this.st.trades++);
+    this.bus.sub(E.RITUAL,()=>this.st.rituals++);
+    // Seed initial humans in clusters (proto-tribes)
+    for(let g=0;g<4;g++){
+      const cx=10+R()*(w-20),cy=10+R()*(h-20);
+      for(let i=0;i<F(n/4)+2;i++){
+        const x=cx+(R()-0.5)*6,y=cy+(R()-0.5)*6;
+        if(this.world.biomeAt(x,y)!==BIOME.WATER)this.world.spawnHuman(this.bus,x,y,null);
+      }
+    }
   }
   step(){
     const r=this.world.step(this.bus);
-    const a=this.world.lfs.filter(l=>l.alive);
-    this.st.t++;this.st.pH.push(a.length);
-    if(a.length>this.st.pk)this.st.pk=a.length;
-    const pr=a.filter(l=>l.trophic==='prod').length;
-    const pd=a.filter(l=>l.trophic!=='prod').length;
-    this.st.prH.push(pr);this.st.pdH.push(pd);
-    this.st.sH.push(this.world.sMult);
-    if(a.length){
-      this.st.vH.push(a.reduce((s,l)=>s+l.v,0)/a.length);
-      this.st.spH.push(this.world.species.length);
-      const mg2=mx(...a.map(l=>l.gen));if(mg2>this.st.mg)this.st.mg=mg2;
-    }else{this.st.vH.push(0);this.st.spH.push(0)}
-    const mh=700;for(const k of['pH','vH','spH','prH','pdH','sH'])if(this.st[k].length>mh)this.st[k]=this.st[k].slice(-mh);
+    const alive=this.world.humans.filter(h=>h.alive);
+    this.st.pH.push(alive.length);
+    this.st.tH.push(this.world.tribes.length);
+    const maxTech=this.world.tribes.reduce((m,t)=>mx(m,t.knowledge),0);
+    this.st.techH.push(maxTech);
+    const mh=700;for(const k of['pH','tH','techH'])if(this.st[k].length>mh)this.st[k]=this.st[k].slice(-mh);
     return r;
   }
   sum(){
-    const a=this.world.lfs.filter(l=>l.alive),au=a.filter(l=>l.auto);
-    const pr=a.filter(l=>l.trophic==='prod'),pd=a.filter(l=>l.trophic==='pred');
-    const sc=a.filter(l=>l.trophic==='scav'),pa=a.filter(l=>l.trophic==='para');
-    const dor=a.filter(l=>l.dormant);
-    return{tick:this.world.tick,pop:a.length,auto:au.length,sp:this.world.species.length,
-      pr:pr.length,pd:pd.length,sc:sc.length,pa:pa.length,
-      cols:this.world.cols.size,dor:dor.length,
-      b:this.st.b,d:this.st.d,sx:this.st.sx,ax:this.st.ax,hgt:this.st.hgt,
-      mg:this.st.mg,ev:this.bus.ct,season:this.world.season};
+    const a=this.world.humans.filter(h=>h.alive);
+    const maxTool=a.reduce((m,h)=>mx(m,h.tool),0);
+    const anyFire=this.world.tribes.some(t=>t.hasTech('fire'));
+    const anyFarm=this.world.tribes.some(t=>t.hasTech('farming'));
+    return{tick:this.world.tick,year:this.world.year,season:this.world.season,pop:a.length,
+      tribes:this.world.tribes.length,structs:this.world.structures.length,
+      maxTool:TOOL_NAME[maxTool],fire:anyFire,farm:anyFarm,
+      b:this.st.b,d:this.st.d,wars:this.st.wars,trades:this.st.trades,rituals:this.st.rituals,
+      ev:this.bus.c};
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-//  RENDERER & UI
+//  RENDERER
 // ═══════════════════════════════════════════════════════════
-let sim,cv,cx,run=0,anim=null,spd=30,vm='eco',hov=null,dpr=1;
+let sim,cv,cx2,run=0,anim=null,spd=20,vm='world',hov=null,dpr=1;
 function init(){
-  sim=new Sim(80,50,22);cv=document.getElementById('cv');cx=cv.getContext('2d');
+  sim=new Sim(80,55,30);cv=document.getElementById('cv');cx2=cv.getContext('2d');
   dpr=window.devicePixelRatio||1;rsz();window.addEventListener('resize',rsz);
   elog();ttip();ctrl();tabs();draw();toggle();
 }
-function rsz(){const c=document.getElementById('wc');const w=c.clientWidth,h=c.clientHeight;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';cx.setTransform(dpr,0,0,dpr,0,0)}
+function rsz(){const c=document.getElementById('wc');const w=c.clientWidth,h=c.clientHeight;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';cx2.setTransform(dpr,0,0,dpr,0,0)}
 function cs(){const c=document.getElementById('wc');return mn(c.clientWidth/sim.world.w,c.clientHeight/sim.world.h)}
 
 function elog(){
   const el=document.getElementById('elog');
-  const types=[E.SPAWN,E.DIE,E.DIVIDE,E.SEXUAL,E.PREY,E.TOXIN,E.PARASITE,E.COL_FORM,E.QUORUM,E.CATA,E.HGT,E.DORMANT_IN,E.DORMANT_OUT,E.NICHE,E.BIOFILM,E.SCAV,E.COOP];
-  const ic={[E.SPAWN]:{t:'+',c:'#00e676'},[E.DIE]:{t:'✗',c:'#ff5252'},[E.DIVIDE]:{t:'÷',c:'#00e5ff'},
-    [E.SEXUAL]:{t:'♀♂',c:'#e040fb'},[E.PREY]:{t:'⚔',c:'#ff9100'},[E.TOXIN]:{t:'☠',c:'#e040fb'},
-    [E.PARASITE]:{t:'⚡',c:'#e040fb'},[E.COL_FORM]:{t:'⬡',c:'#ffd740'},[E.QUORUM]:{t:'◈',c:'#00e5ff'},
-    [E.CATA]:{t:'💥',c:'#ff1744'},[E.HGT]:{t:'⇄',c:'#ff9100'},[E.DORMANT_IN]:{t:'💤',c:'#448aff'},
-    [E.DORMANT_OUT]:{t:'☀',c:'#ffd740'},[E.NICHE]:{t:'⚒',c:'#69f0ae'},[E.COOP]:{t:'♥',c:'#00e5ff'}};
+  const types=[E.BORN,E.DIE,E.TRIBE_FORM,E.TRIBE_MERGE,E.WAR,E.TRADE,E.TOOL,E.FIRE,E.BUILD,E.FARM,
+    E.RITUAL,E.LANGUAGE,E.BURY,E.MONUMENT,E.DISASTER,E.DOMESTICATE,E.TEACH,E.ELDER,E.ALLIANCE];
+  const ic={[E.BORN]:{s:'👶',c:'#7dce82'},[E.DIE]:{s:'💀',c:'#e05555'},[E.TRIBE_FORM]:{s:'🏕',c:'#e09040'},
+    [E.TRIBE_MERGE]:{s:'🤝',c:'#e0c050'},[E.WAR]:{s:'⚔',c:'#e05555'},[E.TRADE]:{s:'🤝',c:'#55b8e0'},
+    [E.TOOL]:{s:'🔨',c:'#55b8e0'},[E.FIRE]:{s:'🔥',c:'#e09040'},[E.BUILD]:{s:'🏠',c:'#d0c8b0'},
+    [E.FARM]:{s:'🌾',c:'#7dce82'},[E.RITUAL]:{s:'🌀',c:'#c060e0'},[E.LANGUAGE]:{s:'💬',c:'#c060e0'},
+    [E.BURY]:{s:'⚱',c:'#8080a0'},[E.MONUMENT]:{s:'🗿',c:'#d0c8b0'},[E.DISASTER]:{s:'⚡',c:'#e05555'},
+    [E.DOMESTICATE]:{s:'🐕',c:'#e0c050'},[E.TEACH]:{s:'📖',c:'#55b8e0'},[E.ELDER]:{s:'👴',c:'#d0c8b0'}};
   sim.bus.sub(types,(ev)=>{
-    const i=ic[ev.t]||{t:ev.t,c:'#888'};
-    const s=ev.src?(ev.src+'').slice(0,5):'—';
-    let det='';
-    if(ev.t===E.SEXUAL)det=` gen${ev.d.gen||'?'}`;
-    if(ev.t===E.DIE)det=` ${ev.d.cause||'?'}`;
-    if(ev.t===E.PREY)det=` ate ${(ev.d.prey||'').slice(0,5)}`;
-    if(ev.t===E.HGT)det=` ${ev.d.trait} from ${(ev.d.from||'').slice(0,5)}`;
-    if(ev.t===E.CATA)det=` ${ev.d.type||''}`;
-    const d=document.createElement('div');d.className='e';
-    d.innerHTML=`<span style="color:${i.c}">${i.t}</span> <span style="color:#3a5a6a">${s}</span>${det}`;
-    el.appendChild(d);if(el.children.length>80)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;
+    const i=ic[ev.t]||{s:'·',c:'#888'};
+    let det='';const d=ev.d;
+    if(ev.t===E.BORN)det=`${d.name} born${d.tribe?' ('+d.tribe+')':''}`;
+    else if(ev.t===E.DIE)det=`${d.name} died: ${d.cause} age ${d.age||'?'}`;
+    else if(ev.t===E.WAR)det=`${d.winner} defeated ${d.loser} (${d.casualties} killed)`;
+    else if(ev.t===E.TRADE)det=`${d.a} ↔ ${d.b}`;
+    else if(ev.t===E.TRIBE_FORM)det=`${d.name} formed (${d.size})`;
+    else if(ev.t===E.TOOL)det=d.tool?`${d.name} crafted ${d.tool}`:`${d.tribe} discovered ${d.tech}`;
+    else if(ev.t===E.FIRE)det=`${d.tribe} discovered fire!`;
+    else if(ev.t===E.BUILD)det=`${d.name} built ${d.type}`;
+    else if(ev.t===E.FARM)det=`${d.tribe} invented farming!`;
+    else if(ev.t===E.RITUAL)det=`${d.tribe} performed ritual`;
+    else if(ev.t===E.LANGUAGE)det=`${d.tribe} developed language!`;
+    else if(ev.t===E.DISASTER)det=d.type;
+    else if(ev.t===E.DOMESTICATE)det=`${d.tribe} domesticated animals!`;
+    else if(ev.t===E.TEACH)det=d.tech?`${d.from}→${d.to}: ${d.tech}`:`${d.teacher}→${d.student}: ${d.skill}`;
+    else det=JSON.stringify(d).slice(0,40);
+    const div=document.createElement('div');div.className='e';
+    div.innerHTML=`<span style="color:${i.c}">${i.s}</span> <span style="color:#5a5070">Y${sim.world.year}</span> ${det}`;
+    el.appendChild(div);if(el.children.length>100)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;
   });
 }
 
@@ -882,24 +776,36 @@ function ttip(){
     const C=cs(),rect=cv.getBoundingClientRect();
     const mx2=(e.clientX-rect.left)/C,my2=(e.clientY-rect.top)/C;
     hov=null;
-    for(const lf of sim.world.lfs){if(!lf.alive)continue;if(abs(mx2-lf.x)<1&&abs(my2-lf.y)<1){hov=lf;break}}
+    for(const h of sim.world.humans){if(!h.alive)continue;if(abs(mx2-h.x)<1&&abs(my2-h.y)<1){hov=h;break}}
+    // Also check structures
+    let hovS=null;
+    if(!hov){for(const s of sim.world.structures){if(abs(mx2-s.x)<1&&abs(my2-s.y)<1){hovS=s;break}}}
     const tt=document.getElementById('tt');
-    if(hov){const l=hov;
-      tt.innerHTML=`<div class="ti">${l.id} <span style="color:${tCol(l.trophic)}">[${l.trophic}]</span> ${STAGE_NAMES[l.stage]} ${l.dormant?'💤':''}</div>
-        <div class="tr"><span>Species</span><span>${l.spId??'?'}</span></div>
-        <div class="tr"><span>Gen/Age</span><span>${l.gen}/${l.age}</span></div>
-        <div class="tr"><span>Energy</span><span>${l.nrg.toFixed(1)}</span></div>
-        <div class="tr"><span>Viability</span><span>${l.v.toFixed(3)}</span></div>
-        <div class="tr"><span>Membrane</span><span>${(l.mem.int*100|0)}% ar=${l.mem.ar.toFixed(2)}</span></div>
-        <div class="tr"><span>Colony</span><span>${l.colId||'—'} ${l.qActive?'QUORUM':''}</span></div>
-        <div class="tr"><span>Kills/Matings</span><span>${l.kills}/${l.matings}</span></div>
-        <div class="tr"><span>HGT</span><span>${l.hgtCount}</span></div>
-        <div class="tr"><span>Biofilm</span><span>${l.biofilm.toFixed(2)}</span></div>
-        <div class="tr"><span>Immune</span><span>[${[...l.immune].map(v=>v.toFixed(1)).join(',')}]</span></div>
-        <div class="tr"><span>Brain out</span><span>${l.lastNN?[...l.lastNN].map(v=>v.toFixed(2)).join(' '):'—'}</span></div>
-        <div class="tr"><span>Agg/Tox/Cop/Spd</span><span>${l.g.aggro.toFixed(2)}/${l.g.toxicity.toFixed(2)}/${l.g.cooperation.toFixed(2)}/${l.g.speed.toFixed(2)}</span></div>`;
+    if(hov){const h=hov;
+      tt.innerHTML=`<div class="ti">${h.name} (${h.sex}) <span style="color:${h.tribe?.color||'#888'}">${h.tribe?.name||'lone'}</span></div>
+        <div class="tr"><span>Age/Stage</span><span>${F(h.age)} (${h.stageName})</span></div>
+        <div class="tr"><span>Tool</span><span>${h.toolName}</span></div>
+        <div class="tr"><span>Hunger</span><span style="color:${h.hunger>60?'#e05555':'#7dce82'}">${F(h.hunger)}%</span></div>
+        <div class="tr"><span>Thirst</span><span style="color:${h.thirst>60?'#e05555':'#55b8e0'}">${F(h.thirst)}%</span></div>
+        <div class="tr"><span>Warmth</span><span>${F(h.warmth)}%</span></div>
+        <div class="tr"><span>Task</span><span>${h.task||'idle'}</span></div>
+        <div class="tr"><span>Hunt/Gather</span><span>${h.skills.hunt.toFixed(2)}/${h.skills.gather.toFixed(2)}</span></div>
+        <div class="tr"><span>Craft/Build</span><span>${h.skills.craft.toFixed(2)}/${h.skills.build.toFixed(2)}</span></div>
+        <div class="tr"><span>Fight/Social</span><span>${h.skills.fight.toFixed(2)}/${h.skills.social.toFixed(2)}</span></div>
+        <div class="tr"><span>Farm</span><span>${h.skills.farm.toFixed(2)}</span></div>
+        <div class="tr"><span>Children/Taught</span><span>${h.children}/${h.taught}</span></div>
+        <div class="tr"><span>Carrying</span><span>F:${h.carrying.food.toFixed(1)} W:${h.carrying.wood.toFixed(1)} S:${h.carrying.stone.toFixed(1)}</span></div>`;
       tt.style.display='block';
-      tt.style.left=mn(e.clientX-rect.left+10,rect.width-270)+'px';
+      tt.style.left=mn(e.clientX-rect.left+10,rect.width-290)+'px';
+      tt.style.top=(e.clientY-rect.top+10)+'px';
+    }else if(hovS){
+      const tribe=sim.world.tribes.find(t=>t.id===hovS.tribe);
+      tt.innerHTML=`<div class="ti">${STRUCT_CHAR[hovS.type]} ${STRUCT_NAME[hovS.type]}</div>
+        <div class="tr"><span>Tribe</span><span style="color:${tribe?.color||'#888'}">${tribe?.name||'—'}</span></div>
+        <div class="tr"><span>Age</span><span>${hovS.age}</span></div>
+        <div class="tr"><span>HP</span><span>${hovS.hp.toFixed(1)}</span></div>`;
+      tt.style.display='block';
+      tt.style.left=mn(e.clientX-rect.left+10,rect.width-200)+'px';
       tt.style.top=(e.clientY-rect.top+10)+'px';
     }else tt.style.display='none';
   });
@@ -909,251 +815,209 @@ function ttip(){
 function ctrl(){
   document.getElementById('bp').onclick=toggle;
   document.getElementById('bs').onclick=()=>{if(!run){sim.step();draw()}};
-  document.getElementById('ba').onclick=()=>sim.world.spawn(sim.bus);
-  document.getElementById('br').onclick=()=>sim.world.spawn(sim.bus,null,null,rg('pred'));
-  document.getElementById('bd').onclick=()=>{const t=['meteor','plague','bloom','ice'];sim.world.cata(sim.bus,t[R()*t.length|0])};
+  document.getElementById('ba').onclick=()=>sim.world.spawnHuman(sim.bus);
+  document.getElementById('bd').onclick=()=>{const t=['flood','drought','fire','bounty'];sim.world.disaster(sim.bus,t[F(R()*t.length)])};
   document.getElementById('bx').onclick=()=>{
-    if(anim)cancelAnimationFrame(anim);run=0;_id=0;_ci=0;
-    document.getElementById('bp').textContent='▶';
-    document.getElementById('elog').innerHTML='';
-    sim=new Sim(80,50,22);elog();draw();toggle();
+    if(anim)cancelAnimationFrame(anim);run=0;_hi=0;_ti=0;
+    document.getElementById('bp').textContent='▶';document.getElementById('elog').innerHTML='';
+    sim=new Sim(80,55,30);elog();draw();toggle();
   };
   document.getElementById('spd').oninput=(e)=>{spd=+e.target.value};
   document.getElementById('vm').onchange=(e)=>{vm=e.target.value};
 }
-
 function tabs(){for(const b of document.querySelectorAll('.tb button'))b.onclick=()=>{
   const p=b.closest('.p');p.querySelectorAll('.tb button').forEach(x=>x.classList.remove('on'));
   p.querySelectorAll('.tc').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');
 }}
-
 function toggle(){run=!run;document.getElementById('bp').textContent=run?'⏸':'▶';document.getElementById('bp').classList.toggle('on',run);if(run)loop()}
-let lt=0;
-function loop(){if(!run)return;const now=performance.now();if(now-lt>=1000/spd){sim.step();draw();lt=now}anim=requestAnimationFrame(loop)}
+let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1000/spd){sim.step();draw();lt=now}anim=requestAnimationFrame(loop)}
 
 // ═══════════════════════════════════════════════════════════
 //  DRAW
 // ═══════════════════════════════════════════════════════════
 function draw(){
   const w=sim.world,W=w.w,H=w.h,C=cs();
-  const cw=document.getElementById('wc').clientWidth,ch=document.getElementById('wc').clientHeight;
-  cx.clearRect(0,0,cw,ch);
+  const cw=document.getElementById('wc').clientWidth;
+  cx2.clearRect(0,0,cw,document.getElementById('wc').clientHeight);
 
-  // Season tint
-  const sTint=w.season==='winter'?[0,0,8]:w.season==='summer'?[5,2,0]:w.season==='autumn'?[3,1,0]:[0,3,2];
+  const sTC={spring:[5,10,0],summer:[10,5,0],autumn:[8,3,0],winter:[-5,-3,5]};
+  const st=sTC[w.season]||[0,0,0];
 
-  // Background
+  // ── Terrain ──
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    const sa=w.res[M.A].get(x,y),sb=w.res[M.B].get(x,y),dead=w.res[M.D].get(x,y);
-    const tot=sa+sb;
-    let r=5+mn(15,tot*1.2)+mn(20,dead*4)+sTint[0];
-    let g=7+mn(30,tot*2.2)+sTint[1];
-    let b=12+mn(22,tot*1.5)+sTint[2];
-
-    if(vm==='ph'){// Pheromone view
-      const p0=w.ph[0].get(x,y),p1=w.ph[1].get(x,y),p2=w.ph[2].get(x,y);
-      r+=p1*15+p2*8;g+=p0*12+p2*4;b+=p0*6+p2*12;
-    }else if(vm==='ter'){// Territory view
-      const t2=w.terF.get(x,y);r+=t2*20;g+=t2*8;b+=t2*5;
-    }else{// Normal: subtle signal/toxin overlay
-      const sig=w.ph[0].get(x,y)+w.ph[2].get(x,y);
-      const tox=w.toxF.get(x,y);
-      if(sig>.2){g+=sig*5;b+=sig*3}
-      if(tox>.2){r+=tox*8}
+    const b=w.terrain[y*W+x];
+    let col;
+    if(vm==='biome'){col=BIOME_COL[b]}
+    else if(vm==='heat'){
+      const f=w.res.get(x,y,'food');
+      col=`rgb(${mn(255,F(20+f*30))},${mn(255,F(15+f*25))},${mn(255,F(10+f*10))})`;
+    }else{
+      // World view: terrain + resource overlay
+      const base=BIOME_COL[b];const r2=parseInt(base.slice(1,3),16),g2=parseInt(base.slice(3,5),16),b2=parseInt(base.slice(5,7),16);
+      const food=w.res.get(x,y,'food');
+      const dim=.4+food*.08;
+      col=`rgb(${mn(255,F(r2*dim+st[0]))},${mn(255,F(g2*dim+st[1]))},${mn(255,F(b2*dim+st[2]))})`;
     }
-    cx.fillStyle=`rgb(${mn(255,r|0)},${mn(255,g|0)},${mn(255,b|0)})`;
-    cx.fillRect(x*C,y*C,C+.5,C+.5);
+    cx2.fillStyle=col;cx2.fillRect(x*C,y*C,C+.5,C+.5);
   }
 
-  // Colony bonds
-  if(vm==='eco'||vm==='nn'){
-    cx.lineWidth=.6;
-    for(const[,col]of w.cols){
-      const ms=[...col.m].map(mid=>w.lfs.find(l=>l.id===mid&&l.alive)).filter(Boolean);
-      if(ms.length<2)continue;
-      cx.strokeStyle='rgba(255,215,64,0.15)';
-      for(let i=0;i<ms.length;i++)for(let j=i+1;j<ms.length;j++){
-        cx.beginPath();cx.moveTo(ms[i].x*C+C/2,ms[i].y*C+C/2);cx.lineTo(ms[j].x*C+C/2,ms[j].y*C+C/2);cx.stroke();
-      }
+  // ── Structures ──
+  const fontSize=mn(C*.7,10);
+  cx2.font=`${fontSize}px serif`;cx2.textAlign='center';cx2.textBaseline='middle';
+  for(const s of w.structures){
+    const px=s.x*C+C/2,py=s.y*C+C/2;
+    // Background glow
+    const tribe=w.tribes.find(t=>t.id===s.tribe);
+    if(tribe&&vm==='tribe'){
+      cx2.fillStyle=tribe.color.replace('50%','50%').replace(')',',0.2)').replace('hsl','hsla');
+      cx2.beginPath();cx2.arc(px,py,C*1.5,0,PI*2);cx2.fill();
+    }
+    cx2.fillText(STRUCT_CHAR[s.type],px,py);
+  }
+
+  // ── Tribe territories (in tribe view) ──
+  if(vm==='tribe'){
+    for(const tribe of w.tribes){
+      if(tribe.sz<1)continue;
+      cx2.fillStyle=tribe.color.replace(')',',0.08)').replace('hsl','hsla');
+      cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*6,0,PI*2);cx2.fill();
+      // Tribe name
+      cx2.fillStyle=tribe.color;cx2.font=`bold ${mn(9,C*.6)}px monospace`;cx2.textAlign='center';
+      cx2.fillText(tribe.name,tribe.homeX*C+C/2,tribe.homeY*C-C*3);
     }
   }
 
-  // Life forms
-  for(const lf of w.lfs){
-    if(!lf.alive)continue;
-    const px=lf.x*C+C/2,py=lf.y*C+C/2;
-    const rr=(1.5+lf.sz*.6)*mn(C/10,1.4);
-    const h=lf.hue;
-
-    // Color
-    let body,glow;
-    if(vm==='sp'){body=`hsl(${h},70%,55%)`;glow=`hsla(${h},70%,55%,`}
-    else if(vm==='nrg'){const ep=mn(1,lf.nrg/50);body=`hsl(${ep*120},80%,50%)`;glow=`hsla(${ep*120},80%,50%,`}
-    else if(vm==='tr'){body=tCol(lf.trophic);glow=hex2rgba(body)}
-    else if(vm==='age'){const sc2=['#ffffff88','#88ddff','#00e676','#ffd740'][lf.stage];body=sc2;glow=hex2rgba(sc2)}
-    else if(vm==='nn'&&lf.lastNN){const v2=lf.lastNN[2];body=`hsl(${(1-v2)*120},80%,50%)`;glow=`hsla(${(1-v2)*120},80%,50%,`}
-    else{
-      if(lf.dormant){body='#448aff';glow='rgba(68,138,255,'}
-      else if(lf.stage===0){body='#ffffff55';glow='rgba(255,255,255,'}
-      else if(!lf.auto){body='#ff5252';glow='rgba(255,82,82,'}
-      else if(lf.canDiv()){body='#00e5ff';glow='rgba(0,229,255,'}
-      else{body=tCol(lf.trophic);glow=hex2rgba(body)}
-    }
+  // ── Humans ──
+  for(const h of w.humans){
+    if(!h.alive)continue;
+    const px=h.x*C+C/2,py=h.y*C+C/2;
+    const rr=mn(C*.4,3)*(h.stage===0?.4:h.stage===1?.7:h.stage===3?1.1:1);
 
     // Trail
-    if(lf.tx.length>2&&(vm==='eco'||vm==='sp')){
-      cx.beginPath();cx.moveTo(lf.tx[0]*C+C/2,lf.ty[0]*C+C/2);
-      for(let i=1;i<lf.tx.length;i++)cx.lineTo(lf.tx[i]*C+C/2,lf.ty[i]*C+C/2);
-      cx.strokeStyle=vm==='sp'?`hsla(${h},50%,50%,.12)`:'rgba(150,200,255,.06)';cx.lineWidth=.4;cx.stroke();
+    if(h.tx.length>2){
+      cx2.beginPath();cx2.moveTo(h.tx[0]*C+C/2,h.ty[0]*C+C/2);
+      for(let i=1;i<h.tx.length;i++)cx2.lineTo(h.tx[i]*C+C/2,h.ty[i]*C+C/2);
+      cx2.strokeStyle=h.tribe?h.tribe.color.replace('50%','50%').replace(')',',0.12)').replace('hsl','hsla'):'rgba(200,200,200,0.06)';
+      cx2.lineWidth=.4;cx2.stroke();
+    }
+
+    // Color by view mode
+    let body;
+    if(vm==='tribe'){body=h.tribe?h.tribe.color:'#808080'}
+    else if(vm==='tool'){
+      const tc=['#555','#888','#aaa','#cc8844','#dd6644','#4488cc'];body=tc[h.tool]||'#555';
+    }else if(vm==='social'){
+      body=h.tribe?h.tribe.color:`hsl(0,0%,40%)`;
+    }else{
+      if(h.stage===0)body='#ffe0c0';
+      else if(h.stage===1)body='#e0c8a0';
+      else if(h.stage===3)body='#c0b8b0';
+      else body=h.sex==='m'?'#d4a060':'#c88060';
     }
 
     // Glow
-    const gr=cx.createRadialGradient(px,py,rr*.2,px,py,rr*(lf.dormant?2:3));
-    gr.addColorStop(0,glow+(lf.dormant?.15:.3)+')');gr.addColorStop(1,glow+'0)');
-    cx.fillStyle=gr;cx.beginPath();cx.arc(px,py,rr*3,0,PI*2);cx.fill();
+    cx2.beginPath();cx2.arc(px,py,rr*2.5,0,PI*2);
+    const gr=cx2.createRadialGradient(px,py,rr*.2,px,py,rr*2.5);
+    const bc=body;
+    gr.addColorStop(0,bc+'66');gr.addColorStop(1,bc+'00');
+    cx2.fillStyle=gr;cx2.fill();
 
-    // Quorum pulse
-    if(lf.qActive){
-      cx.beginPath();cx.arc(px,py,rr+4+sin(Date.now()*.005)*2,0,PI*2);
-      cx.strokeStyle='rgba(0,229,255,0.4)';cx.lineWidth=1.2;cx.setLineDash([2,2]);cx.stroke();cx.setLineDash([]);
+    // Body shape by stage
+    cx2.beginPath();
+    if(h.stage===0){// baby: tiny circle
+      cx2.arc(px,py,rr*.6,0,PI*2);
+    }else if(h.stage===1){// child: small circle
+      cx2.arc(px,py,rr*.8,0,PI*2);
+    }else if(h.stage===3){// elder: diamond
+      cx2.moveTo(px,py-rr);cx2.lineTo(px+rr,py);cx2.lineTo(px,py+rr);cx2.lineTo(px-rr,py);cx2.closePath();
+    }else{// adult: circle
+      cx2.arc(px,py,rr,0,PI*2);
     }
+    cx2.fillStyle=body;cx2.fill();
 
-    // Biofilm haze
-    if(lf.biofilm>.1){
-      cx.beginPath();cx.arc(px,py,rr+6,0,PI*2);
-      cx.fillStyle=`rgba(100,200,150,${lf.biofilm*.15})`;cx.fill();
-    }
+    // Tool indicator
+    if(h.tool>=3){cx2.beginPath();cx2.moveTo(px+rr+1,py-rr);cx2.lineTo(px+rr+1,py+rr);
+      cx2.strokeStyle='#ccaa66';cx2.lineWidth=.8;cx2.stroke()}
 
-    // Membrane ring
-    cx.beginPath();cx.arc(px,py,rr+1.2,0,PI*2);
-    cx.strokeStyle=`rgba(100,180,255,${lf.mem.int*.4})`;cx.lineWidth=lf.mem.ar>.2?1.8:1;cx.stroke();
-
-    // Armor arc
-    if(lf.mem.ar>.15){cx.beginPath();cx.arc(px,py,rr+2.5,0,PI*2*lf.mem.ar);cx.strokeStyle='rgba(255,180,0,0.45)';cx.lineWidth=.8;cx.stroke()}
-
-    // Body shape varies by stage
-    cx.beginPath();
-    if(lf.stage===0){// Egg: small diamond
-      cx.moveTo(px,py-rr);cx.lineTo(px+rr,py);cx.lineTo(px,py+rr);cx.lineTo(px-rr,py);cx.closePath();
-    }else if(lf.stage===1){// Juvenile: triangle
-      cx.moveTo(px,py-rr);cx.lineTo(px+rr*.87,py+rr*.5);cx.lineTo(px-rr*.87,py+rr*.5);cx.closePath();
-    }else if(lf.stage===3){// Elder: hexagon
-      for(let i=0;i<6;i++){const a=PI/3*i-PI/2;cx.lineTo(px+cos(a)*rr,py+sin(a)*rr)}cx.closePath();
-    }else{cx.arc(px,py,rr,0,PI*2)}// Adult: circle
-    cx.fillStyle=body;cx.fill();
-
-    // Kill marks
-    if(lf.kills>0){const mk=mn(lf.kills,6);for(let k=0;k<mk;k++){const a=(k/mk)*PI*2-PI/2;
-      cx.beginPath();cx.arc(px+cos(a)*(rr+4),py+sin(a)*(rr+4),.8,0,PI*2);cx.fillStyle='#ff525266';cx.fill()}}
-
-    // Generation dot
-    if(lf.gen>=5){cx.beginPath();cx.arc(px,py,rr*.3,0,PI*2);cx.fillStyle='rgba(255,255,255,0.6)';cx.fill()}
-    else if(lf.gen>=2){cx.beginPath();cx.arc(px,py,rr*.2,0,PI*2);cx.fillStyle='rgba(255,255,255,0.3)';cx.fill()}
-
-    // Dormancy Z
-    if(lf.dormant){cx.fillStyle='#448aff';cx.font=`${mn(8,C*.6)}px monospace`;cx.fillText('z',px+rr+1,py-rr)}
-
-    // Neural activity visualization (in nn mode)
-    if(vm==='nn'&&lf.lastNN){
-      const nnR=rr*.3;
-      for(let i=0;i<6;i++){
-        const a=(i/6)*PI*2;
-        const ox=px+cos(a)*(rr+3),oy=py+sin(a)*(rr+3);
-        cx.beginPath();cx.arc(ox,oy,nnR,0,PI*2);
-        cx.fillStyle=`rgba(${lf.lastNN[i]*255|0},${(1-lf.lastNN[i])*200|0},100,0.6)`;cx.fill();
-      }
-    }
+    // Hunger indicator (red when starving)
+    if(h.hunger>70){cx2.beginPath();cx2.arc(px,py,rr+2,0,PI*2);cx2.strokeStyle=`rgba(255,50,50,${(h.hunger-70)/30})`;cx2.lineWidth=.8;cx2.stroke()}
 
     // Hover
-    if(hov&&hov.id===lf.id){cx.beginPath();cx.arc(px,py,rr+7,0,PI*2);cx.strokeStyle='#fff5';cx.lineWidth=1.5;cx.stroke()}
+    if(hov&&hov.id===h.id){cx2.beginPath();cx2.arc(px,py,rr+4,0,PI*2);cx2.strokeStyle='#fff6';cx2.lineWidth=1.5;cx2.stroke()}
+  }
+
+  // ── Social bonds (in social view) ──
+  if(vm==='social'){
+    cx2.lineWidth=.3;
+    for(const h of w.humans){
+      if(!h.alive||!h.partner)continue;
+      const p=w.humans.find(o=>o.id===h.partner&&o.alive);
+      if(p){cx2.beginPath();cx2.moveTo(h.x*C+C/2,h.y*C+C/2);cx2.lineTo(p.x*C+C/2,p.y*C+C/2);
+        cx2.strokeStyle='rgba(255,100,150,0.3)';cx2.stroke()}
+    }
   }
 
   ui();
 }
 
-function hex2rgba(hex){
-  if(hex.includes('rgba'))return hex.slice(0,-1)+',';
-  if(hex.includes('rgb'))return hex.replace('rgb','rgba').replace(')',',');
-  if(hex.includes('hsl'))return hex.replace('hsl','hsla').replace(')',',');
-  const r2=parseInt(hex.slice(1,3),16)||0,g2=parseInt(hex.slice(3,5),16)||0,b2=parseInt(hex.slice(5,7),16)||0;
-  return`rgba(${r2},${g2},${b2},`;
-}
-
 function ui(){
   const s=sim.sum();
-  document.getElementById('xt').textContent=s.tick;
+  document.getElementById('xt').textContent=`Y${s.year} T${s.tick}`;
   document.getElementById('xsn').textContent=s.season;
   document.getElementById('xsn').className='sv '+(s.season==='winter'?'vb':s.season==='summer'?'vo':'vy');
   document.getElementById('xp').textContent=s.pop;
-  document.getElementById('xs').textContent=s.sp;
-  document.getElementById('xtr').textContent=`${s.pr}/${s.pd}/${s.sc}/${s.pa}`;
-  document.getElementById('xco').textContent=s.cols;
-  document.getElementById('xdo').textContent=s.dor;
+  document.getElementById('xtr').textContent=s.tribes;
+  document.getElementById('xst').textContent=s.structs;
+  document.getElementById('xht').textContent=s.maxTool;
+  document.getElementById('xfi').textContent=s.fire?'YES':'no';
+  document.getElementById('xfi').className='sv '+(s.fire?'vo':'');
+  document.getElementById('xfa').textContent=s.farm?'YES':'no';
+  document.getElementById('xfa').className='sv '+(s.farm?'vg':'');
   document.getElementById('xbd').textContent=`${s.b}/${s.d}`;
-  document.getElementById('xrp').textContent=`${s.sx}/${s.ax}`;
-  document.getElementById('xhgt').textContent=s.hgt;
-  document.getElementById('xg').textContent=s.mg;
-  document.getElementById('xev').textContent=s.ev;
+  document.getElementById('xwa').textContent=s.wars;
+  document.getElementById('xtd').textContent=s.trades;
+  document.getElementById('xri').textContent=s.rituals;
 
-  // Species bar
-  const bar=document.getElementById('spb'),leg=document.getElementById('spl');
+  // Tribe bar
+  const bar=document.getElementById('trb'),leg=document.getElementById('trl');
   bar.innerHTML='';leg.innerHTML='';
   const tot=mx(1,s.pop);
-  for(const sp of sim.world.species){const d=document.createElement('div');d.style.width=(sp.m.length/tot*100)+'%';d.style.background=sp.c;bar.appendChild(d)}
-  const sorted=[...sim.world.species].sort((a,b)=>b.m.length-a.m.length).slice(0,5);
-  leg.innerHTML=sorted.map(sp=>`<span style="color:${sp.c}">■</span>${sp.m.length}`).join(' ');
+  const sorted=[...sim.world.tribes].sort((a,b)=>b.sz-a.sz);
+  for(const t of sorted){const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;bar.appendChild(d)}
+  leg.innerHTML=sorted.slice(0,4).map(t=>`<span style="color:${t.color}">■</span>${t.name}(${t.sz})`).join(' ');
 
   // Sparklines
-  spark('s1',sim.st.pH,'#00e676');
-  if(document.getElementById('dt').classList.contains('on'))spark('s2',sim.st.spH,'#e040fb');
-  if(document.getElementById('tt2').classList.contains('on'))dualSpark('s3',sim.st.prH,sim.st.pdH,'#00e676','#ff5252');
-  if(document.getElementById('st').classList.contains('on'))spark('s4',sim.st.sH,'#ffd740');
+  spark('s1',sim.st.pH,'#7dce82');
+  if(document.getElementById('tt2').classList.contains('on'))spark('s2',sim.st.tH,'#e09040');
+  if(document.getElementById('tch').classList.contains('on'))spark('s3',sim.st.techH,'#55b8e0');
 
-  // Genome map
-  const alive=sim.world.lfs.filter(l=>l.alive);
-  if(alive.length){
-    const traits=['aggro','toxicity','cooperation','speed','armor','nicheEng','parasitism','dormancy'];
-    const colors=['#ff5252','#e040fb','#00e5ff','#ffd740','#ff9100','#69f0ae','#e040fb','#448aff'];
-    let html='';for(let i=0;i<traits.length;i++){
-      const vals=alive.map(l=>l.g[traits[i]]);const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-      html+=`<div class="gc"><div class="gb" style="height:${avg*100}%;background:${colors[i]}44;border-top:1px solid ${colors[i]}"></div></div>`;
-    }document.getElementById('gmap').innerHTML=html;
+  // Tech tree
+  const tt=document.getElementById('techtree');
+  const allTechs=Object.keys(TECHS);
+  let techHTML='';
+  for(const tech of allTechs){
+    const known=sim.world.tribes.filter(t=>t.hasTech(tech));
+    const col=known.length>0?'#e0c050':'#2a2640';
+    const icon={fire:'🔥',hut:'🏠',farming:'🌾',burial:'⚱',language:'💬',pottery:'🏺',domestication:'🐕',monument:'🗿',boat:'🚣',wall:'🧱'}[tech]||'?';
+    techHTML+=`<span style="color:${col}">${icon}${tech}${known.length?'('+known.length+')':''}</span> `;
   }
-
-  // Neural activity panel
-  if(hov&&hov.lastNN){
-    const labels=['Move∠','Speed','Aggro','Signal','Repro','Dorm'];
-    document.getElementById('nnv').innerHTML=[...hov.lastNN].map((v,i)=>
-      `<div class="nn-node" style="background:rgba(${v*255|0},${(1-v)*180|0},100,0.5)" title="${labels[i]}: ${v.toFixed(3)}"></div>`
-    ).join('');
-    document.getElementById('nnl').textContent=hov.id+' brain output';
-  }
+  tt.innerHTML=techHTML;
 }
 
 function spark(id,data,color){
-  const c=document.getElementById(id),cx2=c.getContext('2d');
-  const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=rect.height*dpr;cx2.scale(dpr,dpr);
-  const W=rect.width,H=rect.height;cx2.clearRect(0,0,W,H);
+  const c=document.getElementById(id),cx=c.getContext('2d');
+  const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=rect.height*dpr;cx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;cx.clearRect(0,0,W,H);
   if(data.length<2)return;const d=data.slice(-300);
   const lo=mn(...d),hi=mx(...d),rng=hi-lo||1;
-  cx2.beginPath();cx2.moveTo(0,H);
-  for(let i=0;i<d.length;i++){cx2.lineTo(i/(d.length-1)*W,H-((d[i]-lo)/rng)*(H-3)-1.5)}
-  cx2.lineTo(W,H);cx2.closePath();
-  const gr=cx2.createLinearGradient(0,0,0,H);gr.addColorStop(0,color+'33');gr.addColorStop(1,color+'06');
-  cx2.fillStyle=gr;cx2.fill();
-  cx2.beginPath();for(let i=0;i<d.length;i++){const x2=i/(d.length-1)*W,y2=H-((d[i]-lo)/rng)*(H-3)-1.5;if(i===0)cx2.moveTo(x2,y2);else cx2.lineTo(x2,y2)}
-  cx2.strokeStyle=color;cx2.lineWidth=1.2;cx2.stroke();
-}
-function dualSpark(id,d1,d2,c1,c2){
-  const c=document.getElementById(id),cx2=c.getContext('2d');
-  const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=rect.height*dpr;cx2.scale(dpr,dpr);
-  const W=rect.width,H=rect.height;cx2.clearRect(0,0,W,H);
-  const r1=d1.slice(-300),r2=d2.slice(-300);if(r1.length<2)return;
-  const all=[...r1,...r2];const lo=mn(...all),hi=mx(...all),rng=hi-lo||1;
-  for(const[data,color]of[[r1,c1],[r2,c2]]){cx2.beginPath();
-    for(let i=0;i<data.length;i++){const x2=i/(data.length-1)*W,y2=H-((data[i]-lo)/rng)*(H-3)-1.5;if(i===0)cx2.moveTo(x2,y2);else cx2.lineTo(x2,y2)}
-    cx2.strokeStyle=color;cx2.lineWidth=1;cx2.stroke()}
+  cx.beginPath();cx.moveTo(0,H);
+  for(let i=0;i<d.length;i++)cx.lineTo(i/(d.length-1)*W,H-((d[i]-lo)/rng)*(H-3)-1.5);
+  cx.lineTo(W,H);cx.closePath();
+  const gr=cx.createLinearGradient(0,0,0,H);gr.addColorStop(0,color+'33');gr.addColorStop(1,color+'06');
+  cx.fillStyle=gr;cx.fill();
+  cx.beginPath();for(let i=0;i<d.length;i++){const x=i/(d.length-1)*W,y=H-((d[i]-lo)/rng)*(H-3)-1.5;if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y)}
+  cx.strokeStyle=color;cx.lineWidth=1.2;cx.stroke();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{try{init()}catch(e){document.body.innerHTML='<pre style="color:red;padding:20px">'+e.message+'\n'+e.stack+'</pre>'}});
