@@ -730,7 +730,7 @@ class Sim{
 // ═══════════════════════════════════════════════════════════
 let sim,cv,cx2,run=0,anim=null,spd=20,vm='world',hov=null,dpr=1;
 function init(){
-  sim=new Sim(80,55,30);cv=document.getElementById('cv');cx2=cv.getContext('2d');
+  sim=new Sim(60,40,28);cv=document.getElementById('cv');cx2=cv.getContext('2d');
   dpr=window.devicePixelRatio||1;rsz();window.addEventListener('resize',rsz);
   elog();ttip();ctrl();tabs();draw();toggle();
 }
@@ -820,7 +820,7 @@ function ctrl(){
   document.getElementById('bx').onclick=()=>{
     if(anim)cancelAnimationFrame(anim);run=0;_hi=0;_ti=0;
     document.getElementById('bp').textContent='▶';document.getElementById('elog').innerHTML='';
-    sim=new Sim(80,55,30);elog();draw();toggle();
+    sim=new Sim(60,40,28);elog();draw();toggle();
   };
   document.getElementById('spd').oninput=(e)=>{spd=+e.target.value};
   document.getElementById('vm').onchange=(e)=>{vm=e.target.value};
@@ -863,7 +863,7 @@ function draw(){
   }
 
   // ── Structures ──
-  const fontSize=mn(C*.7,10);
+  const fontSize=mx(10, mn(C*.8,16));
   cx2.font=`${fontSize}px serif`;cx2.textAlign='center';cx2.textBaseline='middle';
   for(const s of w.structures){
     const px=s.x*C+C/2,py=s.y*C+C/2;
@@ -876,30 +876,29 @@ function draw(){
     cx2.fillText(STRUCT_CHAR[s.type],px,py);
   }
 
-  // ── Tribe territories (in tribe view) ──
-  if(vm==='tribe'){
-    for(const tribe of w.tribes){
-      if(tribe.sz<1)continue;
-      cx2.fillStyle=tribe.color.replace(')',',0.08)').replace('hsl','hsla');
-      cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*6,0,PI*2);cx2.fill();
-      // Tribe name
-      cx2.fillStyle=tribe.color;cx2.font=`bold ${mn(9,C*.6)}px monospace`;cx2.textAlign='center';
-      cx2.fillText(tribe.name,tribe.homeX*C+C/2,tribe.homeY*C-C*3);
-    }
+  // ── Tribe territories — always shown ──
+  for(const tribe of w.tribes){
+    if(tribe.sz<1)continue;
+    const alpha=vm==='tribe'?.12:.06;
+    cx2.fillStyle=tribe.color.replace(')',`,${alpha})`).replace('hsl','hsla');
+    cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*7,0,PI*2);cx2.fill();
+    // Tribe name label
+    cx2.fillStyle=tribe.color;cx2.font=`bold ${mx(10,F(C*.7))}px monospace`;cx2.textAlign='center';
+    cx2.fillText(`${tribe.name} (${tribe.sz})`,tribe.homeX*C+C/2,tribe.homeY*C-C*4);
   }
 
   // ── Humans ──
   for(const h of w.humans){
     if(!h.alive)continue;
     const px=h.x*C+C/2,py=h.y*C+C/2;
-    const rr=mn(C*.4,3)*(h.stage===0?.4:h.stage===1?.7:h.stage===3?1.1:1);
+    const rr=mx(3, C*.35)*(h.stage===0?.5:h.stage===1?.75:h.stage===3?1.15:1);
 
     // Trail
     if(h.tx.length>2){
       cx2.beginPath();cx2.moveTo(h.tx[0]*C+C/2,h.ty[0]*C+C/2);
       for(let i=1;i<h.tx.length;i++)cx2.lineTo(h.tx[i]*C+C/2,h.ty[i]*C+C/2);
-      cx2.strokeStyle=h.tribe?h.tribe.color.replace('50%','50%').replace(')',',0.12)').replace('hsl','hsla'):'rgba(200,200,200,0.06)';
-      cx2.lineWidth=.4;cx2.stroke();
+      cx2.strokeStyle=h.tribe?h.tribe.color.replace(')',',0.25)').replace('hsl','hsla'):'rgba(200,200,200,0.15)';
+      cx2.lineWidth=.8;cx2.stroke();
     }
 
     // Color by view mode
@@ -916,11 +915,11 @@ function draw(){
       else body=h.sex==='m'?'#d4a060':'#c88060';
     }
 
-    // Glow
-    cx2.beginPath();cx2.arc(px,py,rr*2.5,0,PI*2);
-    const gr=cx2.createRadialGradient(px,py,rr*.2,px,py,rr*2.5);
+    // Glow — bright and visible
+    cx2.beginPath();cx2.arc(px,py,rr*3.5,0,PI*2);
+    const gr=cx2.createRadialGradient(px,py,rr*.3,px,py,rr*3.5);
     const bc=body;
-    gr.addColorStop(0,bc+'66');gr.addColorStop(1,bc+'00');
+    gr.addColorStop(0,'rgba(255,240,200,0.6)');gr.addColorStop(0.3,bc+'88');gr.addColorStop(1,bc+'00');
     cx2.fillStyle=gr;cx2.fill();
 
     // Body shape by stage
@@ -935,13 +934,15 @@ function draw(){
       cx2.arc(px,py,rr,0,PI*2);
     }
     cx2.fillStyle=body;cx2.fill();
+    // Outline so humans always visible against terrain
+    cx2.strokeStyle='rgba(0,0,0,0.6)';cx2.lineWidth=1.2;cx2.stroke();
 
-    // Tool indicator
-    if(h.tool>=3){cx2.beginPath();cx2.moveTo(px+rr+1,py-rr);cx2.lineTo(px+rr+1,py+rr);
-      cx2.strokeStyle='#ccaa66';cx2.lineWidth=.8;cx2.stroke()}
+    // Tool indicator (spear/bow line)
+    if(h.tool>=3){cx2.beginPath();cx2.moveTo(px+rr+1,py-rr*1.2);cx2.lineTo(px+rr+1,py+rr*1.2);
+      cx2.strokeStyle='#ddbb55';cx2.lineWidth=1.2;cx2.stroke()}
 
-    // Hunger indicator (red when starving)
-    if(h.hunger>70){cx2.beginPath();cx2.arc(px,py,rr+2,0,PI*2);cx2.strokeStyle=`rgba(255,50,50,${(h.hunger-70)/30})`;cx2.lineWidth=.8;cx2.stroke()}
+    // Hunger indicator (red ring when starving)
+    if(h.hunger>60){cx2.beginPath();cx2.arc(px,py,rr+3,0,PI*2);cx2.strokeStyle=`rgba(255,50,50,${mn(1,(h.hunger-60)/30)})`;cx2.lineWidth=1.5;cx2.stroke()}
 
     // Hover
     if(hov&&hov.id===h.id){cx2.beginPath();cx2.arc(px,py,rr+4,0,PI*2);cx2.strokeStyle='#fff6';cx2.lineWidth=1.5;cx2.stroke()}
