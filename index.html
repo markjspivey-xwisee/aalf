@@ -1566,7 +1566,7 @@ function draw(){
     cx2.fillRect(0,0,W*C,H*C);
   }
 
-  // ── Structures ──
+  // ── Structures (drawn with explicit white bg circle for visibility) ──
   const fontSize=mx(10,mn(C*.8,16));
   cx2.font=`${fontSize}px serif`;cx2.textAlign='center';cx2.textBaseline='middle';
   for(const s of w.structures){
@@ -1576,6 +1576,10 @@ function draw(){
       cx2.fillStyle=tribe.color.replace('50%','50%').replace(')',',0.2)').replace('hsl','hsla');
       cx2.beginPath();cx2.arc(px,py,C*1.5,0,PI*2);cx2.fill();
     }
+    // Dark backing circle so emoji is always visible against any terrain/overlay
+    cx2.fillStyle='rgba(10,8,15,0.55)';
+    cx2.beginPath();cx2.arc(px,py,fontSize*.55,0,PI*2);cx2.fill();
+    cx2.fillStyle='#ffffff';
     cx2.fillText(STRUCT_CHAR[s.type],px,py);
   }
 
