@@ -258,9 +258,29 @@ class ResGrid{
 // ═══════════════════════════════════════════════════════════
 //  TECHNOLOGY TREE
 // ═══════════════════════════════════════════════════════════
-const TOOL_LEVEL={NONE:0,SHARP_STONE:1,HAND_AXE:2,SPEAR:3,BOW:4,POTTERY:5};
-const TOOL_NAME=['none','sharp stone','hand axe','spear','bow','pottery'];
-const TECHS={fire:0,hut:0,farming:0,burial:0,language:0,pottery:0,domestication:0,monument:0,boat:0,wall:0};
+const TOOL_LEVEL={NONE:0,SHARP_STONE:1,HAND_AXE:2,SPEAR:3,BOW:4,POTTERY:5,
+  SMELTING:6,BRONZE_TOOLS:7,WHEEL:8,PLOW:9,WRITING:10,
+  IRON_WORKING:11,SWORDS:12,ARCHITECTURE:13,MATHEMATICS:14,LAW:15};
+const TOOL_NAME=['none','sharp stone','hand axe','spear','bow','pottery',
+  'smelting','bronze tools','wheel','plow','writing',
+  'iron working','swords','architecture','mathematics','law'];
+const TOOL_ERA=[0,0,0,0,0,0, 1,1,1,1,1, 2,2,2,2,2];// 0=stone,1=bronze,2=iron
+const ERA_NAME=['Stone Age','Bronze Age','Iron Age'];
+// Prerequisites: tool level -> {minCraft, requiresTech[], minTribeSz}
+const TOOL_REQS={
+  6:{minCraft:.35,req:['fire'],minSz:8},// smelting needs fire
+  7:{minCraft:.4,req:['fire'],minSz:8},// bronze tools
+  8:{minCraft:.45,req:[],minSz:10},// wheel
+  9:{minCraft:.4,req:['farming'],minSz:10},// plow needs farming
+  10:{minCraft:.5,req:['language'],minSz:12},// writing needs language
+  11:{minCraft:.55,req:['fire'],minSz:15},// iron working
+  12:{minCraft:.55,req:['fire'],minSz:12},// swords
+  13:{minCraft:.6,req:['language'],minSz:15},// architecture
+  14:{minCraft:.65,req:['language'],minSz:15},// mathematics
+  15:{minCraft:.7,req:['language'],minSz:20},// law
+};
+const TECHS={fire:0,hut:0,farming:0,burial:0,language:0,pottery:0,domestication:0,monument:0,boat:0,wall:0,
+  smelting:0,bronze:0,wheel:0,irrigation:0,writing:0,iron:0,masonry:0,calendar:0,medicine:0,trade_routes:0};
 
 // ═══════════════════════════════════════════════════════════
 //  STRUCTURES
@@ -527,7 +547,7 @@ class Human{
       build:parentA?mn(1,(parentA.skills.build+((parentB||{}).skills||{}).build||0)/2+R()*.1):R()*.15,
       farm:parentA?mn(1,(parentA.skills.farm+((parentB||{}).skills||{}).farm||0)/2+R()*.1):R()*.05,
     };
-    this.tool=parentA?mn(parentA.tool,1):0;
+    this.tool=parentA?mx(0,F(parentA.tool*.5)):0;// children inherit half parent's tool knowledge
     this.carrying={food:0,wood:0,stone:0};
     this.partner=null;this.children=0;this._mateCool=0;
     this.task=null;
@@ -677,16 +697,49 @@ class Human{
   _craft(bus,world){
     this.task='crafting';
     const stone=world.res.take(this.x,this.y,'stone',.3);
-    if(stone>.1&&this.tool<5){
-      if(R()<this.skills.craft*.2+.01){
-        this.tool=mn(5,this.tool+1);
-        this.skills.craft=mn(1,this.skills.craft+.01);
-        bus.emit(E.TOOL,this.id,{name:this.name,tool:TOOL_NAME[this.tool]});
-        if(particles)particles.emit(this.x,this.y-0.5,8,{vx:0,vy:-.2,vxR:.6,vyR:.4,life:15,lifeR:8,r:255,g:220,b:80,a:.8,sz:2,spread:1});
-        if(this.tribe){for(const mid of this.tribe.members){
+    if(stone<.1)return;
+    const nextTool=this.tool+1;
+    if(nextTool>=TOOL_NAME.length)return;// already maxed
+    // Check prerequisites for advanced tools
+    const reqs=TOOL_REQS[nextTool];
+    if(reqs){
+      if(this.skills.craft<reqs.minCraft)return;// not skilled enough
+      if(reqs.req.length&&this.tribe&&reqs.req.some(t=>!this.tribe.hasTech(t)))return;// missing tech
+      if(reqs.minSz&&this.tribe&&this.tribe.sz<reqs.minSz)return;// tribe too small
+    }
+    // Chance decreases for higher tiers
+    const difficulty=nextTool<=5?.2:.12/(1+nextTool*.05);
+    if(R()<this.skills.craft*difficulty+.005){
+      this.tool=nextTool;
+      this.skills.craft=mn(1,this.skills.craft+.01);
+      const era=TOOL_ERA[this.tool]||0;
+      bus.emit(E.TOOL,this.id,{name:this.name,tool:TOOL_NAME[this.tool],era:ERA_NAME[era]});
+      if(particles){
+        const colors=[[255,220,80],[255,160,40],[200,200,220]];// gold, bronze, silver
+        const c=colors[era]||colors[0];
+        particles.emit(this.x,this.y-0.5,10+era*5,{vx:0,vy:-.2,vxR:.6+era*.3,vyR:.4,life:15+era*5,lifeR:8,r:c[0],g:c[1],b:c[2],a:.8,sz:2+era,spread:1+era});
+      }
+      // Era transition toast
+      if(this.tool===6)try{showToast(`⚒ ${this.tribe?.name||this.name} enters the BRONZE AGE!`,'monument')}catch(e){}
+      if(this.tool===11)try{showToast(`⚔ ${this.tribe?.name||this.name} enters the IRON AGE!`,'war')}catch(e){}
+      // Teach tech to tribe (discovery spreads)
+      if(this.tribe){
+        // Unlock tribe-level techs from tool advancement
+        if(this.tool>=6&&!this.tribe.hasTech('smelting')){this.tribe.learnTech('smelting',bus)}
+        if(this.tool>=7&&!this.tribe.hasTech('bronze')){this.tribe.learnTech('bronze',bus)}
+        if(this.tool>=8&&!this.tribe.hasTech('wheel')){this.tribe.learnTech('wheel',bus)}
+        if(this.tool>=10&&!this.tribe.hasTech('writing')){this.tribe.learnTech('writing',bus)}
+        if(this.tool>=11&&!this.tribe.hasTech('iron')){this.tribe.learnTech('iron',bus)}
+        if(this.tool>=13&&!this.tribe.hasTech('masonry')){this.tribe.learnTech('masonry',bus)}
+        // Share with tribe members
+        for(const mid of this.tribe.members){
           const m=world.humans.find(h=>h.id===mid&&h.alive&&h.tool<this.tool);
-          if(m&&R()<.3){m.tool=mx(m.tool,this.tool-1);m.skills.craft=mn(1,m.skills.craft+.005)}
-        }}
+          if(m&&R()<.25){m.tool=mx(m.tool,this.tool-1);m.skills.craft=mn(1,m.skills.craft+.005)}
+        }
+        // Legend for age-defining inventions
+        if(this.tool===6||this.tool===11)this.tribe.addLegend(this.name,'master smith',world.year);
+        if(this.tool===10)this.tribe.addLegend(this.name,'inventor of writing',world.year);
+        if(this.tool===15)this.tribe.addLegend(this.name,'lawgiver',world.year);
       }
     }
   }
@@ -716,9 +769,13 @@ class Human{
     this.task='farming';
     const biome=world.terrain[world.ix(F(this.x),F(this.y))];
     if(biome===BIOME.FERTILE||biome===BIOME.PLAINS){
-      world.res.add(this.x,this.y,'food',this.skills.farm*.3);
+      let yield2=this.skills.farm*.3;
+      if(this.tool>=9)yield2*=2;// plow doubles farming
+      if(this.tribe?.hasTech('wheel'))yield2*=1.3;// wheel helps transport
+      if(this.tribe?.hasTech('irrigation'))yield2*=1.5;// irrigation
+      world.res.add(this.x,this.y,'food',yield2);
       this.skills.farm=mn(1,this.skills.farm+.003);
-      this.hunger=mx(0,this.hunger-5);
+      this.hunger=mx(0,this.hunger-5-yield2*2);
     }
   }
 
@@ -889,6 +946,16 @@ class World{
       }
       if(!tribe.hasTech('domestication')&&tribe.hasTech('farming')&&tribe.sz>8&&R()<.002){
         tribe.learnTech('domestication',bus);bus.emit(E.DOMESTICATE,tribe.id,{tribe:tribe.name})}
+      // Advanced tech discoveries based on prerequisites
+      const maxTool=[...tribe.members].reduce((m,mid)=>{const h=this.humans.find(h2=>h2.id===mid&&h2.alive);return mx(m,h?h.tool:0)},0);
+      if(!tribe.hasTech('irrigation')&&tribe.hasTech('farming')&&maxTool>=8&&tribe.sz>10&&R()<.002){
+        tribe.learnTech('irrigation',bus);try{showToast(`💧 ${tribe.name} invented IRRIGATION!`,'farm')}catch(e){}}
+      if(!tribe.hasTech('calendar')&&tribe.hasTech('writing')&&tribe.knowledge>4&&R()<.002){
+        tribe.learnTech('calendar',bus);try{showToast(`📅 ${tribe.name} created a CALENDAR!`,'monument')}catch(e){}}
+      if(!tribe.hasTech('medicine')&&tribe.hasTech('burial')&&tribe.knowledge>5&&R()<.001){
+        tribe.learnTech('medicine',bus);try{showToast(`⚕ ${tribe.name} discovered MEDICINE!`,'farm')}catch(e){}}
+      if(!tribe.hasTech('trade_routes')&&tribe.hasTech('wheel')&&tribe.trades>5&&R()<.002){
+        tribe.learnTech('trade_routes',bus);try{showToast(`🛤 ${tribe.name} established TRADE ROUTES!`,'pop')}catch(e){}}
     }
 
     return{tick:this.tick,alive:this.humans.filter(h=>h.alive).length};
@@ -982,8 +1049,11 @@ class World{
         if(a.belief===b.belief&&dist<12){a.adjustRelation(b.id,.005);b.adjustRelation(a.id,.005)}
         const rel=a.relation(b.id);
         if(rel<-.2&&a.sz>=3&&b.sz>=3&&R()<.03){
-          const aPow=a.sz*([...a.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
-          const bPow=b.sz*([...b.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
+          // Tool level matters hugely: bronze beats stone, iron beats bronze
+          const toolPow=(t)=>t<=5?t*.2:t<=10?1+t*.3:2+t*.5;
+          const wallBonus=(tribe)=>tribe.structures.some(s=>s.type===STRUCT.WALL)?.5:0;
+          const aPow=a.sz*([...a.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+toolPow(m.tool):0)},0))*(1+wallBonus(a));
+          const bPow=b.sz*([...b.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+toolPow(m.tool):0)},0))*(1+wallBonus(b));
           const aWin=R()*aPow>R()*bPow;
           const loser=aWin?b:a;const winner=aWin?a:b;
           const casualties=F(mn(loser.sz-1,1+R()*3));
@@ -1494,6 +1564,11 @@ const MILESTONES=[
   {id:'pop100',icon:'👥',label:'Population 100',check:s=>s.pop>=100},
   {id:'y50',icon:'📅',label:'Year 50',check:s=>s.year>=50},
   {id:'struct10',icon:'🏘',label:'10 Structures',check:s=>s.structs>=10},
+  {id:'bronze',icon:'⚒',label:'Bronze Age',check:s=>s.world?.humans?.some(h=>h.alive&&h.tool>=6)},
+  {id:'iron',icon:'⚔',label:'Iron Age',check:s=>s.world?.humans?.some(h=>h.alive&&h.tool>=11)},
+  {id:'writing',icon:'📜',label:'Writing',check:s=>s.world?.tribes?.some(t=>t.hasTech('writing'))},
+  {id:'medicine',icon:'⚕',label:'Medicine',check:s=>s.world?.tribes?.some(t=>t.hasTech('medicine'))},
+  {id:'pop200',icon:'👥',label:'Population 200',check:s=>s.pop>=200},
 ];
 let achieved={};
 function checkMilestones(simObj){
@@ -1994,13 +2069,22 @@ function ui(){
 
   const tt=document.getElementById('techtree');
   const allTechs=Object.keys(TECHS);
+  const icons={fire:'🔥',hut:'🏠',farming:'🌾',burial:'⚱',language:'💬',pottery:'🏺',domestication:'🐕',
+    monument:'🗿',boat:'🚣',wall:'🧱',smelting:'⚒',bronze:'🥉',wheel:'☸',irrigation:'💧',
+    writing:'📜',iron:'⚔',masonry:'🧱',calendar:'📅',medicine:'⚕',trade_routes:'🛤'};
   let techHTML='';
+  // Also show current era
+  const maxTool=sim.world.humans.filter(h=>h.alive).reduce((m,h)=>mx(m,h.tool),0);
+  const era=ERA_NAME[TOOL_ERA[maxTool]||0]||'Stone Age';
+  techHTML+=`<div style="color:#e8a040;margin-bottom:3px;font-size:9px;font-weight:bold">${era}</div>`;
   for(const tech of allTechs){
     const known=sim.world.tribes.filter(t=>t.hasTech(tech));
-    const col=known.length>0?'#e0c050':'#2a2640';
-    const icon={fire:'🔥',hut:'🏠',farming:'🌾',burial:'⚱',language:'💬',pottery:'🏺',domestication:'🐕',monument:'🗿',boat:'🚣',wall:'🧱'}[tech]||'?';
-    techHTML+=`<span style="color:${col}">${icon}${tech}${known.length?'('+known.length+')':''}</span> `;
+    const col=known.length>0?'#e0c050':'#1a1628';
+    const icon=icons[tech]||'✦';
+    techHTML+=`<span style="color:${col}" title="${tech}">${icon}</span>`;
   }
+  // Show highest individual tool
+  techHTML+=`<div style="color:#5a5070;margin-top:3px">Best tool: <span style="color:#e0c050">${TOOL_NAME[maxTool]}</span></div>`;
   tt.innerHTML=techHTML;
 }
 
