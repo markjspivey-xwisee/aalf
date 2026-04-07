@@ -45,6 +45,24 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 .narrative .ne{padding:2px 4px;border-bottom:1px solid #1a1510;color:#c8b880}
 .narrative .ne:nth-child(odd){background:#100e14}
 .narrative .ne:last-child{color:#e8d4a0;border-bottom:none}
+#daybar{height:3px;grid-column:1/-1;background:linear-gradient(90deg,#101030,#c08020 25%,#f0d060 50%,#c08020 75%,#101030);border-radius:0;position:relative;overflow:hidden}
+#daybar .marker{position:absolute;top:0;width:3px;height:100%;background:#fff;border-radius:1px;transition:left .3s}
+#minimap{position:absolute;bottom:8px;left:8px;border:2px solid #2a2640;border-radius:4px;opacity:.85;z-index:5;cursor:crosshair;background:#050408}
+#minimap canvas{display:block;border-radius:3px}
+.toast-box{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.toast{padding:8px 18px;border-radius:6px;font-size:13px;font-weight:bold;font-family:inherit;color:#fff;opacity:0;transform:translateY(-20px) scale(0.95);transition:all .4s ease;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.6);white-space:nowrap;letter-spacing:.5px}
+.toast.show{opacity:1;transform:translateY(0) scale(1)}
+.toast.fire{background:linear-gradient(135deg,#e06020,#c04010)}.toast.war{background:linear-gradient(135deg,#c02020,#901010)}
+.toast.farm{background:linear-gradient(135deg,#20a040,#108030)}.toast.lang{background:linear-gradient(135deg,#8030c0,#6020a0)}
+.toast.monument{background:linear-gradient(135deg,#c0a030,#a08020)}.toast.disaster{background:linear-gradient(135deg,#c01030,#900818)}
+.toast.pop{background:linear-gradient(135deg,#2080c0,#1060a0)}.toast.domesticate{background:linear-gradient(135deg,#c0a020,#a08010)}
+.ms-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
+.ms-i{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:12px;background:#0a0814;border:1px solid #1a1628;cursor:default;opacity:.3;transition:all .3s}
+.ms-i.got{opacity:1;background:#1a1628;border-color:#e8a04055;box-shadow:0 0 6px #e8a04033}
+.help-ov{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#120f18f0;border:1px solid #2a2640;border-radius:8px;padding:16px 20px;font-size:11px;z-index:30;display:none;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.help-ov h3{color:#e8a040;margin-bottom:8px;font-size:13px}
+.help-ov .hk{display:flex;justify-content:space-between;padding:2px 0}
+.help-ov .hk kbd{background:#1a1628;padding:1px 6px;border-radius:2px;border:1px solid #2a2640;color:#e8a040;font-family:inherit;font-size:10px}
 @media(max-width:800px){#app{grid-template-columns:1fr}#sb{display:none}}
 </style>
 </head>
@@ -66,9 +84,28 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <option value="world">World</option><option value="biome">Biome</option><option value="tribe">Tribes</option>
 <option value="tool">Technology</option><option value="heat">Heatmap</option><option value="social">Social</option>
 </select></label>
+<button id="bmute">🔇</button>
 </div>
 </header>
-<div id="wc"><canvas id="cv"></canvas><div id="tt"></div></div>
+<div id="daybar"><div class="marker" id="daym"></div></div>
+<div id="wc">
+<canvas id="cv"></canvas>
+<div id="tt"></div>
+<div class="toast-box" id="toasts"></div>
+<div id="minimap"><canvas id="mmc" width="150" height="100"></canvas></div>
+<div class="help-ov" id="helpov">
+<h3>⌨ Keyboard Shortcuts</h3>
+<div class="hk"><span>Pause / Play</span><kbd>Space</kbd></div>
+<div class="hk"><span>Speed Up</span><kbd>+</kbd></div>
+<div class="hk"><span>Speed Down</span><kbd>-</kbd></div>
+<div class="hk"><span>Reset</span><kbd>R</kbd></div>
+<div class="hk"><span>Toggle Minimap</span><kbd>M</kbd></div>
+<div class="hk"><span>Unfollow</span><kbd>Esc</kbd></div>
+<div class="hk"><span>Views 1-6</span><kbd>1-6</kbd></div>
+<div class="hk"><span>This Help</span><kbd>?</kbd></div>
+<div style="margin-top:8px;color:#5a5070;font-size:9px">Scroll to zoom · Drag to pan · Click human to follow</div>
+</div>
+</div>
 <div id="sb">
 <div class="p">
 <h3>World</h3>
@@ -109,6 +146,10 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <div class="p">
 <h3>Chronicle</h3>
 <div id="narrative" class="narrative"></div>
+</div>
+<div class="p">
+<h3>Milestones</h3>
+<div id="msrow" class="ms-row"></div>
 </div>
 <div class="p">
 <h3>Event Log</h3>
@@ -558,6 +599,7 @@ class Human{
         this.tool=mn(5,this.tool+1);
         this.skills.craft=mn(1,this.skills.craft+.01);
         bus.emit(E.TOOL,this.id,{name:this.name,tool:TOOL_NAME[this.tool]});
+        if(particles)particles.emit(this.x,this.y-0.5,8,{vx:0,vy:-.2,vxR:.6,vyR:.4,life:15,lifeR:8,r:255,g:220,b:80,a:.8,sz:2,spread:1});
         if(this.tribe){for(const mid of this.tribe.members){
           const m=world.humans.find(h=>h.id===mid&&h.alive&&h.tool<this.tool);
           if(m&&R()<.3){m.tool=mx(m.tool,this.tool-1);m.skills.craft=mn(1,m.skills.craft+.005)}
@@ -823,6 +865,7 @@ class World{
           a.adjustRelation(b.id,-.3);b.adjustRelation(a.id,-.3);
           bus.emit(E.WAR,winner.id,{winner:winner.name,loser:loser.name,casualties});
           if(audioEngine)audioEngine.playWar();
+          if(particles)particles.emit(loser.homeX,loser.homeY,20,{vx:0,vy:-.1,vxR:1,vyR:.8,life:20,lifeR:10,r:220,g:40,b:30,a:.7,sz:2.5,spread:3});
           for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m)m.skills.fight=mn(1,m.skills.fight+.02)}
         }
       }
@@ -1172,17 +1215,136 @@ function cs(){// legacy: returns effective cell size with zoom
 // ═══════════════════════════════════════════════════════════
 //  RENDERER
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  PARTICLE SYSTEM
+// ═══════════════════════════════════════════════════════════
+class Particles{
+  constructor(max=400){this.pool=[];for(let i=0;i<max;i++)this.pool.push({alive:0,x:0,y:0,vx:0,vy:0,life:0,ml:1,r:255,g:255,b:255,a:1,sz:2})}
+  emit(x,y,n,opts={}){
+    let c=0;for(const p of this.pool){if(p.alive||c>=n)continue;
+      p.alive=1;p.x=x+(R()-.5)*(opts.spread||1);p.y=y+(R()-.5)*(opts.spread||1);
+      p.vx=(opts.vx||0)+(R()-.5)*(opts.vxR||.5);p.vy=(opts.vy||0)+(R()-.5)*(opts.vyR||.5);
+      p.life=p.ml=(opts.life||30)+R()*(opts.lifeR||10);
+      p.r=opts.r||255;p.g=opts.g||255;p.b=opts.b||255;p.a=opts.a||.8;p.sz=opts.sz||2;c++;
+    }
+  }
+  tick(){for(const p of this.pool){if(!p.alive)continue;p.x+=p.vx;p.y+=p.vy;p.vy+=(p.vy<0?-.001:.001);p.life--;if(p.life<=0)p.alive=0}}
+  draw(ctx,C){
+    for(const p of this.pool){if(!p.alive)continue;
+      const alpha=p.a*(p.life/p.ml);
+      ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${alpha.toFixed(2)})`;
+      ctx.fillRect(p.x*C-p.sz*.5,p.y*C-p.sz*.5,p.sz,p.sz);
+    }
+  }
+}
+// ═══════════════════════════════════════════════════════════
+//  WEATHER SYSTEM
+// ═══════════════════════════════════════════════════════════
+const WEATHER=['clear','clear','clear','rain','rain','fog','storm','snow'];
+class Weather{
+  constructor(){this.type='clear';this.timer=100;this.intensity=0}
+  tick(season){
+    if(--this.timer<=0){
+      this.timer=80+F(R()*150);
+      if(season==='winter')this.type=R()<.4?'snow':R()<.3?'fog':'clear';
+      else if(season==='spring')this.type=R()<.4?'rain':R()<.15?'storm':'clear';
+      else if(season==='autumn')this.type=R()<.35?'rain':R()<.2?'fog':'clear';
+      else this.type=R()<.15?'rain':'clear';
+      this.intensity=.3+R()*.7;
+    }
+  }
+  emitParticles(ps,W,H,camX,camY,zoom){
+    const vw=W/zoom,vh=H/zoom;
+    if(this.type==='rain'||this.type==='storm'){
+      const n=this.type==='storm'?8:3;
+      for(let i=0;i<n;i++)ps.emit(camX+R()*vw,camY-1,1,{vx:.3,vy:2,life:18,lifeR:5,r:180,g:200,b:240,a:.3,sz:1,spread:vw});
+    }
+    if(this.type==='snow'){
+      for(let i=0;i<2;i++)ps.emit(camX+R()*vw,camY-1,1,{vx:(R()-.5)*.2,vy:.3,life:60,lifeR:30,r:240,g:245,b:255,a:.5,sz:2,spread:vw});
+    }
+  }
+}
+// ═══════════════════════════════════════════════════════════
+//  TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+function showToast(text,cls='fire'){
+  const box=document.getElementById('toasts');if(!box)return;
+  const d=document.createElement('div');d.className='toast '+cls;d.textContent=text;
+  box.appendChild(d);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('show')));
+  setTimeout(()=>{d.classList.remove('show');setTimeout(()=>d.remove(),500)},4000);
+  if(box.children.length>3)box.firstChild.remove();
+}
+// ═══════════════════════════════════════════════════════════
+//  MILESTONES
+// ═══════════════════════════════════════════════════════════
+const MILESTONES=[
+  {id:'fire',icon:'🔥',label:'Fire Discovered',check:s=>s.fire},
+  {id:'tribe',icon:'🏕',label:'First Tribe',check:s=>s.tribes>0},
+  {id:'tool',icon:'🔨',label:'First Tool',check:s=>s.maxTool!=='none'},
+  {id:'farm',icon:'🌾',label:'Farming',check:s=>s.farm},
+  {id:'lang',icon:'💬',label:'Language',check:s=>s.world?.tribes?.some(t=>t.hasTech('language'))},
+  {id:'war',icon:'⚔',label:'First War',check:s=>s.wars>0},
+  {id:'mon',icon:'🗿',label:'Monument',check:s=>s.world?.structures?.some(s2=>s2.type===STRUCT.MONUMENT)},
+  {id:'dom',icon:'🐕',label:'Domestication',check:s=>s.world?.tribes?.some(t=>t.hasTech('domestication'))},
+  {id:'pop50',icon:'👥',label:'Population 50',check:s=>s.pop>=50},
+  {id:'pop100',icon:'👥',label:'Population 100',check:s=>s.pop>=100},
+  {id:'y50',icon:'📅',label:'Year 50',check:s=>s.year>=50},
+  {id:'struct10',icon:'🏘',label:'10 Structures',check:s=>s.structs>=10},
+];
+let achieved={};
+function checkMilestones(simObj){
+  const s=simObj.sum();s.world=simObj.world;
+  for(const m of MILESTONES){
+    if(achieved[m.id])continue;
+    if(m.check(s)){
+      achieved[m.id]={year:s.year,tick:s.tick};
+      showToast(`${m.icon} ${m.label}!`,m.id==='war'?'war':m.id==='fire'?'fire':m.id.startsWith('pop')?'pop':m.id==='farm'?'farm':'monument');
+    }
+  }
+  // Render
+  const row=document.getElementById('msrow');if(!row)return;
+  row.innerHTML=MILESTONES.map(m=>`<div class="ms-i ${achieved[m.id]?'got':''}" title="${m.label}${achieved[m.id]?' (Y'+achieved[m.id].year+')':''}">${m.icon}</div>`).join('');
+}
+
 let sim,cv,cx2,run=0,anim=null,spd=20,vm='world',hov=null,dpr=1;
+let particles,weather;
+let showMinimap=true, showHelp=false;
 
 function init(){
   audioEngine=new AudioEngine();
+  particles=new Particles(500);weather=new Weather();achieved={};
   sim=new Sim(60,40,28);cv=document.getElementById('cv');cx2=cv.getContext('2d');
   dpr=window.devicePixelRatio||1;rsz();window.addEventListener('resize',rsz);
   setupCamera(cv);
   elog();ttip();ctrl();tabs();draw();toggle();
   setupNarrative(sim.bus,sim.world);
-  // Center camera initially
+  setupToasts();setupKeys();
   camX=0;camY=0;camZoom=1;
+}
+
+function setupToasts(){
+  sim.bus.sub(E.FIRE,(ev)=>showToast(`🔥 ${ev.d.tribe||'A tribe'} discovered FIRE!`,'fire'));
+  sim.bus.sub(E.WAR,(ev)=>showToast(`⚔ WAR! ${ev.d.winner} vs ${ev.d.loser}!`,'war'));
+  sim.bus.sub(E.FARM,(ev)=>showToast(`🌾 ${ev.d.tribe} invented FARMING!`,'farm'));
+  sim.bus.sub(E.LANGUAGE,(ev)=>showToast(`💬 ${ev.d.tribe} developed LANGUAGE!`,'lang'));
+  sim.bus.sub(E.MONUMENT,(ev)=>showToast(`🗿 ${ev.d.tribe} built a MONUMENT!`,'monument'));
+  sim.bus.sub(E.DOMESTICATE,(ev)=>showToast(`🐕 ${ev.d.tribe} DOMESTICATED animals!`,'domesticate'));
+  sim.bus.sub(E.DISASTER,(ev)=>showToast(`⚡ DISASTER: ${ev.d.type}!`,'disaster'));
+}
+
+function setupKeys(){
+  document.addEventListener('keydown',(e)=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+    if(e.key===' '){e.preventDefault();toggle()}
+    else if(e.key==='+'||e.key==='='){spd=mn(120,spd+5);document.getElementById('spd').value=spd}
+    else if(e.key==='-'){spd=mx(1,spd-5);document.getElementById('spd').value=spd}
+    else if(e.key==='r'||e.key==='R')document.getElementById('bx').click();
+    else if(e.key==='m'||e.key==='M'){showMinimap=!showMinimap;document.getElementById('minimap').style.display=showMinimap?'block':'none'}
+    else if(e.key==='Escape'){followTarget=null}
+    else if(e.key==='?'){showHelp=!showHelp;document.getElementById('helpov').style.display=showHelp?'block':'none'}
+    else if(e.key>='1'&&e.key<='6'){const opts=['world','biome','tribe','tool','heat','social'];vm=opts[+e.key-1]||'world';document.getElementById('vm').value=vm}
+  });
 }
 
 function rsz(){const c=document.getElementById('wc');const w=c.clientWidth,h=c.clientHeight;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';cx2.setTransform(dpr,0,0,dpr,0,0)}
@@ -1276,7 +1438,9 @@ function ctrl(){
     narrativeEntries.length=0;
     followTarget=null;camX=0;camY=0;camZoom=1;
     sim=new Sim(60,40,28);
+    particles=new Particles(500);weather=new Weather();achieved={};
     setupNarrative(sim.bus,sim.world);
+    setupToasts();
     elog();draw();toggle();
   };
   document.getElementById('spd').oninput=(e)=>{spd=+e.target.value};
@@ -1293,7 +1457,23 @@ function tabs(){for(const b of document.querySelectorAll('.tb button'))b.onclick
   b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');
 }}
 function toggle(){run=!run;document.getElementById('bp').textContent=run?'⏸':'▶';document.getElementById('bp').classList.toggle('on',run);if(run)loop()}
-let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1000/spd){sim.step();draw();lt=now}anim=requestAnimationFrame(loop)}
+let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1000/spd){
+  sim.step();
+  weather.tick(sim.world.season);
+  // Emit particles
+  const C=cs0();
+  weather.emitParticles(particles,document.getElementById('wc').clientWidth,document.getElementById('wc').clientHeight,camX,camY,camZoom);
+  // Smoke from fire pits
+  for(const s of sim.world.structures){if(s.type===STRUCT.FIRE_PIT&&R()<.3)particles.emit(s.x+.5,s.y-.2,1,{vx:0,vy:-.15,life:25,lifeR:15,r:160,g:150,b:140,a:.3,sz:2.5,spread:.3})}
+  // Dust from moving humans
+  for(const h of sim.world.humans){if(h.alive&&h.stage>=2&&h.tx.length>2&&R()<.15)particles.emit(h.x,h.y+.3,1,{vx:(R()-.5)*.1,vy:-.05,life:10,lifeR:5,r:140,g:120,b:90,a:.2,sz:1.5,spread:.3})}
+  // Autumn leaves
+  if(sim.world.season==='autumn'&&R()<.1)particles.emit(camX+R()*60/camZoom,camY-1,1,{vx:.2,vy:.15,life:50,lifeR:20,r:200+F(R()*55),g:120+F(R()*60),b:30,a:.4,sz:2,spread:30});
+  particles.tick();
+  checkMilestones(sim);
+  // Day bar
+  const daym=document.getElementById('daym');if(daym)daym.style.left=(sim.world.timeOfDay*100)+'%';
+  draw();lt=now}anim=requestAnimationFrame(loop)}
 
 // ═══════════════════════════════════════════════════════════
 //  DRAW
@@ -1485,9 +1665,49 @@ function draw(){
     }
   }
 
+  // ── Particles ──
+  if(particles)particles.draw(cx2,C);
+
+  // ── Weather overlay ──
+  if(weather&&weather.type==='fog'){cx2.fillStyle=`rgba(180,190,200,${weather.intensity*.08})`;cx2.fillRect(0,0,W*C,H*C)}
+  if(weather&&weather.type==='storm'&&R()<.002){cx2.fillStyle='rgba(255,255,255,0.4)';cx2.fillRect(0,0,W*C,H*C)}// lightning
+
   cx2.restore();
 
+  // ── Minimap (outside camera transform) ──
+  if(showMinimap)drawMinimap();
+
   ui();
+}
+
+function drawMinimap(){
+  const mc=document.getElementById('mmc');if(!mc)return;
+  const mx2=mc.getContext('2d');
+  const w=sim.world,W=w.w,H=w.h;
+  const sw=150,sh=100;
+  mx2.clearRect(0,0,sw,sh);
+  const sx=sw/W,sy=sh/H;
+  // Terrain
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const b=w.terrain[y*W+x];
+    mx2.fillStyle=BIOME_COL[b];mx2.fillRect(x*sx,y*sy,sx+.5,sy+.5);
+  }
+  // Humans as dots
+  for(const h of w.humans){if(!h.alive)continue;
+    mx2.fillStyle=h.tribe?h.tribe.color:'#fff';
+    mx2.fillRect(h.x*sx-1,h.y*sy-1,2,2);
+  }
+  // Viewport rectangle
+  const C=cs0();const cont=document.getElementById('wc');
+  const vw=cont.clientWidth/(C*camZoom),vh=cont.clientHeight/(C*camZoom);
+  mx2.strokeStyle='#e8a040';mx2.lineWidth=1.5;
+  mx2.strokeRect(camX*sx,camY*sy,vw*sx,vh*sy);
+  // Click handler for minimap
+  if(!mc._hasClick){mc._hasClick=true;mc.addEventListener('click',(e)=>{
+    const rect=mc.getBoundingClientRect();
+    camX=(e.clientX-rect.left)/sx-30/camZoom;camY=(e.clientY-rect.top)/sy-20/camZoom;
+    followTarget=null;
+  })}
 }
 
 function ui(){
