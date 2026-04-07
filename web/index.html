@@ -271,6 +271,44 @@ const STRUCT_CHAR=['🏠','🔥','📦','🗿','🧱','🌾','⚱'];
 class Structure{constructor(type,x,y,tribe){this.type=type;this.x=x;this.y=y;this.tribe=tribe;this.hp=20;this.age=0}}
 
 // ═══════════════════════════════════════════════════════════
+//  BELIEF SYSTEM — Emergent religion/ideology
+// ═══════════════════════════════════════════════════════════
+const BELIEFS=['ancestor worship','sun worship','nature spirits','river god','sky father',
+  'earth mother','fire cult','moon worship','animal totems','dream walkers'];
+const TABOOS=['eating alone','crossing rivers at night','building on mountains','killing wolves',
+  'speaking during hunts','touching the dead','wasting food','trading with strangers'];
+
+// ═══════════════════════════════════════════════════════════
+//  REPUTATION / SOCIAL HIERARCHY
+// ═══════════════════════════════════════════════════════════
+function calcReputation(h){
+  return h.kills*3 + h.taught*2 + h.children*1.5 + (h.skills.fight>.5?2:0) +
+    (h.skills.social>.5?2:0) + (h.age>40?3:0) + (h.tool>=3?2:0);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRIBAL MEMORY — Collective knowledge that persists
+// ═══════════════════════════════════════════════════════════
+class TribalMemory{
+  constructor(){
+    this.goodLocations=[];// {x,y,food} — remembered resource-rich areas
+    this.dangerZones=[];// {x,y,what} — remembered threats
+    this.enemies=[];// tribe names that attacked
+    this.allies=[];// tribe names that traded
+    this.stories=[];// narrative strings passed down
+  }
+  rememberFood(x,y,food){
+    if(this.goodLocations.length>10)this.goodLocations.shift();
+    this.goodLocations.push({x:F(x),y:F(y),food});
+  }
+  rememberDanger(x,y,what){
+    if(this.dangerZones.length>8)this.dangerZones.shift();
+    this.dangerZones.push({x:F(x),y:F(y),what});
+  }
+  addStory(s){this.stories.push(s);if(this.stories.length>10)this.stories.shift()}
+}
+
+// ═══════════════════════════════════════════════════════════
 //  TRIBE
 // ═══════════════════════════════════════════════════════════
 let _ti=0;
@@ -283,7 +321,8 @@ class Tribe{
     this.culture=R();
     // ── Language: unique word set that evolves ──
     this.words={food:this._word(),water:this._word(),danger:this._word(),fire:this._word(),
-      hello:this._word(),hunt:this._word(),build:this._word(),war:this._word()};
+      hello:this._word(),hunt:this._word(),build:this._word(),war:this._word(),
+      god:this._word(),death:this._word(),love:this._word(),home:this._word()};
     // ── Legends: greatest members remembered ──
     this.legends=[];// {name, deed, year}
     // ── Phenotype: skin tone drifts per tribe ──
@@ -291,6 +330,15 @@ class Tribe{
     this.skinLight=35+F(R()*30);// lightness %
     // ── Migration state ──
     this.migrating=false;this.migTarget=null;this.migTicks=0;
+    // ── Belief system ──
+    this.belief=BELIEFS[F(R()*BELIEFS.length)];
+    this.taboo=TABOOS[F(R()*TABOOS.length)];
+    this.faithStr=.2+R()*.3;// how strongly they hold beliefs
+    // ── Tribal memory ──
+    this.memory=new TribalMemory();
+    // ── Social hierarchy ──
+    this.leaderId=null;// most reputable member
+    this.leaderName=null;
   }
   get sz(){return this.members.size}
   get color(){return`hsl(${this.hue},60%,50%)`}
@@ -552,8 +600,16 @@ class Human{
     const spd=this.speed*.5;
     const biome=world.terrain[world.ix(F(this.x),F(this.y))];
     const bSpd=BIOME_WALK[biome];
-    this.x+=dx/d*spd*bSpd;this.y+=dy/d*spd*bSpd;
-    this.x=((this.x%world.w)+world.w)%world.w;this.y=((this.y%world.h)+world.h)%world.h;
+    const nx=this.x+dx/d*spd*bSpd,ny=this.y+dy/d*spd*bSpd;
+    const nxw=((nx%world.w)+world.w)%world.w,nyw=((ny%world.h)+world.h)%world.h;
+    // Don't walk into water or mountains
+    const destBiome=world.terrain[world.ix(F(nxw),F(nyw))];
+    if(destBiome===BIOME.WATER||destBiome===BIOME.MOUNTAIN){
+      this.x+=(R()-.5)*1.5;this.y+=(R()-.5)*1.5;// bounce randomly
+      this.x=((this.x%world.w)+world.w)%world.w;this.y=((this.y%world.h)+world.h)%world.h;
+      return;
+    }
+    this.x=nxw;this.y=nyw;
     this.tx.push(this.x);this.ty.push(this.y);if(this.tx.length>10){this.tx.shift();this.ty.shift()}
   }
 
@@ -577,7 +633,7 @@ class Human{
       }
     }
     const got=world.res.take(this.x,this.y,'food',0.8+this.skills.gather*.8+(this.tool>=2?.5:0));
-    if(got>.05){this.hunger=mx(0,this.hunger-got*20);this.skills.gather=mn(1,this.skills.gather+.002);
+    if(got>.05){this.hunger=mx(0,this.hunger-got*20);this.skills.gather=mn(1,this.skills.gather+.001*(1-this.skills.gather));
       if(this.carrying.food<5)this.carrying.food+=got*.3;return}
     if(this.skills.hunt>.3&&this.tool>=1&&R()<.1){
       this.hunger=mx(0,this.hunger-20);this.skills.hunt=mn(1,this.skills.hunt+.003);
@@ -822,6 +878,7 @@ class World{
     if(this.tick%20===0)this._updateTribes(bus);
     if(this.tick%30===0)this._checkWar(bus);
     if(this.tick%50===0)this._checkMigration(bus);
+    if(this.tick%40===0)this._updateLeadersAndBeliefs(bus);
 
     for(const tribe of this.tribes){
       if(!tribe.hasTech('farming')&&tribe.sz>6){
@@ -873,6 +930,36 @@ class World{
       }
     }
     this.tribes=this.tribes.filter(t=>t.sz>0);
+    // ── Tribal schism: large tribes can split ──
+    for(const tribe of [...this.tribes]){
+      if(tribe.sz>15&&R()<.008){
+        // Rebels form new tribe
+        const rebels=[];const members=[...tribe.members];
+        const splitN=F(tribe.sz*.3);
+        for(let i=0;i<splitN&&members.length;i++){
+          const mid=members.splice(F(R()*members.length),1)[0];
+          const m=this.humans.find(h=>h.id===mid&&h.alive);
+          if(m)rebels.push(m);
+        }
+        if(rebels.length>=3){
+          const newTribe=new Tribe(tribe.hue+60+R()*60);
+          newTribe.homeX=rebels[0].x;newTribe.homeY=rebels[0].y;
+          // Inherit some tech but different belief
+          for(const[k,v]of Object.entries(tribe.techs))if(v&&R()<.7)newTribe.techs[k]=1;
+          newTribe.belief=BELIEFS[F(R()*BELIEFS.length)];// new belief!
+          newTribe.skinBase=tribe.skinBase+F((R()-.5)*10);
+          newTribe.skinLight=tribe.skinLight+F((R()-.5)*8);
+          for(const m of rebels){tribe.members.delete(m.id);m.tribe=newTribe;newTribe.members.add(m.id);
+            m.phenoHue=newTribe.skinBase+F((R()-.5)*5);m.phenoLight=newTribe.skinLight+F((R()-.5)*4)}
+          this.tribes.push(newTribe);
+          newTribe.adjustRelation(tribe.id,-.3);tribe.adjustRelation(newTribe.id,-.3);
+          tribe.memory.addStory(`The ${newTribe.name} split from the ${tribe.name}, rejecting ${tribe.belief}`);
+          newTribe.memory.addStory(`We broke free from the ${tribe.name} and follow ${newTribe.belief}`);
+          bus.emit(E.TRIBE_FORM,newTribe.id,{name:newTribe.name,size:newTribe.sz});
+          try{showToast(`⚡ SCHISM! ${newTribe.name} splits from ${tribe.name}!`,'war')}catch(e){}
+        }
+      }
+    }
   }
 
   _checkWar(bus){
@@ -880,9 +967,21 @@ class World{
       for(const b of this.tribes){
         if(a.id===b.id)continue;
         const dx=abs(a.homeX-b.homeX),dy=abs(a.homeY-b.homeY);
-        if(dx>10||dy>10)continue;
+        if(dx>15||dy>15)continue;
+        // Proximity breeds tension — close tribes drift toward hostility
+        const dist=sqrt(dx*dx+dy*dy);
+        if(dist<8){a.adjustRelation(b.id,-.01);b.adjustRelation(a.id,-.01)}
+        // Resource competition
+        const homeFood=this.res.get(a.homeX,a.homeY,'food');
+        if(homeFood<2&&dist<10){a.adjustRelation(b.id,-.02)}
+        // Religious tension: different beliefs + high faith = more hostile
+        if(a.belief!==b.belief&&(a.faithStr>.5||b.faithStr>.5)){
+          a.adjustRelation(b.id,-.008*mx(a.faithStr,b.faithStr));
+        }
+        // Same belief = bonding
+        if(a.belief===b.belief&&dist<12){a.adjustRelation(b.id,.005);b.adjustRelation(a.id,.005)}
         const rel=a.relation(b.id);
-        if(rel<-.3&&a.sz>=3&&b.sz>=3&&R()<.02){
+        if(rel<-.2&&a.sz>=3&&b.sz>=3&&R()<.03){
           const aPow=a.sz*([...a.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
           const bPow=b.sz*([...b.members].reduce((s,mid)=>{const m=this.humans.find(h=>h.id===mid);return s+(m?m.skills.fight+m.tool*.2:0)},0));
           const aWin=R()*aPow>R()*bPow;
@@ -901,6 +1000,47 @@ class World{
           if(particles)particles.emit(loser.homeX,loser.homeY,20,{vx:0,vy:-.1,vxR:1,vyR:.8,life:20,lifeR:10,r:220,g:40,b:30,a:.7,sz:2.5,spread:3});
           for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m){m.skills.fight=mn(1,m.skills.fight+.02);if(m.kills>2)winner.addLegend(m.name,'great warrior',this.year)}}
         }
+      }
+    }
+  }
+
+  _updateLeadersAndBeliefs(bus){
+    for(const tribe of this.tribes){
+      if(tribe.sz<2)continue;
+      // Elect leader by reputation
+      let bestRep=-1,bestH=null;
+      for(const mid of tribe.members){
+        const m=this.humans.find(h=>h.id===mid&&h.alive);
+        if(!m)continue;
+        const rep=calcReputation(m);
+        if(rep>bestRep){bestRep=rep;bestH=m}
+      }
+      if(bestH){
+        const oldLeader=tribe.leaderId;
+        tribe.leaderId=bestH.id;tribe.leaderName=bestH.name;
+        if(oldLeader!==bestH.id&&oldLeader){
+          // Leadership change! Add legend for long-serving leaders
+          tribe.addLegend(bestH.name,'became chief',this.year);
+          tribe.memory.addStory(`${bestH.name} rose to lead the ${tribe.name}`);
+        }
+      }
+      // Faith strengthens with rituals, weakens without
+      if(tribe.rituals>tribe.sz*2)tribe.faithStr=mn(1,tribe.faithStr+.005);
+      else tribe.faithStr=mx(.05,tribe.faithStr-.002);
+      // Beliefs can shift through contact with other tribes
+      for(const other of this.tribes){
+        if(other.id===tribe.id)continue;
+        if(tribe.relation(other.id)>.5&&R()<.005){// allied tribes exchange beliefs
+          if(other.faithStr>tribe.faithStr+.2){
+            tribe.belief=other.belief;// adopt stronger tribe's belief
+            tribe.memory.addStory(`The ${tribe.name} adopted ${other.belief} from the ${other.name}`);
+          }
+        }
+      }
+      // Remember tribal knowledge
+      if(bestH){
+        const food=this.res.get(bestH.x,bestH.y,'food');
+        if(food>3)tribe.memory.rememberFood(bestH.x,bestH.y,food);
       }
     }
   }
@@ -1654,7 +1794,12 @@ function draw(){
     cx2.fillStyle=tribe.color.replace(')',`,${alpha})`).replace('hsl','hsla');
     cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*7,0,PI*2);cx2.fill();
     cx2.fillStyle=tribe.color;cx2.font=`bold ${mx(10,F(C*.7))}px monospace`;cx2.textAlign='center';
-    cx2.fillText(`${tribe.name} (${tribe.sz})`,tribe.homeX*C+C/2,tribe.homeY*C-C*4);
+    cx2.fillText(`${tribe.name} (${tribe.sz})`,tribe.homeX*C+C/2,tribe.homeY*C-C*5);
+    // Belief + leader subtitle
+    cx2.font=`${mx(7,F(C*.45))}px monospace`;
+    cx2.fillStyle=tribe.color.replace('60%','40%');
+    const sub=`${tribe.belief||''}${tribe.leaderName?' · 👑'+tribe.leaderName:''}`;
+    cx2.fillText(sub,tribe.homeX*C+C/2,tribe.homeY*C-C*3.2);
   }
 
   // ── Animals ──
@@ -1834,8 +1979,9 @@ function ui(){
   leg.innerHTML=sorted.slice(0,4).map(t=>{
     const techs=Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>({fire:'🔥',farming:'🌾',language:'💬',burial:'⚱',domestication:'🐕',monument:'🗿'}[k]||'✦')).join('');
     const migIcon=t.migrating?'🚶':'';
-    const legendStr=t.legends.length?` 📜${t.legends.length}`:'';
-    return`<span style="color:${t.color}">■</span>${t.name}(${t.sz})${techs}${migIcon}${legendStr}`;
+    const legendStr=t.legends.length?`📜${t.legends.length}`:'';
+    const leader=t.leaderName?`👑${t.leaderName}`:'';
+    return`<span style="color:${t.color}">■</span>${t.name}(${t.sz})${techs}${migIcon}${legendStr} <span style="color:#8a7a60">${leader}</span>`;
   }).join(' ');
 
   spark('s1',sim.st.pH,'#7dce82');
