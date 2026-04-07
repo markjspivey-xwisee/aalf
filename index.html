@@ -268,7 +268,7 @@ const TECHS={fire:0,hut:0,farming:0,burial:0,language:0,pottery:0,domestication:
 const STRUCT={HUT:0,FIRE_PIT:1,STORAGE:2,MONUMENT:3,WALL:4,FARM:5,BURIAL:6};
 const STRUCT_NAME=['hut','fire pit','storage','monument','wall','farm','burial mound'];
 const STRUCT_CHAR=['🏠','🔥','📦','🗿','🧱','🌾','⚱'];
-class Structure{constructor(type,x,y,tribe){this.type=type;this.x=x;this.y=y;this.tribe=tribe;this.hp=10;this.age=0}}
+class Structure{constructor(type,x,y,tribe){this.type=type;this.x=x;this.y=y;this.tribe=tribe;this.hp=20;this.age=0}}
 
 // ═══════════════════════════════════════════════════════════
 //  TRIBE
@@ -348,12 +348,16 @@ class Animal{
       // Random wander
       this.vx+=(R()-.5)*.04;this.vy+=(R()-.5)*.04;
     }
-    // Avoid water and mountains
-    const b=world.terrain[world.ix(F(this.x),F(this.y))];
-    if(b===BIOME.WATER||b===BIOME.MOUNTAIN){this.vx*=-0.5;this.vy*=-0.5;this.vx+=(R()-.5)*.2;this.vy+=(R()-.5)*.2}
+    // Avoid water and mountains — push back hard
     const spd=0.3;const v=sqrt(this.vx*this.vx+this.vy*this.vy)||1;
     if(v>spd){this.vx=this.vx/v*spd;this.vy=this.vy/v*spd}
-    this.x+=this.vx;this.y+=this.vy;
+    const nx=this.x+this.vx,ny=this.y+this.vy;
+    const nb=world.terrain[world.ix(F(nx),F(ny))];
+    if(nb===BIOME.WATER||nb===BIOME.MOUNTAIN){this.vx*=-1;this.vy*=-1;this.vx+=(R()-.5)*.3;this.vy+=(R()-.5)*.3}
+    else{this.x=nx;this.y=ny}
+    // Rescue if somehow stuck on water
+    const cb=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(cb===BIOME.WATER||cb===BIOME.MOUNTAIN){this.x+=2*(R()-.5);this.y+=2*(R()-.5)}
   }
   _tickWolf(world,isNight){
     // More active at night
@@ -393,11 +397,14 @@ class Animal{
       if(n>0){this.vx+=cx/n*.02;this.vy+=cy/n*.02}
       this.vx+=(R()-.5)*.05*actMult;this.vy+=(R()-.5)*.05*actMult;
     }
-    const b=world.terrain[world.ix(F(this.x),F(this.y))];
-    if(b===BIOME.WATER){this.vx*=-0.5;this.vy*=-0.5}
     const spd=0.35*actMult;const v=sqrt(this.vx*this.vx+this.vy*this.vy)||1;
     if(v>spd){this.vx=this.vx/v*spd;this.vy=this.vy/v*spd}
-    this.x+=this.vx;this.y+=this.vy;
+    const nx=this.x+this.vx,ny=this.y+this.vy;
+    const nb=world.terrain[world.ix(F(nx),F(ny))];
+    if(nb===BIOME.WATER||nb===BIOME.MOUNTAIN){this.vx*=-1;this.vy*=-1}
+    else{this.x=nx;this.y=ny}
+    const cb=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(cb===BIOME.WATER){this.x+=2*(R()-.5);this.y+=2*(R()-.5)}
   }
   _tickBoar(world,isNight){
     // Aggressive when humans near
@@ -422,11 +429,14 @@ class Animal{
       // Solitary wander
       this.vx+=(R()-.5)*.05;this.vy+=(R()-.5)*.05;
     }
-    const b=world.terrain[world.ix(F(this.x),F(this.y))];
-    if(b===BIOME.WATER){this.vx*=-0.5;this.vy*=-0.5}
     const spd=0.25;const v=sqrt(this.vx*this.vx+this.vy*this.vy)||1;
     if(v>spd){this.vx=this.vx/v*spd;this.vy=this.vy/v*spd}
-    this.x+=this.vx;this.y+=this.vy;
+    const nx=this.x+this.vx,ny=this.y+this.vy;
+    const nb=world.terrain[world.ix(F(nx),F(ny))];
+    if(nb===BIOME.WATER||nb===BIOME.MOUNTAIN){this.vx*=-1;this.vy*=-1}
+    else{this.x=nx;this.y=ny}
+    const cb=world.terrain[world.ix(F(this.x),F(this.y))];
+    if(cb===BIOME.WATER){this.x+=2*(R()-.5);this.y+=2*(R()-.5)}
   }
 }
 
@@ -512,7 +522,7 @@ class Human{
 
     const roll=R();
     if(roll<.12&&this.skills.craft>.2)this._craft(bus,world);
-    else if(roll<.2&&this.skills.build>.2&&this.tribe)this._build(bus,world);
+    else if(roll<.22&&this.skills.build>.1&&this.tribe)this._build(bus,world);
     else if(roll<.28&&this.skills.farm>.2&&this.tribe&&this.tribe.hasTech('farming'))this._doFarm(bus,world);
     else if(roll<.45)this._seekFood(world,bus);
     else if(roll<.65&&this.tribe)this._socialize(world,bus);
@@ -595,7 +605,7 @@ class Human{
     this.task='crafting';
     const stone=world.res.take(this.x,this.y,'stone',.3);
     if(stone>.1&&this.tool<5){
-      if(R()<this.skills.craft*.15){
+      if(R()<this.skills.craft*.2+.01){
         this.tool=mn(5,this.tool+1);
         this.skills.craft=mn(1,this.skills.craft+.01);
         bus.emit(E.TOOL,this.id,{name:this.name,tool:TOOL_NAME[this.tool]});
@@ -610,10 +620,12 @@ class Human{
 
   _build(bus,world){
     this.task='building';
+    // Don't overbuild — max ~3 structures per tribe member
+    if(this.tribe&&this.tribe.structures.length>=this.tribe.sz*3)return;
     const wood=world.res.take(this.x,this.y,'wood',.5);
     const stone=world.res.take(this.x,this.y,'stone',.3);
     if(wood<.2&&stone<.1)return;
-    if(R()<this.skills.build*.1){
+    if(R()<this.skills.build*.2+.02){
       let type=STRUCT.HUT;
       if(this.tribe?.hasTech('fire')&&R()<.3)type=STRUCT.FIRE_PIT;
       if(this.tribe?.hasTech('farming')&&R()<.2)type=STRUCT.FARM;
@@ -766,7 +778,7 @@ class World{
 
     for(const s of this.structures){s.age++;
       if(s.type===STRUCT.FARM)this.res.add(s.x,s.y,'food',.15*this.sMult);
-      if(s.hp<=0)continue;s.hp-=.01;
+      if(s.hp<=0)continue;s.hp-=.002;// decay over ~5000 ticks (~100 years)
     }
     this.structures=this.structures.filter(s=>s.hp>0);
 
