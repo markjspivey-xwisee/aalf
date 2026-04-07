@@ -6,874 +6,791 @@
 <title>AALF — Autopoietic Artificial Life Forms</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#06090f;color:#c8d6e5;font-family:'JetBrains Mono','Fira Code','Courier New',monospace;overflow:hidden}
-#app{display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;height:100vh}
-header{grid-column:1/-1;padding:8px 16px;background:linear-gradient(90deg,#0a0f1a,#101828);border-bottom:1px solid #1a2540;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
-header h1{font-size:16px;color:#00e5ff;letter-spacing:2px}
-header .sub{font-size:10px;color:#4a5a6a;margin-left:8px}
-.controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.controls button{background:#1a2540;border:1px solid #2a3a55;color:#8ecae6;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s}
-.controls button:hover{background:#2a3a55;color:#00e5ff}
-.controls button.active{background:#00e5ff22;border-color:#00e5ff;color:#00e5ff}
-.controls button.danger{border-color:#ff525255}
-.controls button.danger:hover{background:#ff525222;color:#ff5252}
-.controls select,.controls input[type=range]{background:#1a2540;border:1px solid #2a3a55;color:#8ecae6;padding:3px 6px;border-radius:4px;font-family:inherit;font-size:11px}
-.controls label{font-size:10px;color:#4a5a6a}
-#world-container{position:relative;overflow:hidden;background:#050810}
-#world-canvas{display:block;width:100%;height:100%}
-#sidebar{background:#0a0f1a;border-left:1px solid #1a2540;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;font-size:11px}
-.panel{background:#0f1520;border:1px solid #1a253a;border-radius:5px;padding:8px}
-.panel h3{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#4a6a8a;margin-bottom:6px;border-bottom:1px solid #151f30;padding-bottom:4px}
-.stat-row{display:flex;justify-content:space-between;padding:1px 0}
-.stat-label{color:#4a5a6a}
-.stat-value{font-weight:bold}
-.v-green{color:#00e676}.v-red{color:#ff5252}.v-cyan{color:#00e5ff}.v-yellow{color:#ffd740}.v-magenta{color:#e040fb}.v-orange{color:#ff9100}
-.sparkline-container{height:32px;margin-top:4px;position:relative}
-.sparkline-container canvas{width:100%;height:100%}
-.event-log{max-height:140px;overflow-y:auto;font-size:10px;line-height:1.5}
-.event-log .entry{padding:1px 3px;border-radius:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.event-log .entry:nth-child(odd){background:#080c16}
-.species-bar{display:flex;height:8px;border-radius:3px;overflow:hidden;margin-top:4px}
-.species-bar div{min-width:2px;transition:width .3s}
-.genome-map{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-top:4px}
-.genome-map .g-cell{height:12px;border-radius:2px;position:relative}
-.genome-map .g-cell .g-bar{position:absolute;bottom:0;left:0;right:0;border-radius:2px}
-footer{grid-column:1/-1;padding:4px 16px;background:#0a0f1a;border-top:1px solid #1a2540;font-size:10px;color:#3a4a5a;display:flex;justify-content:space-between;align-items:center}
-.legend{display:flex;gap:12px;align-items:center}
-.legend-item{display:flex;align-items:center;gap:3px}
-.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-#tooltip{position:absolute;background:#0f1828ee;border:1px solid #2a3a55;border-radius:6px;padding:8px 10px;font-size:10px;pointer-events:none;display:none;z-index:10;max-width:240px;line-height:1.5}
-#tooltip .tt-id{color:#00e5ff;font-weight:bold;font-size:11px}
-#tooltip .tt-row{display:flex;justify-content:space-between;gap:10px}
-.tab-bar{display:flex;gap:2px;margin-bottom:6px}
-.tab-bar button{flex:1;background:#0a1020;border:1px solid #1a253a;color:#4a6a8a;padding:3px;border-radius:3px 3px 0 0;cursor:pointer;font-size:9px;font-family:inherit}
-.tab-bar button.active{background:#0f1520;border-bottom-color:#0f1520;color:#8ecae6}
-.tab-content{display:none}
-.tab-content.active{display:block}
-@media(max-width:900px){#app{grid-template-columns:1fr}#sidebar{display:none}}
+:root{--bg:#05080e;--panel:#0a1018;--border:#152035;--dim:#3a4a5a;--text:#b0c4d8}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;overflow:hidden;font-size:11px}
+#app{display:grid;grid-template-columns:1fr 330px;grid-template-rows:auto 1fr auto;height:100vh}
+header{grid-column:1/-1;padding:6px 12px;background:linear-gradient(90deg,#080e18,#0e1828);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
+header h1{font-size:15px;color:#00e5ff;letter-spacing:2px}
+header .sub{font-size:9px;color:#3a4a5a;margin-left:6px}
+.cg{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.cg button{background:#12203a;border:1px solid #1e3050;color:#7ab8d8;padding:3px 8px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:10px;transition:all .12s}
+.cg button:hover{background:#1e3050;color:#00e5ff}
+.cg button.on{background:#00e5ff18;border-color:#00e5ff55;color:#00e5ff}
+.cg button.dn{border-color:#ff525255}.cg button.dn:hover{background:#ff525218;color:#ff5252}
+.cg select,.cg input[type=range]{background:#12203a;border:1px solid #1e3050;color:#7ab8d8;padding:2px 4px;border-radius:3px;font-family:inherit;font-size:10px}
+.cg label{font-size:9px;color:#3a4a5a}
+#wc{position:relative;overflow:hidden;background:#030508}
+#wc canvas{display:block;width:100%;height:100%}
+#sb{background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:#1e3050 transparent}
+.p{background:#0c1520;border:1px solid #152030;border-radius:4px;padding:6px}
+.p h3{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#3a5a7a;margin-bottom:4px;border-bottom:1px solid #15202e;padding-bottom:3px}
+.sr{display:flex;justify-content:space-between;padding:1px 0}.sl{color:#3a4a5a}.sv{font-weight:bold}
+.vg{color:#00e676}.vr{color:#ff5252}.vc{color:#00e5ff}.vy{color:#ffd740}.vm{color:#e040fb}.vo{color:#ff9100}.vb{color:#448aff}
+.sc{height:28px;margin-top:3px;position:relative}.sc canvas{width:100%;height:100%}
+.el{max-height:120px;overflow-y:auto;font-size:9px;line-height:1.4;scrollbar-width:thin}
+.el .e{padding:1px 2px;border-radius:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.el .e:nth-child(odd){background:#060a14}
+.sb{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:3px}.sb div{min-width:1px;transition:width .3s}
+.gm{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;margin-top:3px}
+.gm .gc{height:14px;border-radius:1px;position:relative;background:#080c18}
+.gm .gc .gb{position:absolute;bottom:0;left:0;right:0;border-radius:1px}
+.tb{display:flex;gap:1px;margin-bottom:4px}
+.tb button{flex:1;background:#080e1a;border:1px solid #152030;color:#3a5a7a;padding:2px;border-radius:2px 2px 0 0;cursor:pointer;font-size:8px;font-family:inherit}
+.tb button.on{background:#0c1520;border-bottom-color:#0c1520;color:#7ab8d8}
+.tc{display:none}.tc.on{display:block}
+.nn-vis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:3px}
+.nn-node{width:100%;aspect-ratio:1;border-radius:50%;border:1px solid #1e3050}
+footer{grid-column:1/-1;padding:3px 12px;background:var(--panel);border-top:1px solid var(--border);font-size:9px;color:#2a3a4a;display:flex;justify-content:space-between;align-items:center}
+.lg{display:flex;gap:10px;align-items:center}.li{display:flex;align-items:center;gap:2px}
+.ld{width:7px;height:7px;border-radius:50%;display:inline-block}
+#tt{position:absolute;background:#0c1525ee;border:1px solid #2a3a55;border-radius:5px;padding:6px 8px;font-size:9px;pointer-events:none;display:none;z-index:10;max-width:260px;line-height:1.4}
+#tt .ti{color:#00e5ff;font-weight:bold;font-size:10px}
+#tt .tr{display:flex;justify-content:space-between;gap:8px}
+@media(max-width:800px){#app{grid-template-columns:1fr}#sb{display:none}}
 </style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <div style="display:flex;align-items:baseline">
-      <h1>AALF</h1>
-      <span class="sub">Autopoietic Artificial Life &mdash; Emergent Complexity Simulation</span>
-    </div>
-    <div class="controls">
-      <button id="btn-pause" class="active">&#9654; Run</button>
-      <button id="btn-step">Step</button>
-      <button id="btn-spawn">+Spawn</button>
-      <button id="btn-predator">+Predator</button>
-      <button id="btn-cataclysm" class="danger">Cataclysm</button>
-      <button id="btn-reset">Reset</button>
-      <label>Speed<input id="speed" type="range" min="1" max="120" value="20" style="width:70px;vertical-align:middle"></label>
-      <label>View<select id="view-mode"><option value="normal">Normal</option><option value="species">Species</option><option value="energy">Energy</option><option value="trophic">Trophic</option><option value="bonds">Bonds</option><option value="signals">Signals</option></select></label>
-    </div>
-  </header>
-  <div id="world-container">
-    <canvas id="world-canvas"></canvas>
-    <div id="tooltip"></div>
-  </div>
-  <div id="sidebar">
-    <div class="panel">
-      <h3>Ecosystem</h3>
-      <div class="stat-row"><span class="stat-label">Tick</span><span id="s-tick" class="stat-value v-cyan">0</span></div>
-      <div class="stat-row"><span class="stat-label">Population</span><span id="s-pop" class="stat-value v-green">0</span></div>
-      <div class="stat-row"><span class="stat-label">Species</span><span id="s-species" class="stat-value v-magenta">0</span></div>
-      <div class="stat-row"><span class="stat-label">Producers</span><span id="s-producers" class="stat-value v-green">0</span></div>
-      <div class="stat-row"><span class="stat-label">Predators</span><span id="s-predators" class="stat-value v-red">0</span></div>
-      <div class="stat-row"><span class="stat-label">Colonies</span><span id="s-colonies" class="stat-value v-yellow">0</span></div>
-      <div class="stat-row"><span class="stat-label">Symbioses</span><span id="s-symbioses" class="stat-value v-cyan">0</span></div>
-      <div class="stat-row"><span class="stat-label">Births / Deaths</span><span id="s-bd" class="stat-value">0/0</span></div>
-      <div class="stat-row"><span class="stat-label">Max Gen.</span><span id="s-gen" class="stat-value v-yellow">0</span></div>
-      <div class="stat-row"><span class="stat-label">Events</span><span id="s-events" class="stat-value">0</span></div>
-    </div>
-    <div class="panel">
-      <h3>Species Distribution</h3>
-      <div id="species-bar" class="species-bar"></div>
-      <div id="species-legend" style="margin-top:4px;font-size:9px"></div>
-    </div>
-    <div class="panel">
-      <div class="tab-bar">
-        <button class="active" data-tab="pop-tab">Population</button>
-        <button data-tab="diversity-tab">Diversity</button>
-        <button data-tab="trophic-tab">Trophic</button>
-      </div>
-      <div id="pop-tab" class="tab-content active"><div class="sparkline-container"><canvas id="spark-pop"></canvas></div></div>
-      <div id="diversity-tab" class="tab-content"><div class="sparkline-container"><canvas id="spark-diversity"></canvas></div></div>
-      <div id="trophic-tab" class="tab-content"><div class="sparkline-container"><canvas id="spark-trophic"></canvas></div></div>
-    </div>
-    <div class="panel">
-      <h3>Genome Diversity</h3>
-      <div id="genome-map" class="genome-map"></div>
-    </div>
-    <div class="panel">
-      <h3>Event Log <span style="color:#3a4a5a">(subscriptions)</span></h3>
-      <div id="event-log" class="event-log"></div>
-    </div>
-  </div>
-  <footer>
-    <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:#00e676"></span>Producer</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#ff5252"></span>Predator</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#ffd740"></span>Scavenger</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#e040fb"></span>Parasite</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#00e5ff"></span>Dividing</span>
-      <span class="legend-item"><span class="legend-dot" style="background:rgba(255,255,100,0.3)"></span>Signal field</span>
-      <span style="color:#2a3a55">|</span>
-      <span class="legend-item" style="color:#3a5a4a">Lines=bonds</span>
-    </div>
-    <div>Hover for details &bull; View modes show different layers</div>
-  </footer>
+<header>
+<div style="display:flex;align-items:baseline">
+<h1>AALF</h1><span class="sub">Autopoietic Artificial Life &mdash; Emergent Neural Ecosystem</span>
+</div>
+<div class="cg">
+<button id="bp" class="on">&#9654;</button>
+<button id="bs">Step</button>
+<button id="ba">+Life</button>
+<button id="br">+Pred</button>
+<button id="bd" class="dn">Cataclysm</button>
+<button id="bx">Reset</button>
+<label>Spd<input id="spd" type="range" min="1" max="200" value="30" style="width:60px"></label>
+<label>View<select id="vm"><option value="eco">Ecosystem</option><option value="sp">Species</option><option value="nn">Neural</option><option value="nrg">Energy</option><option value="tr">Trophic</option><option value="ph">Pheromone</option><option value="ter">Territory</option><option value="age">Life Stage</option></select></label>
+</div>
+</header>
+<div id="wc"><canvas id="cv"></canvas><div id="tt"></div></div>
+<div id="sb">
+<div class="p">
+<h3>Ecosystem</h3>
+<div class="sr"><span class="sl">Tick</span><span id="xt" class="sv vc">0</span></div>
+<div class="sr"><span class="sl">Season</span><span id="xsn" class="sv vy">—</span></div>
+<div class="sr"><span class="sl">Population</span><span id="xp" class="sv vg">0</span></div>
+<div class="sr"><span class="sl">Species</span><span id="xs" class="sv vm">0</span></div>
+<div class="sr"><span class="sl">Prod / Pred / Scav / Para</span><span id="xtr" class="sv">—</span></div>
+<div class="sr"><span class="sl">Colonies</span><span id="xco" class="sv vy">0</span></div>
+<div class="sr"><span class="sl">Dormant</span><span id="xdo" class="sv vb">0</span></div>
+<div class="sr"><span class="sl">Births / Deaths</span><span id="xbd" class="sv">0/0</span></div>
+<div class="sr"><span class="sl">Sexual / Asex</span><span id="xrp" class="sv">0/0</span></div>
+<div class="sr"><span class="sl">HGT Events</span><span id="xhgt" class="sv vo">0</span></div>
+<div class="sr"><span class="sl">Max Gen</span><span id="xg" class="sv vy">0</span></div>
+<div class="sr"><span class="sl">Events</span><span id="xev" class="sv">0</span></div>
+</div>
+<div class="p">
+<h3>Species</h3>
+<div id="spb" class="sb"></div>
+<div id="spl" style="margin-top:2px;font-size:8px"></div>
+</div>
+<div class="p">
+<div class="tb">
+<button class="on" data-t="pt">Pop</button>
+<button data-t="dt">Diversity</button>
+<button data-t="tt2">Trophic</button>
+<button data-t="st">Season</button>
+</div>
+<div id="pt" class="tc on"><div class="sc"><canvas id="s1"></canvas></div></div>
+<div id="dt" class="tc"><div class="sc"><canvas id="s2"></canvas></div></div>
+<div id="tt2" class="tc"><div class="sc"><canvas id="s3"></canvas></div></div>
+<div id="st" class="tc"><div class="sc"><canvas id="s4"></canvas></div></div>
+</div>
+<div class="p">
+<h3>Genome Traits</h3>
+<div id="gmap" class="gm"></div>
+<div style="margin-top:2px;font-size:7px;color:#2a3a4a;display:flex;justify-content:space-between"><span>Agg</span><span>Tox</span><span>Cop</span><span>Spd</span><span>Arm</span><span>Nic</span><span>Par</span><span>Dor</span></div>
+</div>
+<div class="p">
+<h3>Neural Activity</h3>
+<div id="nnv" class="nn-vis"></div>
+<div id="nnl" style="margin-top:2px;font-size:8px;color:#3a4a5a"></div>
+</div>
+<div class="p">
+<h3>Event Log</h3>
+<div id="elog" class="el"></div>
+</div>
+</div>
+<footer>
+<div class="lg">
+<span class="li"><span class="ld" style="background:#00e676"></span>Prod</span>
+<span class="li"><span class="ld" style="background:#ff5252"></span>Pred</span>
+<span class="li"><span class="ld" style="background:#ffd740"></span>Scav</span>
+<span class="li"><span class="ld" style="background:#e040fb"></span>Para</span>
+<span class="li"><span class="ld" style="background:#448aff"></span>Dormant</span>
+<span class="li"><span class="ld" style="background:#ffffff55"></span>Egg</span>
+<span class="li" style="color:#1e3050">|</span>
+<span class="li" style="color:#2a3a4a">🧠=neural 🔗=bonds 💠=quorum ⚡=HGT</span>
+</div>
+<div>Hover for details</div>
+</footer>
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════
-//  EVENT BUS — Subscription System
+//  CORE ENGINE
 // ═══════════════════════════════════════════════════════════
-class EventBus {
-  constructor() { this._subs = new Map(); this._wild = []; this._count = 0; }
-  subscribe(types, cb, filter) {
-    const sub = { id: (Math.random()*1e9|0).toString(36), types: types ? new Set(Array.isArray(types)?types:[types]) : null, cb, filter, active:true };
-    if (!sub.types) this._wild.push(sub);
-    else for (const t of sub.types) { if (!this._subs.has(t)) this._subs.set(t,[]); this._subs.get(t).push(sub); }
-    return sub;
+const R=Math.random,F=Math.floor,mn=Math.min,mx=Math.max,abs=Math.abs,sqrt=Math.sqrt,sin=Math.sin,cos=Math.cos,PI=Math.PI,atan2=Math.atan2;
+class EventBus{constructor(){this.s=new Map;this.w=[];this.c=0}
+sub(t,cb,f){const s={id:(R()*1e9|0).toString(36),t:t?new Set(Array.isArray(t)?t:[t]):null,cb,f,a:1};if(!s.t)this.w.push(s);else for(const tt of s.t){if(!this.s.has(tt))this.s.set(tt,[]);this.s.get(tt).push(s)}return s}
+emit(t,src,d={}){this.c++;const e={t,src,d};for(const s of(this.s.get(t)||[]))if(s.a&&(!s.f||s.f(e)))s.cb(e);for(const s of this.w)if(s.a&&(!s.f||s.f(e)))s.cb(e)}
+get ct(){return this.c}}
+const E={SPAWN:'sp',DIE:'di',DIVIDE:'dv',SEXUAL:'sx',PREY:'pr',TOXIN:'tx',PARASITE:'pa',
+COL_FORM:'cf',COL_MERGE:'cm',QUORUM:'qu',QUORUM_OFF:'qo',SPEC:'spec',NICHE:'ni',
+AUTO_OK:'ao',AUTO_LOST:'al',BREACH:'br',CATA:'ca',HGT:'hgt',DORMANT_IN:'din',DORMANT_OUT:'dout',
+BIOFILM:'bf',TERRITORY:'ter',SCAV:'sc',COOP:'co'};
+
+// ═══════════════════════════════════════════════════════════
+//  NEURAL NETWORK — Evolved brains controlling behavior
+// ═══════════════════════════════════════════════════════════
+//  Inputs (8): resourceHere, resourceGrad, predNear, preyNear, signalStr, energy%, membrane%, ageNorm
+//  Hidden (6): fully connected + bias
+//  Outputs (6): moveAngle, moveSpeed, aggression, signalEmit, reproduce, dormancy
+class Brain{
+  constructor(w1,b1,w2,b2){
+    const NI=8,NH=6,NO=6;
+    this.NI=NI;this.NH=NH;this.NO=NO;
+    this.w1=w1||Brain.randMat(NH,NI);
+    this.b1=b1||Brain.randVec(NH);
+    this.w2=w2||Brain.randMat(NO,NH);
+    this.b2=b2||Brain.randVec(NO);
+    this.lastH=new Float32Array(NH);
+    this.lastO=new Float32Array(NO);
   }
-  emit(type, src, data={}) {
-    this._count++;
-    const evt = { type, src, data, t: Date.now() };
-    let n = 0;
-    for (const s of (this._subs.get(type)||[])) if (s.active && (!s.filter||s.filter(evt))) { s.cb(evt); n++; }
-    for (const s of this._wild) if (s.active && (!s.filter||s.filter(evt))) { s.cb(evt); n++; }
-    return n;
+  static randMat(r,c){const m=new Float32Array(r*c);for(let i=0;i<m.length;i++)m[i]=(R()-0.5)*1.5;return m}
+  static randVec(n){const v=new Float32Array(n);for(let i=0;i<n;i++)v[i]=(R()-0.5)*0.5;return v}
+  forward(inputs){
+    const{NI,NH,NO,w1,b1,w2,b2}=this;
+    // Hidden layer
+    for(let j=0;j<NH;j++){let s=b1[j];for(let i=0;i<NI;i++)s+=w1[j*NI+i]*inputs[i];this.lastH[j]=Math.tanh(s)}
+    // Output layer
+    for(let j=0;j<NO;j++){let s=b2[j];for(let i=0;i<NH;i++)s+=w2[j*NH+i]*this.lastH[i];this.lastO[j]=1/(1+Math.exp(-s))}// sigmoid
+    return this.lastO;
   }
-  get count() { return this._count; }
-  get subCount() {
-    const seen = new Set();
-    for (const ss of this._subs.values()) for (const s of ss) if (s.active) seen.add(s.id);
-    for (const s of this._wild) if (s.active) seen.add(s.id);
-    return seen.size;
+  mutate(rate=0.12){
+    const m=a=>{const n=new Float32Array(a.length);for(let i=0;i<a.length;i++)n[i]=R()<rate?a[i]+(R()-0.5)*0.6:a[i];return n};
+    return new Brain(m(this.w1),m(this.b1),m(this.w2),m(this.b2));
+  }
+  static crossover(a,b){
+    const cx=arr1=>{ const n=new Float32Array(arr1.length);for(let i=0;i<n.length;i++)n[i]=R()<0.5?a.w1[i]??0:b.w1[i]??0;return n};
+    // Actually do proper crossover per weight matrix
+    const cross=(m1,m2)=>{const n=new Float32Array(m1.length);const cp=F(R()*m1.length);for(let i=0;i<n.length;i++)n[i]=i<cp?m1[i]:m2[i];return n};
+    return new Brain(cross(a.w1,b.w1),cross(a.b1,b.b1),cross(a.w2,b.w2),cross(a.b2,b.b2));
   }
 }
-const E = {
-  SPAWNED:'spawn', DIED:'died', DIVIDED:'divided', CONSUMED_PREY:'consumed_prey',
-  TOXIN_KILL:'toxin_kill', PARASITIZED:'parasitized',
-  COLONY_FORMED:'colony.formed', COLONY_MERGED:'colony.merged', COLONY_SPLIT:'colony.split',
-  SYMBIOSIS_FORMED:'symbiosis.formed', SYMBIOSIS_BROKEN:'symbiosis.broken',
-  QUORUM_ACTIVATED:'quorum.activated', QUORUM_DEACTIVATED:'quorum.deactivated',
-  SPECIATION:'speciation', NICHE_CONSTRUCTED:'niche.constructed',
-  AUTOPOIESIS_OK:'auto.ok', AUTOPOIESIS_LOST:'auto.lost',
-  MEMBRANE_BREACHED:'membrane.breach',
-  CATACLYSM:'cataclysm', ENV_TICK:'env.tick', SIM_STEP:'sim.step',
-  MIGRATION:'migration', SCAVENGE:'scavenge',
-};
 
 // ═══════════════════════════════════════════════════════════
-//  CHEMISTRY — Expanded with toxins, signals, dead matter
+//  CHEMISTRY
 // ═══════════════════════════════════════════════════════════
-const M = { SUB_A:0, SUB_B:1, CAT:2, LIPID:3, ENZ:4, TRANS:5, SIG:6, NRG:7, WASTE:8, TOXIN:9, DEAD:10 };
-
-const REACTIONS = [
-  { n:'nrg_prod', i:{[M.SUB_A]:1}, o:{[M.NRG]:4,[M.WASTE]:1}, c:-4, cat:false, r:0.95 },
-  { n:'lipid',    i:{[M.SUB_B]:1,[M.NRG]:1}, o:{[M.LIPID]:3}, c:1, cat:false, r:0.85 },
-  { n:'enzyme',   i:{[M.SUB_A]:1,[M.SUB_B]:1,[M.NRG]:2}, o:{[M.ENZ]:1}, c:2, cat:true, r:0.45 },
-  { n:'trans',    i:{[M.SUB_B]:2,[M.NRG]:1}, o:{[M.TRANS]:1}, c:1.5, cat:false, r:0.5 },
-  { n:'signal',   i:{[M.SUB_A]:1,[M.NRG]:1}, o:{[M.SIG]:3}, c:1, cat:false, r:0.35 },
-  { n:'toxin',    i:{[M.SUB_A]:1,[M.SUB_B]:1,[M.NRG]:3}, o:{[M.TOXIN]:2}, c:3, cat:true, r:0.2 },
-  { n:'waste_x',  i:{[M.WASTE]:3}, o:{}, c:0.5, cat:false, r:0.8 },
-  { n:'scavenge', i:{[M.DEAD]:2}, o:{[M.NRG]:2,[M.SUB_A]:1}, c:-2, cat:false, r:0.6 },
+const M={A:0,B:1,C:2,L:3,Z:4,T:5,S:6,N:7,W:8,X:9,D:10,PH0:11,PH1:12,PH2:13};
+// PH0=food pheromone, PH1=danger pheromone, PH2=mating pheromone
+const RX=[
+  {n:'nrg',i:{[M.A]:1},o:{[M.N]:4,[M.W]:1},c:-4,cat:0,r:.95},
+  {n:'lip',i:{[M.B]:1,[M.N]:1},o:{[M.L]:3},c:1,cat:0,r:.85},
+  {n:'enz',i:{[M.A]:1,[M.B]:1,[M.N]:2},o:{[M.Z]:1},c:2,cat:1,r:.45},
+  {n:'trn',i:{[M.B]:2,[M.N]:1},o:{[M.T]:1},c:1.5,cat:0,r:.5},
+  {n:'sig',i:{[M.A]:1,[M.N]:1},o:{[M.S]:3},c:1,cat:0,r:.35},
+  {n:'tox',i:{[M.A]:1,[M.B]:1,[M.N]:3},o:{[M.X]:2},c:3,cat:1,r:.2},
+  {n:'wst',i:{[M.W]:3},o:{},c:.5,cat:0,r:.8},
+  {n:'scv',i:{[M.D]:2},o:{[M.N]:2,[M.A]:1},c:-2,cat:0,r:.6},
+  {n:'ph0',i:{[M.S]:1,[M.N]:1},o:{[M.PH0]:4},c:1,cat:0,r:.4},
+  {n:'ph1',i:{[M.S]:1,[M.N]:1},o:{[M.PH1]:3},c:1,cat:0,r:.3},
+  {n:'ph2',i:{[M.S]:1,[M.N]:1},o:{[M.PH2]:3},c:1,cat:0,r:.25},
 ];
-
-function metabolize(inv, energy, hasCat, eBonus, genome) {
-  let delta = 0; const done = [];
-  // Prioritize based on genome strategy
-  let order = [0,6,1,3,2,4]; // default: energy, waste, lipid, trans, enzyme, signal
-  if (genome.toxicity > 0.5) order = [0,5,6,1,3,2,4]; // toxin producers prioritize toxin
-  if (genome.scavenger > 0.5) order = [7,0,6,1,3,2,4]; // scavengers prioritize dead matter
-  for (const ri of order) {
-    if (ri >= REACTIONS.length) continue;
-    const rxn = REACTIONS[ri];
-    if (rxn.cat && !hasCat) continue;
-    const eff = Math.min(1, rxn.r + eBonus);
-    let canDo = true;
-    if (energy + delta < rxn.c) canDo = false;
-    for (const [m,a] of Object.entries(rxn.i)) if ((inv[m]||0) < a) { canDo = false; break; }
-    if (canDo && Math.random() < eff) {
-      for (const [m,a] of Object.entries(rxn.i)) inv[m] = (inv[m]||0) - a;
-      for (const [m,a] of Object.entries(rxn.o)) inv[m] = (inv[m]||0) + a;
-      delta -= rxn.c;
-      done.push(rxn.n);
+function metab(inv,nrg,hasCat,bonus,g){
+  let d=0;const done=[];
+  let order=[0,6,1,3,2,4,8]; // default priority
+  if(g.toxicity>.5)order=[0,5,6,1,3,2,4];
+  if(g.scavenger>.5)order=[7,0,6,1,3,2,4];
+  for(const ri of order){if(ri>=RX.length)continue;const rx=RX[ri];
+    if(rx.cat&&!hasCat)continue;
+    let ok=1;if(nrg+d<rx.c)ok=0;
+    if(ok)for(const[m,a]of Object.entries(rx.i))if((inv[m]||0)<a){ok=0;break}
+    if(ok&&R()<mn(1,rx.r+bonus)){
+      for(const[m,a]of Object.entries(rx.i))inv[m]=(inv[m]||0)-a;
+      for(const[m,a]of Object.entries(rx.o))inv[m]=(inv[m]||0)+a;
+      d-=rx.c;done.push(rx.n);
     }
   }
-  return { delta, done };
+  return{d,done};
 }
 
 // ═══════════════════════════════════════════════════════════
 //  MEMBRANE
 // ═══════════════════════════════════════════════════════════
-class Membrane {
-  constructor() { this.integrity=1; this.perm=0.3; this.lipids=20; this.trans=3; this.armor=0; }
-  get viable() { return this.integrity > 0.12 && this.lipids >= 4; }
-  get damaged() { return this.integrity < 0.4; }
-  get tCap() { return this.perm * this.integrity + Math.min(this.trans*0.1, 0.5); }
-  get canDiv() { return this.lipids >= 30 && this.integrity > 0.7; }
-  decay() {
-    const loss = 0.02 * (1 + Math.random()*0.5);
-    this.lipids = Math.max(0, this.lipids - loss);
-    this.trans = Math.max(0, this.trans - 0.006);
-    this.armor = Math.max(0, this.armor - 0.003);
-    this.integrity = Math.min(1, this.lipids / 25);
-    return loss;
-  }
-  repair(la, ta) {
-    const lu = Math.min(la, Math.max(0, 50 - this.lipids));
-    this.lipids += lu;
-    const tu = Math.min(ta, Math.max(0, 10 - this.trans));
-    this.trans += tu;
-    this.integrity = Math.min(1, this.lipids / 25);
-    return { lu, tu };
-  }
-  divide() {
-    const hl = this.lipids/2, ht = this.trans/2, ha = this.armor/2;
-    this.lipids=hl; this.trans=ht; this.armor=ha;
-    this.integrity = Math.min(1, hl/25);
-    const d = new Membrane();
-    d.lipids=hl; d.trans=ht; d.armor=ha;
-    d.integrity = Math.min(1, hl/25);
-    d.perm = Math.max(0.05, Math.min(0.9, this.perm + (Math.random()-0.5)*0.1));
-    return d;
-  }
-  takeDamage(amt) {
-    const actual = Math.max(0, amt - this.armor * 0.5);
-    this.lipids = Math.max(0, this.lipids - actual);
-    this.integrity = Math.min(1, this.lipids / 25);
-    return actual;
-  }
+class Mem{
+  constructor(){this.int=1;this.pm=.3;this.lip=20;this.tr=3;this.ar=0}
+  get ok(){return this.int>.12&&this.lip>=4}
+  get dmg(){return this.int<.4}
+  get cap(){return this.pm*this.int+mn(this.tr*.1,.5)}
+  get canDiv(){return this.lip>=30&&this.int>.7}
+  decay(){const l=.02*(1+R()*.5);this.lip=mx(0,this.lip-l);this.tr=mx(0,this.tr-.006);this.ar=mx(0,this.ar-.003);this.int=mn(1,this.lip/25);return l}
+  repair(la,ta){const lu=mn(la,mx(0,50-this.lip));this.lip+=lu;const tu=mn(ta,mx(0,10-this.tr));this.tr+=tu;this.int=mn(1,this.lip/25);return{lu,tu}}
+  divide(){const h=this.lip/2,ht=this.tr/2,ha=this.ar/2;this.lip=h;this.tr=ht;this.ar=ha;this.int=mn(1,h/25);
+    const d=new Mem;d.lip=h;d.tr=ht;d.ar=ha;d.int=mn(1,h/25);d.pm=mx(.05,mn(.9,this.pm+(R()-.5)*.1));return d}
+  hit(a){const act=mx(0,a-this.ar*.5);this.lip=mx(0,this.lip-act);this.int=mn(1,this.lip/25);return act}
 }
 
 // ═══════════════════════════════════════════════════════════
-//  GENOME — Rich trait space enabling emergent strategies
+//  GENOME — 18 evolvable traits
 // ═══════════════════════════════════════════════════════════
-//  Traits: metaEff, memInv, divThresh, perm, sigSens, aggro,
-//          toxicity, armor, speed, cooperation, scavenger,
-//          parasitism, quorumThresh, nicheEng, speciesHue
-const GENE_NAMES = ['metaEff','memInv','divThresh','perm','sigSens','aggro','toxicity','armor','speed','cooperation','scavenger','parasitism','quorumThresh','nicheEng','hue'];
-
-function randomGenome(preset) {
-  const g = {
-    metaEff: 0.7+Math.random()*0.6, memInv: 0.3+Math.random()*0.4,
-    divThresh: 30+Math.random()*30, perm: 0.2+Math.random()*0.3,
-    sigSens: 0.2+Math.random()*0.6, aggro: Math.random()*0.15,
-    toxicity: Math.random()*0.1, armor: Math.random()*0.1,
-    speed: 0.3+Math.random()*0.4, cooperation: 0.2+Math.random()*0.5,
-    scavenger: Math.random()*0.15, parasitism: Math.random()*0.05,
-    quorumThresh: 3+Math.random()*5, nicheEng: Math.random()*0.2,
-    hue: Math.random()*360,
-  };
-  if (preset === 'predator') {
-    g.aggro = 0.6+Math.random()*0.3; g.speed = 0.6+Math.random()*0.3;
-    g.toxicity = 0.3+Math.random()*0.4; g.armor = 0.3+Math.random()*0.3;
-    g.cooperation = Math.random()*0.2; g.hue = 0+Math.random()*30;
-  }
+const GT=['metaEff','memInv','divThresh','perm','sigSens','aggro','toxicity','armor','speed',
+  'cooperation','scavenger','parasitism','quorumTh','nicheEng','hue','dormancy','sexPref','immunity'];
+function rg(preset){
+  const g={metaEff:.7+R()*.6,memInv:.3+R()*.4,divThresh:30+R()*30,perm:.2+R()*.3,
+    sigSens:.2+R()*.6,aggro:R()*.15,toxicity:R()*.1,armor:R()*.1,speed:.3+R()*.4,
+    cooperation:.2+R()*.5,scavenger:R()*.15,parasitism:R()*.05,quorumTh:3+R()*5,
+    nicheEng:R()*.2,hue:R()*360,dormancy:R()*.15,sexPref:.3+R()*.4,immunity:R()};
+  if(preset==='pred'){g.aggro=.6+R()*.3;g.speed=.6+R()*.3;g.toxicity=.3+R()*.4;g.armor=.3+R()*.3;g.cooperation=R()*.2;g.hue=R()*30}
   return g;
 }
-
-function mutateGenome(g, rate=0.1) {
-  const m = (v,lo,hi) => Math.random()<rate ? Math.max(lo,Math.min(hi, v+(Math.random()-0.5)*0.25)) : v;
-  const ng = {
-    metaEff:m(g.metaEff,.1,2), memInv:m(g.memInv,.1,.9),
-    divThresh: Math.random()<rate ? Math.max(15, g.divThresh+(Math.random()-0.5)*8) : g.divThresh,
-    perm:m(g.perm,.05,.9), sigSens:m(g.sigSens,0,1), aggro:m(g.aggro,0,1),
-    toxicity:m(g.toxicity,0,1), armor:m(g.armor,0,1), speed:m(g.speed,.05,1),
-    cooperation:m(g.cooperation,0,1), scavenger:m(g.scavenger,0,1),
-    parasitism:m(g.parasitism,0,1), quorumThresh:m(g.quorumThresh,2,15),
-    nicheEng:m(g.nicheEng,0,1),
-    hue: g.hue + (Math.random()<rate*3 ? (Math.random()-0.5)*25 : 0),
-  };
-  return ng;
+function mg(g,rate=.12){
+  const m=(v,lo,hi)=>R()<rate?mx(lo,mn(hi,v+(R()-.5)*.3)):v;
+  return{metaEff:m(g.metaEff,.1,2),memInv:m(g.memInv,.1,.9),
+    divThresh:R()<rate?mx(15,g.divThresh+(R()-.5)*10):g.divThresh,
+    perm:m(g.perm,.05,.9),sigSens:m(g.sigSens,0,1),aggro:m(g.aggro,0,1),
+    toxicity:m(g.toxicity,0,1),armor:m(g.armor,0,1),speed:m(g.speed,.05,1),
+    cooperation:m(g.cooperation,0,1),scavenger:m(g.scavenger,0,1),
+    parasitism:m(g.parasitism,0,1),quorumTh:m(g.quorumTh,2,15),
+    nicheEng:m(g.nicheEng,0,1),hue:g.hue+(R()<rate*3?(R()-.5)*30:0),
+    dormancy:m(g.dormancy,0,1),sexPref:m(g.sexPref,0,1),immunity:m(g.immunity,0,1)};
 }
-
-function genomeDist(a, b) {
-  let d = 0;
-  for (const k of GENE_NAMES) {
-    if (k === 'hue') { let dh = Math.abs(a.hue-b.hue); d += Math.min(dh,360-dh)/360; }
-    else if (k === 'divThresh') d += Math.abs(a[k]-b[k])/60;
-    else if (k === 'quorumThresh') d += Math.abs(a[k]-b[k])/15;
-    else d += Math.abs((a[k]||0)-(b[k]||0));
-  }
-  return d / GENE_NAMES.length;
+function crossGenome(a,b){
+  const c={};const cp=F(R()*GT.length);
+  for(let i=0;i<GT.length;i++){const k=GT[i];c[k]=i<cp?a[k]:b[k];if(k==='hue')c[k]=(a[k]+b[k])/2+(R()-.5)*20}
+  return c;
 }
+function gDist(a,b){let d=0;for(const k of GT){
+  if(k==='hue'){let dh=abs(a.hue-b.hue);d+=mn(dh,360-dh)/360}
+  else if(k==='divThresh')d+=abs(a[k]-b[k])/60;
+  else if(k==='quorumTh')d+=abs(a[k]-b[k])/15;
+  else d+=abs((a[k]||0)-(b[k]||0));
+}return d/GT.length}
+function tRole(g){if(g.aggro>.4&&g.toxicity>.2)return'pred';if(g.parasitism>.4)return'para';if(g.scavenger>.4)return'scav';return'prod'}
+function tCol(r){return{prod:'#00e676',pred:'#ff5252',scav:'#ffd740',para:'#e040fb'}[r]||'#8ecae6'}
 
 // ═══════════════════════════════════════════════════════════
-//  TROPHIC CLASSIFICATION — Emergent from genome
+//  LIFE STAGES: egg(0) → juvenile(1) → adult(2) → elder(3)
 // ═══════════════════════════════════════════════════════════
-function trophicRole(g) {
-  if (g.aggro > 0.4 && g.toxicity > 0.2) return 'predator';
-  if (g.parasitism > 0.4) return 'parasite';
-  if (g.scavenger > 0.4) return 'scavenger';
-  return 'producer';
-}
-function roleColor(role) {
-  return { producer:'#00e676', predator:'#ff5252', scavenger:'#ffd740', parasite:'#e040fb' }[role] || '#8ecae6';
-}
+const STAGE_NAMES=['egg','juv','adult','elder'];
+function getStage(age){if(age<8)return 0;if(age<40)return 1;if(age<350)return 2;return 3}
 
 // ═══════════════════════════════════════════════════════════
-//  LIFE FORM — Complex autopoietic entity
+//  LIFE FORM — Neural-driven autopoietic entity
 // ═══════════════════════════════════════════════════════════
-let _id = 0;
-class LifeForm {
-  constructor(x, y, genome, gen=0, parentId=null) {
-    this.id = 'lf'+(_id++);
-    this.x=x; this.y=y;
-    this.genome = genome || randomGenome();
-    this.generation = gen;
-    this.parentId = parentId;
-    this.membrane = new Membrane();
-    this.membrane.perm = this.genome.perm;
-    this.age = 0;
-    this.inv = {[M.ENZ]:3,[M.LIPID]:8,[M.TRANS]:2};
-    this.energy = 18;
-    this.alive = true;
-    this.autopoietic = true;
-    this._noProd = 0;
-    this._divCool = 0;
-
+let _id=0;
+class LF{
+  constructor(x,y,genome,brain,gen=0,pid=null){
+    this.id='l'+(_id++);this.x=x;this.y=y;
+    this.g=genome||rg();this.brain=brain||new Brain;
+    this.gen=gen;this.pid=pid;
+    this.mem=new Mem;this.mem.pm=this.g.perm;
+    this.age=0;this.inv={[M.Z]:3,[M.L]:8,[M.T]:2};this.nrg=18;
+    this.alive=1;this.auto=1;this._np=0;this._dc=0;
     // Emergent state
-    this.colonyId = null;       // colony membership
-    this.symbiotId = null;      // symbiotic partner id
-    this.quorumActive = false;  // quorum sensing active
-    this.signalStr = 0;         // signal strength emitted
-    this.toxinStr = 0;          // toxin field strength
-    this.kills = 0;
-    this.speciesId = null;      // assigned species cluster
-    this.trophic = trophicRole(this.genome);
-    this.trailX = []; this.trailY = []; // movement trail
+    this.colId=null;this.symId=null;this.qActive=0;
+    this.sigStr=0;this.toxStr=0;this.kills=0;this.spId=null;
+    this.trophic=tRole(this.g);
+    this.tx=[];this.ty=[];// trail
+    this.dormant=0;this.dormTick=0;
+    this.territory={x:x,y:y,str:0};// territory center
+    this.biofilm=0;// biofilm investment
+    this.lastNN=null;// last neural output for visualization
+    this.hgtCount=0;
+    this.matings=0;
+    this.stage=0;
+    this.phEm=[0,0,0];// pheromone emission [food,danger,mating]
+    this.immune=new Float32Array(4);// immune memory vs toxin types
+    this.immune[F(this.g.immunity*3.99)]=.5;
   }
+  get v(){if(!this.alive)return 0;return this.mem.int*.4+mn(1,this.nrg/20)*.3+mn(1,(this.inv[M.Z]||0)/3)*.3}
+  get sz(){return 1+this.mem.lip*.04+(this.trophic==='pred'?.5:0)+(this.stage===0?-0.5:0)+(this.stage===3?0.3:0)}
+  get hue(){let h=this.g.hue%360;if(h<0)h+=360;return h}
 
-  get viability() {
-    if (!this.alive) return 0;
-    return this.membrane.integrity*0.4 + Math.min(1,this.energy/20)*0.3 + Math.min(1,(this.inv[M.ENZ]||0)/3)*0.3;
-  }
-  get size() { return 1 + this.membrane.lipids*0.04 + (this.trophic==='predator'?0.5:0); }
-  get hueActual() {
-    let h = this.genome.hue % 360;
-    if (h < 0) h += 360;
-    return h;
-  }
+  tick(bus,nbrs,world){
+    if(!this.alive)return;
+    this.age++;this.stage=getStage(this.age);
+    if(this._dc>0)this._dc--;
 
-  tick(bus, neighbors, world) {
-    if (!this.alive) return;
-    this.age++;
-    if (this._divCool > 0) this._divCool--;
+    // ── Dormancy ──
+    if(this.dormant){
+      this.nrg-=0.02;// minimal upkeep
+      this.dormTick++;
+      // Wake conditions: resources available or time elapsed
+      const resHere=world.resAt(this.x,this.y,M.A);
+      if(resHere>3||this.dormTick>200||world.season==='spring'){
+        this.dormant=0;this.dormTick=0;
+        bus.emit(E.DORMANT_OUT,this.id);
+      }
+      if(this.nrg<=0){this.alive=0;bus.emit(E.DIE,this.id,{age:this.age,cause:'dormant_starve'})}
+      return;
+    }
 
-    // Basal cost scales with complexity
-    const baseCost = 0.12 + this.size*0.02 + (this.genome.toxicity>0.3?0.05:0) + (this.genome.armor>0.3?0.03:0);
-    this.energy -= baseCost;
+    // ── Eggs don't do much ──
+    if(this.stage===0){this.nrg-=0.05;if(this.nrg<=0){this.alive=0;bus.emit(E.DIE,this.id,{age:this.age,cause:'egg_fail'})}return}
 
-    // Aging
-    if (this.age > 400) this.energy -= (this.age-400)*0.003;
+    // ── Neural network decision ──
+    const gx=F(this.x),gy=F(this.y);
+    const resHere=(world.resAt(this.x,this.y,M.A)+world.resAt(this.x,this.y,M.B))/10;
+    let resGrad=0;
+    for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){
+      const v=world.resAt(gx+dx,gy+dy,M.A);if(v>resHere*5)resGrad=.5;
+    }
+    const predNear=nbrs.filter(n=>n.trophic==='pred'&&n.sz>this.sz).length>0?1:0;
+    const preyNear=nbrs.filter(n=>n.trophic!=='pred'&&n.sz<this.sz).length>0?1:0;
+    const sigHere=world.phAt(this.x,this.y,0)/5;
+    const nrgPct=mn(1,this.nrg/50);
+    const memPct=this.mem.int;
+    const ageN=mn(1,this.age/400);
+    const inputs=[resHere,resGrad,predNear,preyNear,sigHere,nrgPct,memPct,ageN];
+    const out=this.brain.forward(inputs);
+    this.lastNN=out;
 
-    // Enzyme decay
-    if (this.inv[M.ENZ]>0) this.inv[M.ENZ] = Math.max(0, this.inv[M.ENZ]-0.04);
+    // Decode neural outputs
+    const nnMoveAngle=out[0]*PI*2;
+    const nnMoveSpd=out[1];
+    const nnAggro=out[2];
+    const nnSignal=out[3];
+    const nnRepro=out[4];
+    const nnDormancy=out[5];
+
+    // ── Energy cost ──
+    const baseCost=.12+this.sz*.02+(this.g.toxicity>.3?.05:0)+(this.g.armor>.3?.03:0)+(this.stage===1?-.03:0);
+    this.nrg-=baseCost;
+    if(this.age>350)this.nrg-=(this.age-350)*.004;// elder decline
+    if(this.inv[M.Z]>0)this.inv[M.Z]=mx(0,this.inv[M.Z]-.04);
 
     // ── Metabolism ──
-    const hasCat = (this.inv[M.CAT]||0) > 0;
-    const eBonus = Math.min(0.3,(this.inv[M.ENZ]||0)*0.05) * this.genome.metaEff;
-    // Quorum bonus: colony members get metabolic boost
-    const qBonus = this.quorumActive ? 0.15 : 0;
-    const {delta, done} = metabolize(this.inv, this.energy, hasCat, eBonus+qBonus, this.genome);
-    this.energy += delta;
-    if (done.length) { this._noProd=0; } else { this._noProd++; }
+    const hasCat=(this.inv[M.C]||0)>0;
+    const eBonus=mn(.3,(this.inv[M.Z]||0)*.05)*this.g.metaEff+(this.qActive?.15:0);
+    const{d,done}=metab(this.inv,this.nrg,hasCat,eBonus,this.g);
+    this.nrg+=d;
+    if(done.length)this._np=0;else this._np++;
 
     // ── Membrane ──
-    this.membrane.decay();
-    const la = this.membrane.damaged ? (this.inv[M.LIPID]||0) : (this.inv[M.LIPID]||0)*(0.3+this.genome.memInv*0.7);
-    const ta = (this.inv[M.TRANS]||0)*0.7;
-    const {lu,tu} = this.membrane.repair(la, ta);
-    this.inv[M.LIPID] = (this.inv[M.LIPID]||0)-lu;
-    this.inv[M.TRANS] = (this.inv[M.TRANS]||0)-tu;
+    this.mem.decay();
+    const la=this.mem.dmg?(this.inv[M.L]||0):(this.inv[M.L]||0)*(.3+this.g.memInv*.7);
+    const ta=(this.inv[M.T]||0)*.7;
+    const{lu,tu}=this.mem.repair(la,ta);
+    this.inv[M.L]=(this.inv[M.L]||0)-lu;this.inv[M.T]=(this.inv[M.T]||0)-tu;
+    if(this.g.armor>.2)this.mem.ar=mn(1,this.mem.ar+this.g.armor*.01);
 
-    // Armor from toxin investment
-    if (this.genome.armor > 0.2) {
-      this.membrane.armor = Math.min(1, this.membrane.armor + this.genome.armor * 0.01);
-    }
+    // ── Autopoiesis ──
+    if(this._np>20&&this.auto){this.auto=0;bus.emit(E.AUTO_LOST,this.id)}
+    else if(!this.auto&&this._np===0){this.auto=1;bus.emit(E.AUTO_OK,this.id)}
 
-    // ── Autopoiesis check ──
-    if (this._noProd > 20 && this.autopoietic) { this.autopoietic = false; bus.emit(E.AUTOPOIESIS_LOST, this.id); }
-    else if (!this.autopoietic && this._noProd === 0) { this.autopoietic = true; bus.emit(E.AUTOPOIESIS_OK, this.id); }
+    // ── Pheromone emission (neural-driven) ──
+    if(nnSignal>.3){
+      this.phEm[0]=nnSignal*(resHere>.5?1:0)*2;// emit food pheromone when near food
+      this.phEm[1]=nnSignal*(predNear?1:0)*2;// emit danger pheromone when predator near
+      this.phEm[2]=nnSignal*(nnRepro>.5?1:0)*2;// emit mating pheromone when wanting to reproduce
+    }else{this.phEm=[0,0,0]}
+    this.sigStr=(this.inv[M.S]||0)*this.g.sigSens;
+    this.toxStr=(this.inv[M.X]||0)*this.g.toxicity;
 
-    // ── Signal emission ──
-    this.signalStr = (this.inv[M.SIG]||0) * this.genome.sigSens;
-    // Toxin emission
-    this.toxinStr = (this.inv[M.TOXIN]||0) * this.genome.toxicity;
-
-    // ── Predation ──
-    if (this.genome.aggro > 0.3 && neighbors.length > 0) {
-      this._tryPredation(bus, neighbors);
-    }
+    // ── Predation (neural aggression modulated) ──
+    if(this.g.aggro>.25&&nnAggro>.4&&this.stage>=2&&nbrs.length>0)this._hunt(bus,nbrs,nnAggro);
 
     // ── Parasitism ──
-    if (this.genome.parasitism > 0.3 && neighbors.length > 0) {
-      this._tryParasitism(bus, neighbors);
-    }
+    if(this.g.parasitism>.3&&this.stage>=2)this._parasite(bus,nbrs);
 
     // ── Toxin warfare ──
-    if (this.toxinStr > 1 && neighbors.length > 0) {
-      this._toxinAttack(bus, neighbors);
-    }
+    if(this.toxStr>1&&nbrs.length>0)this._toxAttack(bus,nbrs);
 
     // ── Quorum sensing ──
-    const sameSpecies = neighbors.filter(n => n.speciesId === this.speciesId);
-    if (sameSpecies.length >= this.genome.quorumThresh && !this.quorumActive) {
-      this.quorumActive = true;
-      bus.emit(E.QUORUM_ACTIVATED, this.id, { count: sameSpecies.length });
-    } else if (sameSpecies.length < this.genome.quorumThresh - 1 && this.quorumActive) {
-      this.quorumActive = false;
-      bus.emit(E.QUORUM_DEACTIVATED, this.id);
-    }
+    const kin=nbrs.filter(n=>n.spId===this.spId);
+    if(kin.length>=this.g.quorumTh&&!this.qActive){this.qActive=1;bus.emit(E.QUORUM,this.id,{n:kin.length})}
+    else if(kin.length<this.g.quorumTh-1&&this.qActive){this.qActive=0;bus.emit(E.QUORUM_OFF,this.id)}
 
-    // ── Cooperation / resource sharing ──
-    if (this.genome.cooperation > 0.4 && sameSpecies.length > 0) {
-      const neediest = sameSpecies.reduce((a,b) => a.energy < b.energy ? a : b);
-      if (neediest.energy < this.energy * 0.5 && this.energy > 10) {
-        const share = Math.min(2, this.energy * 0.1);
-        this.energy -= share;
-        neediest.energy += share;
-        bus.emit(E.SYMBIOSIS_FORMED, this.id, { partnerId: neediest.id, amount: share });
+    // ── Cooperation ──
+    if(this.g.cooperation>.4&&kin.length>0){
+      const neediest=kin.reduce((a,b)=>a.nrg<b.nrg?a:b);
+      if(neediest.nrg<this.nrg*.4&&this.nrg>12){
+        const share=mn(2.5,this.nrg*.12);this.nrg-=share;neediest.nrg+=share;
+        bus.emit(E.COOP,this.id,{to:neediest.id,amt:share});
       }
     }
 
     // ── Niche construction ──
-    if (this.genome.nicheEng > 0.3 && this.energy > 15 && Math.random() < this.genome.nicheEng * 0.1) {
-      world.depositAt(this.x, this.y, M.SUB_A, this.genome.nicheEng * 0.5);
-      world.depositAt(this.x, this.y, M.SUB_B, this.genome.nicheEng * 0.3);
-      this.energy -= 0.5;
-      bus.emit(E.NICHE_CONSTRUCTED, this.id);
+    if(this.g.nicheEng>.3&&this.nrg>15&&R()<this.g.nicheEng*.08){
+      world.dep(this.x,this.y,M.A,this.g.nicheEng*.5);
+      world.dep(this.x,this.y,M.B,this.g.nicheEng*.3);
+      this.nrg-=.5;bus.emit(E.NICHE,this.id);
     }
 
-    // ── Death ──
-    if (!this.membrane.viable || this.energy <= 0) this.die(bus);
-  }
-
-  _tryPredation(bus, neighbors) {
-    for (const prey of neighbors) {
-      if (!prey.alive || prey.trophic === 'predator' && prey.size >= this.size) continue;
-      if (prey.speciesId === this.speciesId && this.genome.cooperation > 0.3) continue; // don't eat kin
-      const attackPower = this.genome.aggro * this.size * (1 + this.kills*0.05);
-      const defense = prey.membrane.armor + prey.size * 0.3 + (prey.genome.speed * 0.5);
-      if (attackPower > defense && Math.random() < 0.15) {
-        const stolen = Math.min(prey.energy * 0.6, 15);
-        this.energy += stolen;
-        prey.energy -= stolen;
-        prey.membrane.takeDamage(3 + this.genome.aggro * 5);
-        this.kills++;
-        bus.emit(E.CONSUMED_PREY, this.id, { preyId: prey.id, amount: stolen });
-        if (!prey.membrane.viable || prey.energy <= 0) prey.die(bus);
-        break; // one attack per tick
-      }
+    // ── Territory marking ──
+    if(this.g.aggro>.2&&this.stage>=2){
+      this.territory.str=mn(1,this.territory.str+.02);
+      this.territory.x+=(this.x-this.territory.x)*.05;
+      this.territory.y+=(this.y-this.territory.y)*.05;
     }
-  }
 
-  _tryParasitism(bus, neighbors) {
-    const host = neighbors.find(n => n.alive && n.speciesId !== this.speciesId && n.energy > 5);
-    if (!host) return;
-    const drainRate = this.genome.parasitism * 0.5;
-    if (Math.random() < drainRate * 0.3) {
-      const stolen = Math.min(host.energy * 0.08, 3);
-      this.energy += stolen * 0.7; // inefficient transfer
-      host.energy -= stolen;
-      bus.emit(E.PARASITIZED, this.id, { hostId: host.id, amount: stolen });
+    // ── Biofilm building ──
+    if(this.g.cooperation>.5&&this.colId&&this.nrg>10){
+      this.biofilm=mn(1,this.biofilm+.005);
+      // Biofilm provides defense bonus to colony members
+      this.mem.ar=mn(1,this.mem.ar+this.biofilm*.005);
     }
-  }
 
-  _toxinAttack(bus, neighbors) {
-    for (const n of neighbors) {
-      if (n.speciesId === this.speciesId) continue; // kin immunity
-      if (!n.alive) continue;
-      const toxinDmg = this.toxinStr * 0.1 * (1 - n.membrane.armor * 0.5);
-      if (toxinDmg > 0.1) {
-        n.membrane.takeDamage(toxinDmg);
-        n.energy -= toxinDmg * 0.5;
-        if (!n.membrane.viable || n.energy <= 0) {
-          n.die(bus);
-          bus.emit(E.TOXIN_KILL, this.id, { victimId: n.id });
+    // ── Dormancy decision (neural-driven) ──
+    if(nnDormancy>.7&&this.g.dormancy>.3&&this.nrg<8&&resHere<.2&&this.stage>=2){
+      this.dormant=1;this.dormTick=0;
+      bus.emit(E.DORMANT_IN,this.id);
+      return;
+    }
+
+    // ── Horizontal gene transfer ──
+    if(nbrs.length>0&&R()<.005){
+      const donor=nbrs[F(R()*nbrs.length)];
+      if(donor.alive&&donor.spId!==this.spId){
+        // Transfer one random trait
+        const trait=GT[F(R()*GT.length)];
+        if(trait!=='hue'&&trait!=='divThresh'){
+          this.g[trait]=(this.g[trait]+donor.g[trait])/2;
+          this.hgtCount++;
+          bus.emit(E.HGT,this.id,{from:donor.id,trait});
         }
       }
     }
-    // Deplete toxin inventory
-    this.inv[M.TOXIN] = Math.max(0, (this.inv[M.TOXIN]||0) - 0.1);
+
+    // ── Immune adaptation ──
+    // Exposure to toxins builds immunity
+    const toxHere=world.toxAt(this.x,this.y);
+    if(toxHere>.3){
+      for(let i=0;i<4;i++)this.immune[i]=mn(1,this.immune[i]+.002);
+    }
+
+    // ── Death check ──
+    if(!this.mem.ok||this.nrg<=0){this.alive=0;bus.emit(E.DIE,this.id,{age:this.age,gen:this.gen,trophic:this.trophic,kills:this.kills,cause:this.nrg<=0?'starve':'breach'})}
   }
 
-  importResources(avail, bus) {
-    const consumed = {};
-    if (!this.alive) return consumed;
-    const cap = this.membrane.tCap;
-    const imports = [M.SUB_A, M.SUB_B, M.CAT];
-    if (this.genome.scavenger > 0.3) imports.push(M.DEAD);
-    for (const mol of imports) {
-      const a = avail[mol]||0;
-      if (a <= 0) continue;
-      const t = Math.min(a, cap * 0.4);
-      if (t > 0.01) { this.inv[mol]=(this.inv[mol]||0)+t; consumed[mol]=t; }
+  _hunt(bus,nbrs,nnAggro){
+    for(const prey of nbrs){
+      if(!prey.alive)continue;
+      if(prey.trophic==='pred'&&prey.sz>=this.sz)continue;
+      if(prey.spId===this.spId&&this.g.cooperation>.3)continue;
+      if(prey.dormant)continue;
+      const atk=this.g.aggro*this.sz*(1+this.kills*.03)*nnAggro;
+      const def=prey.mem.ar+prey.sz*.3+prey.g.speed*.5+(prey.biofilm*.3);
+      if(atk>def&&R()<.12){
+        const stolen=mn(prey.nrg*.6,15);
+        this.nrg+=stolen;prey.nrg-=stolen;
+        prey.mem.hit(3+this.g.aggro*5);
+        this.kills++;
+        bus.emit(E.PREY,this.id,{prey:prey.id,amt:stolen});
+        if(!prey.mem.ok||prey.nrg<=0){prey.alive=0;bus.emit(E.DIE,prey.id,{age:prey.age,cause:'predation'})}
+        break;
+      }
     }
+  }
+  _parasite(bus,nbrs){
+    const host=nbrs.find(n=>n.alive&&n.spId!==this.spId&&n.nrg>5&&!n.dormant);
+    if(!host)return;
+    if(R()<this.g.parasitism*.2){
+      const stolen=mn(host.nrg*.08,3);
+      this.nrg+=stolen*.7;host.nrg-=stolen;
+      bus.emit(E.PARASITE,this.id,{host:host.id,amt:stolen});
+    }
+  }
+  _toxAttack(bus,nbrs){
+    for(const n of nbrs){
+      if(n.spId===this.spId||!n.alive||n.dormant)continue;
+      const immIdx=F(this.g.immunity*3.99);// toxin "type" based on producer's immunity gene
+      const resist=n.immune[immIdx]||0;
+      const dmg=this.toxStr*.1*(1-n.mem.ar*.5)*(1-resist*.5);
+      if(dmg>.1){n.mem.hit(dmg);n.nrg-=dmg*.5;
+        if(!n.mem.ok||n.nrg<=0){n.alive=0;bus.emit(E.TOXIN,this.id,{v:n.id});bus.emit(E.DIE,n.id,{age:n.age,cause:'toxin'})}
+      }
+    }
+    this.inv[M.X]=mx(0,(this.inv[M.X]||0)-.1);
+  }
+
+  impRes(avail){
+    const consumed={};if(!this.alive||this.dormant)return consumed;
+    const cap=this.mem.cap;
+    const imports=[M.A,M.B,M.C];
+    if(this.g.scavenger>.3)imports.push(M.D);
+    for(const mol of imports){const a=avail[mol]||0;if(a<=0)continue;const t=mn(a,cap*.4);if(t>.01){this.inv[mol]=(this.inv[mol]||0)+t;consumed[mol]=t}}
     return consumed;
   }
 
-  canDivide() { return this._divCool<=0 && this.energy>=this.genome.divThresh && this.membrane.canDiv && this.autopoietic && (this.inv[M.ENZ]||0)>=0.5; }
+  canDiv(){return this._dc<=0&&this.nrg>=this.g.divThresh&&this.mem.canDiv&&this.auto&&(this.inv[M.Z]||0)>=.5&&this.stage>=2&&!this.dormant}
 
-  divide(bus) {
-    if (!this.canDivide()) return null;
-    const dm = this.membrane.divide();
-    const dg = mutateGenome(this.genome);
-    const di = {};
-    for (const [k,v] of Object.entries(this.inv)) { const s=v*(0.35+Math.random()*0.2); di[k]=s; this.inv[k]-=s; }
-    const de = this.energy*0.45; this.energy -= de;
-    const child = new LifeForm(
-      this.x+(Math.random()-0.5)*3, this.y+(Math.random()-0.5)*3,
-      dg, this.generation+1, this.id
-    );
-    child.membrane = dm; child.inv = di; child.energy = de;
-    child.colonyId = this.colonyId; // inherit colony
-    this._divCool = 25;
-    bus.emit(E.DIVIDED, this.id, { childId:child.id, gen:child.generation });
-    bus.emit(E.SPAWNED, child.id, { parentId:this.id, gen:child.generation });
-    return child;
+  // Asexual division
+  divide(bus){
+    if(!this.canDiv())return null;
+    const dm=this.mem.divide();const dg=mg(this.g);const db=this.brain.mutate();
+    const di={};for(const[k,v]of Object.entries(this.inv)){const s=v*(.35+R()*.2);di[k]=s;this.inv[k]-=s}
+    const de=this.nrg*.45;this.nrg-=de;
+    const c=new LF(this.x+(R()-.5)*3,this.y+(R()-.5)*3,dg,db,this.gen+1,this.id);
+    c.mem=dm;c.inv=di;c.nrg=de;c.colId=this.colId;
+    c.immune=new Float32Array(this.immune);// inherit immunity
+    this._dc=25;
+    bus.emit(E.DIVIDE,this.id,{child:c.id,gen:c.gen});bus.emit(E.SPAWN,c.id,{pid:this.id,gen:c.gen});
+    return c;
   }
 
-  die(bus) {
-    this.alive = false; this.autopoietic = false;
-    bus.emit(E.DIED, this.id, { age:this.age, gen:this.generation, trophic:this.trophic, kills:this.kills });
-    return this.inv;
+  // Sexual reproduction
+  mate(partner,bus){
+    if(!this.canDiv()||!partner.canDiv())return null;
+    if(gDist(this.g,partner.g)>.4)return null;// too genetically distant
+    const dg=mg(crossGenome(this.g,partner.g),.08);
+    const db=Brain.crossover(this.brain,partner.brain).mutate(.08);
+    const dm=this.mem.divide();partner.mem.divide();// both contribute membrane
+    const di={};
+    for(const[k,v]of Object.entries(this.inv)){const s=v*.25;di[k]=(di[k]||0)+s;this.inv[k]-=s}
+    for(const[k,v]of Object.entries(partner.inv)){const s=v*.25;di[k]=(di[k]||0)+s;partner.inv[k]-=s}
+    const de=this.nrg*.3+partner.nrg*.3;this.nrg*=.7;partner.nrg*=.7;
+    const c=new LF((this.x+partner.x)/2+(R()-.5)*2,(this.y+partner.y)/2+(R()-.5)*2,dg,db,mx(this.gen,partner.gen)+1);
+    c.mem=dm;c.inv=di;c.nrg=de;
+    // Inherit better immunity from both parents
+    c.immune=new Float32Array(4);for(let i=0;i<4;i++)c.immune[i]=mx(this.immune[i],partner.immune[i]);
+    this._dc=30;partner._dc=30;
+    this.matings++;partner.matings++;
+    bus.emit(E.SEXUAL,this.id,{mate:partner.id,child:c.id,gen:c.gen});
+    bus.emit(E.SPAWN,c.id,{p1:this.id,p2:partner.id,gen:c.gen});
+    return c;
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-//  RESOURCE FIELD + SIGNAL FIELD
+//  FIELD — Spatial resource/pheromone/toxin layer
 // ═══════════════════════════════════════════════════════════
-class Field {
-  constructor(w,h,regen,diff,init,mx=10) {
-    this.w=w; this.h=h; this.regen=regen; this.diff=diff; this.mx=mx;
-    this.g = new Float32Array(w*h);
-    for (let i=0;i<w*h;i++) this.g[i] = Math.max(0, init + (Math.random()-0.5)*2);
-  }
-  idx(x,y) { return ((y%this.h+this.h)%this.h)*this.w + ((x%this.w+this.w)%this.w); }
-  get(x,y) { return this.g[this.idx(x,y)]; }
-  consume(x,y,amt) { const i=this.idx(x,y); const a=Math.min(this.g[i],amt); this.g[i]-=a; return a; }
-  deposit(x,y,amt) { const i=this.idx(x,y); this.g[i]=Math.min(this.mx, this.g[i]+amt); }
-  tick() {
-    // Regen
-    for (let i=0;i<this.g.length;i++) if (this.g[i]<this.mx) this.g[i]=Math.min(this.mx, this.g[i]+this.regen*(0.5+Math.random()));
-    // Diffuse
-    const ng = new Float32Array(this.g.length);
-    const dr = this.diff;
-    for (let y=0;y<this.h;y++) for (let x=0;x<this.w;x++) {
-      const i = y*this.w+x;
-      const avg = (this.g[((y-1+this.h)%this.h)*this.w+x] + this.g[((y+1)%this.h)*this.w+x] +
-                   this.g[y*this.w+(x-1+this.w)%this.w] + this.g[y*this.w+(x+1)%this.w]) / 4;
-      ng[i] = this.g[i]*(1-dr) + avg*dr;
+class Fld{
+  constructor(w,h,regen,diff,init,mx2=10){this.w=w;this.h=h;this.rg=regen;this.df=diff;this.mx2=mx2;this.g=new Float32Array(w*h);for(let i=0;i<w*h;i++)this.g[i]=mx(0,init+(R()-.5)*2)}
+  ix(x,y){return((y%this.h+this.h)%this.h)*this.w+((x%this.w+this.w)%this.w)}
+  get(x,y){return this.g[this.ix(F(x),F(y))]}
+  eat(x,y,a){const i=this.ix(F(x),F(y));const r=mn(this.g[i],a);this.g[i]-=r;return r}
+  add(x,y,a){const i=this.ix(F(x),F(y));this.g[i]=mn(this.mx2,this.g[i]+a)}
+  tick(seasonMult=1){
+    for(let i=0;i<this.g.length;i++)if(this.g[i]<this.mx2)this.g[i]=mn(this.mx2,this.g[i]+this.rg*(.5+R())*seasonMult);
+    const ng=new Float32Array(this.g.length);const dr=this.df;
+    for(let y=0;y<this.h;y++)for(let x=0;x<this.w;x++){
+      const i=y*this.w+x;
+      const avg=(this.g[((y-1+this.h)%this.h)*this.w+x]+this.g[((y+1)%this.h)*this.w+x]+this.g[y*this.w+(x-1+this.w)%this.w]+this.g[y*this.w+(x+1)%this.w])/4;
+      ng[i]=this.g[i]*(1-dr)+avg*dr;
     }
-    this.g = ng;
+    this.g=ng;
   }
-  decayAll(rate) { for (let i=0;i<this.g.length;i++) this.g[i] = Math.max(0, this.g[i]*rate); }
+  decay(r){for(let i=0;i<this.g.length;i++)this.g[i]=mx(0,this.g[i]*r)}
 }
 
 // ═══════════════════════════════════════════════════════════
-//  COLONY SYSTEM — Emergent multicellularity
+//  SEASONS — Environmental oscillation
 // ═══════════════════════════════════════════════════════════
-let _colId = 0;
-class Colony {
-  constructor() { this.id='col'+(_colId++); this.members=new Set(); this.formed=0; }
-  get size() { return this.members.size; }
-  add(lf) { this.members.add(lf.id); lf.colonyId=this.id; }
-  remove(lf) { this.members.delete(lf.id); if (lf.colonyId===this.id) lf.colonyId=null; }
+const SEASONS=['spring','summer','autumn','winter'];
+function getSeason(tick){return SEASONS[F((tick%400)/100)]}
+function seasonMult(tick){const p=(tick%400)/400;return .6+.8*(.5+.5*sin(p*PI*2))} // 0.6 - 1.4
+
+// ═══════════════════════════════════════════════════════════
+//  SPECIES CLUSTERING
+// ═══════════════════════════════════════════════════════════
+function cluster(lfs,th=.13){
+  const alive=lfs.filter(l=>l.alive);if(!alive.length)return[];
+  const sp=[];const done=new Set;
+  for(const lf of alive){if(done.has(lf.id))continue;
+    const cl=[lf];done.add(lf.id);lf.spId=sp.length;
+    for(const o of alive){if(done.has(o.id))continue;
+      for(const m of cl){if(gDist(m.g,o.g)<th){cl.push(o);done.add(o.id);o.spId=sp.length;break}}}
+    sp.push({id:sp.length,m:cl,c:`hsl(${cl[0].hue},70%,55%)`});
+  }return sp;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  SPECIES CLUSTERING — Emergent speciation
+//  COLONY
 // ═══════════════════════════════════════════════════════════
-function clusterSpecies(lifeForms, threshold=0.15) {
-  // Simple single-linkage clustering by genome distance
-  const alive = lifeForms.filter(l=>l.alive);
-  if (!alive.length) return [];
-  const species = [];
-  const assigned = new Set();
-  for (const lf of alive) {
-    if (assigned.has(lf.id)) continue;
-    const cluster = [lf];
-    assigned.add(lf.id);
-    lf.speciesId = species.length;
-    // Find all close enough to this one
-    for (const other of alive) {
-      if (assigned.has(other.id)) continue;
-      // Check distance to any member of cluster
-      for (const member of cluster) {
-        if (genomeDist(member.genome, other.genome) < threshold) {
-          cluster.push(other);
-          assigned.add(other.id);
-          other.speciesId = species.length;
-          break;
-        }
-      }
-    }
-    species.push({ id: species.length, members: cluster, color: `hsl(${cluster[0].hueActual},70%,55%)` });
-  }
-  return species;
-}
+let _ci=0;
+class Col{constructor(){this.id='c'+(_ci++);this.m=new Set;this.t=0}
+  get sz(){return this.m.size}add(l){this.m.add(l.id);l.colId=this.id}rm(l){this.m.delete(l.id);if(l.colId===this.id)l.colId=null}}
 
 // ═══════════════════════════════════════════════════════════
-//  WORLD — Environment with signal/toxin fields
+//  WORLD
 // ═══════════════════════════════════════════════════════════
-class World {
-  constructor(w,h) {
-    this.w=w; this.h=h;
-    this.lifeForms = [];
-    this.tick = 0;
-    this.res = {
-      [M.SUB_A]: new Field(w,h, 0.12, 0.12, 5),
-      [M.SUB_B]: new Field(w,h, 0.08, 0.10, 4),
-      [M.CAT]:   new Field(w,h, 0.015, 0.05, 0.7),
-      [M.DEAD]:  new Field(w,h, 0, 0.08, 0, 15), // dead matter field
-    };
-    this.signalField = new Field(w,h, 0, 0.2, 0, 8);
-    this.toxinField = new Field(w,h, 0, 0.15, 0, 6);
-    this.colonies = new Map();
-    this.species = [];
-
+class World{
+  constructor(w,h){
+    this.w=w;this.h=h;this.lfs=[];this.tick=0;
+    this.res={[M.A]:new Fld(w,h,.12,.12,5),[M.B]:new Fld(w,h,.08,.10,4),[M.C]:new Fld(w,h,.015,.05,.7),[M.D]:new Fld(w,h,0,.08,0,15)};
+    this.ph=[new Fld(w,h,0,.2,0,8),new Fld(w,h,0,.15,0,6),new Fld(w,h,0,.18,0,6)];// food,danger,mating pheromones
+    this.toxF=new Fld(w,h,0,.12,0,8);
+    this.terF=new Fld(w,h,0,.02,0,3);// territory field
+    this.cols=new Map;this.species=[];
+    this.season='spring';this.sMult=1;
     // Hotspots
-    for (let i=0; i<5; i++) {
-      const hx=Math.random()*w|0, hy=Math.random()*h|0;
-      for (let dy=-3;dy<=3;dy++) for (let dx=-3;dx<=3;dx++) {
-        const d = Math.sqrt(dx*dx+dy*dy);
-        if (d <= 3) {
-          this.res[M.SUB_A].deposit(hx+dx, hy+dy, (4-d)*2);
-          this.res[M.SUB_B].deposit(hx+dx, hy+dy, (4-d)*1.5);
-        }
-      }
-    }
+    for(let i=0;i<6;i++){const hx=R()*w|0,hy=R()*h|0;
+      for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const d=sqrt(dx*dx+dy*dy);
+        if(d<=3){this.res[M.A].add(hx+dx,hy+dy,(4-d)*2);this.res[M.B].add(hx+dx,hy+dy,(4-d)*1.5)}}}
   }
-  depositAt(x,y,mol,amt) {
-    const gx=Math.floor(x), gy=Math.floor(y);
-    if (this.res[mol]) this.res[mol].deposit(gx,gy,amt);
+  resAt(x,y,mol){return this.res[mol]?this.res[mol].get(x,y):0}
+  phAt(x,y,i){return this.ph[i].get(x,y)}
+  toxAt(x,y){return this.toxF.get(x,y)}
+  dep(x,y,mol,a){if(this.res[mol])this.res[mol].add(x,y,a)}
+  spawn(bus,x,y,genome,brain){
+    const l=new LF(x??R()*this.w,y??R()*this.h,genome,brain);
+    this.lfs.push(l);bus.emit(E.SPAWN,l.id,{x:l.x,y:l.y,trophic:l.trophic});return l;
   }
-  spawn(bus,x,y,genome) {
-    const lf = new LifeForm(x??Math.random()*this.w, y??Math.random()*this.h, genome);
-    this.lifeForms.push(lf);
-    bus.emit(E.SPAWNED, lf.id, {x:lf.x, y:lf.y, trophic:lf.trophic});
-    return lf;
-  }
-  neighborsOf(lf, radius=2.5) {
-    const r = [];
-    for (const o of this.lifeForms) {
-      if (o.id===lf.id || !o.alive) continue;
-      let dx=Math.abs(lf.x-o.x), dy=Math.abs(lf.y-o.y);
-      dx=Math.min(dx,this.w-dx); dy=Math.min(dy,this.h-dy);
-      if (dx*dx+dy*dy <= radius*radius) r.push(o);
-    }
-    return r;
+  nbOf(lf,radius=2.5){
+    const r=[];for(const o of this.lfs){
+      if(o.id===lf.id||!o.alive)continue;
+      let dx=abs(lf.x-o.x),dy=abs(lf.y-o.y);
+      dx=mn(dx,this.w-dx);dy=mn(dy,this.h-dy);
+      if(dx*dx+dy*dy<=radius*radius)r.push(o);
+    }return r;
   }
 
-  step(bus) {
+  step(bus){
     this.tick++;
-    const aliveBefore = this.lifeForms.filter(l=>l.alive).length;
+    this.season=getSeason(this.tick);
+    this.sMult=seasonMult(this.tick);
+    const ab=this.lfs.filter(l=>l.alive).length;
 
-    // Resource dynamics
-    for (const rf of Object.values(this.res)) rf.tick();
-    this.signalField.decayAll(0.85); // signals fade
-    this.toxinField.decayAll(0.9);   // toxins persist longer
+    // Resource dynamics with seasonal modulation
+    for(const rf of Object.values(this.res))rf.tick(this.sMult);
+    for(const pf of this.ph)pf.decay(.82);
+    this.toxF.decay(.88);
+    this.terF.decay(.995);
 
-    const newLFs = [];
-    for (const lf of this.lifeForms) {
-      if (!lf.alive) continue;
+    const nw=[];
+    for(const lf of this.lfs){
+      if(!lf.alive)continue;
+      if(lf.dormant){lf.tick(bus,[],this);continue}
 
-      // Movement: Brownian + chemotaxis + fleeing predators
-      const spd = lf.genome.speed * 0.6;
-      lf.x += (Math.random()-0.5)*spd;
-      lf.y += (Math.random()-0.5)*spd;
+      // ── Movement (neural-driven + pheromone following) ──
+      if(lf.stage>0){
+        const spd=lf.g.speed*.6;
+        const nn=lf.lastNN;
+        if(nn){
+          const ang=nn[0]*PI*2;const mag=nn[1]*spd;
+          lf.x+=cos(ang)*mag;lf.y+=sin(ang)*mag;
+        }else{lf.x+=(R()-.5)*spd;lf.y+=(R()-.5)*spd}
 
-      // Chemotaxis toward resources
-      const gx=Math.floor(lf.x), gy=Math.floor(lf.y);
-      let bx=0,by=0,bv=this.res[M.SUB_A].get(gx,gy);
-      for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-        const v = this.res[M.SUB_A].get(gx+dx,gy+dy);
-        if (v>bv) { bv=v; bx=dx*0.12; by=dy*0.12; }
-      }
-      lf.x+=bx; lf.y+=by;
-
-      // Predators chase prey (move toward nearest smaller organism)
-      if (lf.trophic === 'predator') {
-        let closest=null, closestD=Infinity;
-        for (const o of this.lifeForms) {
-          if (o.id===lf.id || !o.alive || o.size >= lf.size) continue;
-          let dx2=lf.x-o.x, dy2=lf.y-o.y;
-          const d=dx2*dx2+dy2*dy2;
-          if (d<closestD && d < 25) { closestD=d; closest=o; }
-        }
-        if (closest) {
-          const ang = Math.atan2(closest.y-lf.y, closest.x-lf.x);
-          lf.x += Math.cos(ang)*spd*0.5;
-          lf.y += Math.sin(ang)*spd*0.5;
-        }
-      }
-
-      // Prey flee from toxin fields
-      if (lf.trophic === 'producer') {
-        const toxHere = this.toxinField.get(gx,gy);
-        if (toxHere > 0.5) {
-          let minTox=toxHere, mx=0, my=0;
-          for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-            const t = this.toxinField.get(gx+dx,gy+dy);
-            if (t<minTox) { minTox=t; mx=dx; my=dy; }
+        // Pheromone chemotaxis
+        const gx2=F(lf.x),gy2=F(lf.y);
+        if(lf.trophic==='prod'){
+          // Follow food pheromone, flee danger pheromone
+          let bx2=0,by2=0;
+          for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){
+            const food=this.ph[0].get(gx2+dx,gy2+dy);
+            const danger=this.ph[1].get(gx2+dx,gy2+dy);
+            bx2+=dx*(food*.1-danger*.2);by2+=dy*(food*.1-danger*.2);
           }
-          lf.x += mx*0.3; lf.y += my*0.3;
+          lf.x+=bx2;lf.y+=by2;
+        }else if(lf.trophic==='pred'){
+          // Predators ignore food pheromone, attracted to prey concentrations
+          let closest=null,cD=Infinity;
+          for(const o of this.lfs){
+            if(o.id===lf.id||!o.alive||o.sz>=lf.sz||o.dormant)continue;
+            let dx2=lf.x-o.x,dy2=lf.y-o.y;const d2=dx2*dx2+dy2*dy2;
+            if(d2<cD&&d2<36){cD=d2;closest=o}
+          }
+          if(closest){const ang2=atan2(closest.y-lf.y,closest.x-lf.x);lf.x+=cos(ang2)*spd*.4;lf.y+=sin(ang2)*spd*.4}
         }
+
+        // Colony cohesion
+        if(lf.colId&&this.cols.has(lf.colId)){
+          const col=this.cols.get(lf.colId);
+          let cx2=0,cy2=0,cn=0;
+          for(const mid of col.m){const m2=this.lfs.find(l2=>l2.id===mid&&l2.alive);if(m2){cx2+=m2.x;cy2+=m2.y;cn++}}
+          if(cn>1){cx2/=cn;cy2/=cn;lf.x+=(cx2-lf.x)*.04;lf.y+=(cy2-lf.y)*.04}
+        }
+
+        // Wrap toroidal
+        lf.x=((lf.x%this.w)+this.w)%this.w;lf.y=((lf.y%this.h)+this.h)%this.h;
+        lf.tx.push(lf.x);lf.ty.push(lf.y);if(lf.tx.length>12){lf.tx.shift();lf.ty.shift()}
       }
-
-      // Colony cohesion — move toward colony center
-      if (lf.colonyId && this.colonies.has(lf.colonyId)) {
-        const col = this.colonies.get(lf.colonyId);
-        let cx2=0,cy2=0,cn=0;
-        for (const mid of col.members) {
-          const m = this.lifeForms.find(l=>l.id===mid && l.alive);
-          if (m) { cx2+=m.x; cy2+=m.y; cn++; }
-        }
-        if (cn>1) {
-          cx2/=cn; cy2/=cn;
-          lf.x += (cx2-lf.x)*0.03;
-          lf.y += (cy2-lf.y)*0.03;
-        }
-      }
-
-      // Wrap
-      lf.x=((lf.x%this.w)+this.w)%this.w;
-      lf.y=((lf.y%this.h)+this.h)%this.h;
-
-      // Trail
-      lf.trailX.push(lf.x); lf.trailY.push(lf.y);
-      if (lf.trailX.length > 15) { lf.trailX.shift(); lf.trailY.shift(); }
 
       // Import resources
-      const avail = {};
-      for (const [mol,rf] of Object.entries(this.res)) avail[mol] = rf.get(Math.floor(lf.x), Math.floor(lf.y));
-      const consumed = lf.importResources(avail, bus);
-      for (const [mol,amt] of Object.entries(consumed)) {
-        if (this.res[mol]) this.res[mol].consume(Math.floor(lf.x), Math.floor(lf.y), amt);
-      }
+      const avail={};for(const[mol,rf]of Object.entries(this.res))avail[mol]=rf.get(F(lf.x),F(lf.y));
+      const consumed=lf.impRes(avail);
+      for(const[mol,amt]of Object.entries(consumed))if(this.res[mol])this.res[mol].eat(lf.x,lf.y,amt);
 
-      // Emit signals and toxins to fields
-      if (lf.signalStr > 0.1) this.signalField.deposit(Math.floor(lf.x), Math.floor(lf.y), lf.signalStr*0.2);
-      if (lf.toxinStr > 0.1) this.toxinField.deposit(Math.floor(lf.x), Math.floor(lf.y), lf.toxinStr*0.15);
+      // Emit pheromones to fields
+      for(let i=0;i<3;i++)if(lf.phEm[i]>.1)this.ph[i].add(F(lf.x),F(lf.y),lf.phEm[i]*.15);
+      if(lf.toxStr>.1)this.toxF.add(F(lf.x),F(lf.y),lf.toxStr*.12);
+      if(lf.territory.str>.1)this.terF.add(F(lf.territory.x),F(lf.territory.y),lf.territory.str*.1);
 
-      // Internal tick with neighbor awareness
-      const neighbors = this.neighborsOf(lf);
-      lf.tick(bus, neighbors, this);
+      // Tick with neighbors
+      const nbrs=this.nbOf(lf);
+      lf.tick(bus,nbrs,this);
 
-      // Division
-      if (lf.alive && lf.canDivide()) {
-        const child = lf.divide(bus);
-        if (child) {
-          child.x=((child.x%this.w)+this.w)%this.w;
-          child.y=((child.y%this.h)+this.h)%this.h;
-          newLFs.push(child);
+      // ── Reproduction ──
+      if(lf.alive&&lf.canDiv()&&lf.stage>=2){
+        const nnRepro=lf.lastNN?lf.lastNN[4]:0;
+        if(nnRepro>.4||lf.nrg>lf.g.divThresh*1.3){
+          // Try sexual first if preference is high
+          if(lf.g.sexPref>.4){
+            const mate=nbrs.find(n=>n.alive&&n.canDiv()&&n.spId===lf.spId&&n.stage>=2&&gDist(lf.g,n.g)<.35);
+            if(mate){const child=lf.mate(mate,bus);if(child){child.x=((child.x%this.w)+this.w)%this.w;child.y=((child.y%this.h)+this.h)%this.h;nw.push(child);continue}}
+          }
+          // Fall back to asexual
+          const child=lf.divide(bus);
+          if(child){child.x=((child.x%this.w)+this.w)%this.w;child.y=((child.y%this.h)+this.h)%this.h;nw.push(child)}
         }
       }
 
       // Waste & dead matter
-      const waste = lf.inv[M.WASTE]||0;
-      if (waste > 0) { this.res[M.SUB_A].deposit(Math.floor(lf.x), Math.floor(lf.y), waste*0.1); lf.inv[M.WASTE]=0; }
+      const wst=lf.inv[M.W]||0;if(wst>0){this.res[M.A].add(F(lf.x),F(lf.y),wst*.08);lf.inv[M.W]=0}
     }
 
-    // Dead release materials
-    for (const lf of this.lifeForms) {
-      if (!lf.alive) {
-        for (const [k,v] of Object.entries(lf.inv)) {
-          if (v>0 && this.res[k]) this.res[k].deposit(Math.floor(lf.x), Math.floor(lf.y), v);
-        }
-        // Dead body becomes dead matter
-        this.res[M.DEAD].deposit(Math.floor(lf.x), Math.floor(lf.y), 2 + lf.membrane.lipids*0.1);
-        lf.inv = {};
+    // Dead release
+    for(const lf of this.lfs){
+      if(!lf.alive){
+        for(const[k,v]of Object.entries(lf.inv))if(v>0&&this.res[k])this.res[k].add(F(lf.x),F(lf.y),v);
+        this.res[M.D].add(F(lf.x),F(lf.y),2+lf.mem.lip*.1);
+        lf.inv={};
       }
     }
 
-    this.lifeForms.push(...newLFs);
-    this.lifeForms = this.lifeForms.filter(l => l.alive);
+    this.lfs.push(...nw);
+    this.lfs=this.lfs.filter(l=>l.alive);
 
-    // Colony formation — nearby same-species with high cooperation
-    if (this.tick % 10 === 0) this._updateColonies(bus);
-    // Species clustering every 20 ticks
-    if (this.tick % 20 === 0) this.species = clusterSpecies(this.lifeForms);
+    if(this.tick%10===0)this._updCols(bus);
+    if(this.tick%20===0)this.species=cluster(this.lfs);
 
-    const aliveAfter = this.lifeForms.length;
-    return { tick:this.tick, alive:aliveAfter, born:newLFs.length, died:aliveBefore-aliveAfter+newLFs.length };
+    return{tick:this.tick,alive:this.lfs.length,born:nw.length,died:ab-this.lfs.length+nw.length};
   }
 
-  _updateColonies(bus) {
-    // Clean dead members
-    for (const [id,col] of this.colonies) {
-      for (const mid of col.members) {
-        const m = this.lifeForms.find(l=>l.id===mid);
-        if (!m || !m.alive) col.remove({id:mid, colonyId:id});
-      }
-      if (col.size === 0) this.colonies.delete(id);
+  _updCols(bus){
+    for(const[id,col]of this.cols){
+      for(const mid of col.m){const m2=this.lfs.find(l=>l.id===mid);if(!m2||!m2.alive)col.rm({id:mid,colId:id})}
+      if(col.sz===0)this.cols.delete(id);
     }
-
-    // Form new colonies from clusters of cooperators
-    for (const lf of this.lifeForms) {
-      if (!lf.alive || lf.colonyId) continue;
-      if (lf.genome.cooperation < 0.4) continue;
-      const neighbors = this.neighborsOf(lf, 2);
-      const compatible = neighbors.filter(n =>
-        n.alive && !n.colonyId && n.speciesId === lf.speciesId && n.genome.cooperation > 0.4
-      );
-      if (compatible.length >= 2) {
-        const col = new Colony();
-        col.formed = this.tick;
-        col.add(lf);
-        for (const n of compatible.slice(0,5)) col.add(n);
-        this.colonies.set(col.id, col);
-        bus.emit(E.COLONY_FORMED, col.id, { size:col.size });
+    for(const lf of this.lfs){
+      if(!lf.alive||lf.colId||lf.g.cooperation<.4)continue;
+      const nb=this.nbOf(lf,2);
+      const compat=nb.filter(n=>n.alive&&!n.colId&&n.spId===lf.spId&&n.g.cooperation>.4);
+      if(compat.length>=2){
+        const col=new Col;col.t=this.tick;col.add(lf);
+        for(const n of compat.slice(0,6))col.add(n);
+        this.cols.set(col.id,col);bus.emit(E.COL_FORM,col.id,{sz:col.sz});
       }
     }
-
-    // Merge nearby colonies of same species
-    // Grow existing colonies with nearby compatible organisms
-    for (const [id,col] of this.colonies) {
-      const members = [...col.members].map(mid => this.lifeForms.find(l=>l.id===mid)).filter(Boolean);
-      for (const m of members) {
-        const neighbors = this.neighborsOf(m, 2);
-        for (const n of neighbors) {
-          if (n.alive && !n.colonyId && n.speciesId === m.speciesId && n.genome.cooperation > 0.3 && col.size < 12) {
-            col.add(n);
-          }
-        }
+    for(const[,col]of this.cols){
+      const members=[...col.m].map(mid=>this.lfs.find(l=>l.id===mid&&l.alive)).filter(Boolean);
+      for(const m2 of members){const nb2=this.nbOf(m2,2);
+        for(const n of nb2)if(n.alive&&!n.colId&&n.spId===m2.spId&&n.g.cooperation>.3&&col.sz<15)col.add(n);
       }
     }
   }
 
-  cataclysm(bus, type) {
-    if (type === 'meteor') {
-      const cx=Math.random()*this.w, cy=Math.random()*this.h, r=6;
-      for (let y=cy-r;y<=cy+r;y++) for (let x=cx-r;x<=cx+r;x++) {
-        const d=Math.sqrt((x-cx)**2+(y-cy)**2);
-        if (d<r) {
-          for (const rf of Object.values(this.res)) rf.consume(Math.floor(x),Math.floor(y), 8);
-          this.toxinField.deposit(Math.floor(x),Math.floor(y), 4);
-        }
-      }
-      for (const lf of this.lifeForms) {
-        if (!lf.alive) continue;
-        const d=Math.sqrt((lf.x-cx)**2+(lf.y-cy)**2);
-        if (d<r) { lf.membrane.takeDamage(8*(1-d/r)); lf.energy -= 10*(1-d/r); if (lf.energy<=0||!lf.membrane.viable) lf.die(bus); }
-      }
-      bus.emit(E.CATACLYSM, null, { type:'meteor', x:cx, y:cy, r });
-    } else if (type === 'plague') {
-      for (const lf of this.lifeForms) {
-        if (!lf.alive) continue;
-        if (Math.random() < 0.3) { lf.energy *= 0.3; lf.membrane.takeDamage(5); if (!lf.membrane.viable) lf.die(bus); }
-      }
-      bus.emit(E.CATACLYSM, null, { type:'plague' });
-    } else if (type === 'bloom') {
-      for (let i=0; i<this.w*this.h; i++) { this.res[M.SUB_A].g[i] = Math.min(10, this.res[M.SUB_A].g[i]+4); this.res[M.SUB_B].g[i] = Math.min(10, this.res[M.SUB_B].g[i]+3); }
-      bus.emit(E.CATACLYSM, null, { type:'bloom' });
+  cata(bus,type){
+    if(type==='meteor'){const cx2=R()*this.w,cy2=R()*this.h,r=7;
+      for(let y=cy2-r;y<=cy2+r;y++)for(let x=cx2-r;x<=cx2+r;x++){const d=sqrt((x-cx2)**2+(y-cy2)**2);
+        if(d<r){for(const rf of Object.values(this.res))rf.eat(x,y,8);this.toxF.add(F(x),F(y),5)}}
+      for(const lf of this.lfs){if(!lf.alive)continue;const d=sqrt((lf.x-cx2)**2+(lf.y-cy2)**2);
+        if(d<r){lf.mem.hit(10*(1-d/r));lf.nrg-=12*(1-d/r);if(lf.nrg<=0||!lf.mem.ok){lf.alive=0;bus.emit(E.DIE,lf.id,{cause:'meteor'})}}}
+      bus.emit(E.CATA,null,{type:'meteor',x:cx2,y:cy2});
+    }else if(type==='plague'){
+      for(const lf of this.lfs){if(!lf.alive)continue;if(R()<.3){lf.nrg*=.25;lf.mem.hit(6);if(!lf.mem.ok){lf.alive=0;bus.emit(E.DIE,lf.id,{cause:'plague'})}}}
+      bus.emit(E.CATA,null,{type:'plague'});
+    }else if(type==='bloom'){
+      for(let i=0;i<this.w*this.h;i++){this.res[M.A].g[i]=mn(10,this.res[M.A].g[i]+5);this.res[M.B].g[i]=mn(10,this.res[M.B].g[i]+4)}
+      bus.emit(E.CATA,null,{type:'bloom'});
+    }else if(type==='ice'){// ice age
+      for(let i=0;i<this.w*this.h;i++){this.res[M.A].g[i]*=.3;this.res[M.B].g[i]*=.3}
+      bus.emit(E.CATA,null,{type:'ice_age'});
     }
   }
 }
@@ -881,514 +798,365 @@ class World {
 // ═══════════════════════════════════════════════════════════
 //  SIMULATION
 // ═══════════════════════════════════════════════════════════
-class Simulation {
-  constructor(w=80,h=50,initPop=20) {
-    this.bus = new EventBus();
-    this.world = new World(w,h);
-    this.stats = { ticks:0, births:0, deaths:0, peak:0, maxGen:0,
-                   popHist:[], viabHist:[], speciesHist:[], prodHist:[], predHist:[] };
-    this._setupStats();
-    for (let i=0; i<initPop; i++) this.world.spawn(this.bus);
-    // Seed a couple of predators
-    for (let i=0; i<2; i++) this.world.spawn(this.bus, null, null, randomGenome('predator'));
-    this.world.species = clusterSpecies(this.world.lifeForms);
+class Sim{
+  constructor(w=80,h=50,n=22){
+    this.bus=new EventBus;this.world=new World(w,h);
+    this.st={t:0,b:0,d:0,pk:0,mg:0,sx:0,ax:0,hgt:0,
+      pH:[],vH:[],spH:[],prH:[],pdH:[],sH:[]};
+    this.bus.sub(E.SPAWN,()=>this.st.b++);
+    this.bus.sub(E.DIE,()=>this.st.d++);
+    this.bus.sub(E.SEXUAL,()=>this.st.sx++);
+    this.bus.sub(E.DIVIDE,()=>this.st.ax++);
+    this.bus.sub(E.HGT,()=>this.st.hgt++);
+    for(let i=0;i<n;i++)this.world.spawn(this.bus);
+    for(let i=0;i<3;i++)this.world.spawn(this.bus,null,null,rg('pred'));
+    this.world.species=cluster(this.world.lfs);
   }
-  _setupStats() {
-    this.bus.subscribe(E.SPAWNED, ()=>this.stats.births++);
-    this.bus.subscribe(E.DIED, ()=>this.stats.deaths++);
+  step(){
+    const r=this.world.step(this.bus);
+    const a=this.world.lfs.filter(l=>l.alive);
+    this.st.t++;this.st.pH.push(a.length);
+    if(a.length>this.st.pk)this.st.pk=a.length;
+    const pr=a.filter(l=>l.trophic==='prod').length;
+    const pd=a.filter(l=>l.trophic!=='prod').length;
+    this.st.prH.push(pr);this.st.pdH.push(pd);
+    this.st.sH.push(this.world.sMult);
+    if(a.length){
+      this.st.vH.push(a.reduce((s,l)=>s+l.v,0)/a.length);
+      this.st.spH.push(this.world.species.length);
+      const mg2=mx(...a.map(l=>l.gen));if(mg2>this.st.mg)this.st.mg=mg2;
+    }else{this.st.vH.push(0);this.st.spH.push(0)}
+    const mh=700;for(const k of['pH','vH','spH','prH','pdH','sH'])if(this.st[k].length>mh)this.st[k]=this.st[k].slice(-mh);
+    return r;
   }
-  step() {
-    const result = this.world.step(this.bus);
-    const alive = this.world.lifeForms.filter(l=>l.alive);
-    this.stats.ticks++;
-    this.stats.popHist.push(alive.length);
-    if (alive.length > this.stats.peak) this.stats.peak = alive.length;
-
-    const producers = alive.filter(l=>l.trophic==='producer').length;
-    const predators = alive.filter(l=>l.trophic!=='producer').length;
-    this.stats.prodHist.push(producers);
-    this.stats.predHist.push(predators);
-
-    if (alive.length) {
-      this.stats.viabHist.push(alive.reduce((s,l)=>s+l.viability,0)/alive.length);
-      const mg = Math.max(...alive.map(l=>l.generation));
-      if (mg > this.stats.maxGen) this.stats.maxGen = mg;
-      this.stats.speciesHist.push(this.world.species.length);
-    } else {
-      this.stats.viabHist.push(0);
-      this.stats.speciesHist.push(0);
-    }
-
-    const maxH = 600;
-    if (this.stats.popHist.length > maxH) {
-      this.stats.popHist=this.stats.popHist.slice(-maxH);
-      this.stats.viabHist=this.stats.viabHist.slice(-maxH);
-      this.stats.speciesHist=this.stats.speciesHist.slice(-maxH);
-      this.stats.prodHist=this.stats.prodHist.slice(-maxH);
-      this.stats.predHist=this.stats.predHist.slice(-maxH);
-    }
-    return result;
-  }
-  summary() {
-    const a = this.world.lifeForms.filter(l=>l.alive);
-    const auto = a.filter(l=>l.autopoietic);
-    const prods = a.filter(l=>l.trophic==='producer');
-    const preds = a.filter(l=>l.trophic!=='producer');
-    const symb = a.filter(l=>l.symbiotId).length;
-    return {
-      tick:this.world.tick, pop:a.length, auto:auto.length,
-      species:this.world.species.length,
-      producers:prods.length, predators:preds.length,
-      colonies:this.world.colonies.size,
-      symbioses:symb,
-      peak:this.stats.peak, births:this.stats.births, deaths:this.stats.deaths,
-      maxGen:this.stats.maxGen,
-      events:this.bus.count, subs:this.bus.subCount,
-    };
+  sum(){
+    const a=this.world.lfs.filter(l=>l.alive),au=a.filter(l=>l.auto);
+    const pr=a.filter(l=>l.trophic==='prod'),pd=a.filter(l=>l.trophic==='pred');
+    const sc=a.filter(l=>l.trophic==='scav'),pa=a.filter(l=>l.trophic==='para');
+    const dor=a.filter(l=>l.dormant);
+    return{tick:this.world.tick,pop:a.length,auto:au.length,sp:this.world.species.length,
+      pr:pr.length,pd:pd.length,sc:sc.length,pa:pa.length,
+      cols:this.world.cols.size,dor:dor.length,
+      b:this.st.b,d:this.st.d,sx:this.st.sx,ax:this.st.ax,hgt:this.st.hgt,
+      mg:this.st.mg,ev:this.bus.ct,season:this.world.season};
   }
 }
 
 // ═══════════════════════════════════════════════════════════
 //  RENDERER & UI
 // ═══════════════════════════════════════════════════════════
-let sim, canvas, ctx, running=false, animId=null, speed=20, viewMode='normal', hoveredLF=null;
-let dpr = 1;
-
-function init() {
-  sim = new Simulation(80, 50, 20);
-  canvas = document.getElementById('world-canvas');
-  ctx = canvas.getContext('2d');
-  dpr = window.devicePixelRatio || 1;
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  setupEventLog();
-  setupTooltip();
-  setupControls();
-  setupTabs();
-  render();
-  toggleRun(); // auto-start
+let sim,cv,cx,run=0,anim=null,spd=30,vm='eco',hov=null,dpr=1;
+function init(){
+  sim=new Sim(80,50,22);cv=document.getElementById('cv');cx=cv.getContext('2d');
+  dpr=window.devicePixelRatio||1;rsz();window.addEventListener('resize',rsz);
+  elog();ttip();ctrl();tabs();draw();toggle();
 }
+function rsz(){const c=document.getElementById('wc');const w=c.clientWidth,h=c.clientHeight;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';cx.setTransform(dpr,0,0,dpr,0,0)}
+function cs(){const c=document.getElementById('wc');return mn(c.clientWidth/sim.world.w,c.clientHeight/sim.world.h)}
 
-function resizeCanvas() {
-  const container = document.getElementById('world-container');
-  const w = container.clientWidth, h = container.clientHeight;
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-function cellSize() {
-  const container = document.getElementById('world-container');
-  return Math.min(container.clientWidth / sim.world.w, container.clientHeight / sim.world.h);
-}
-
-function setupEventLog() {
-  const logEl = document.getElementById('event-log');
-  const logTypes = [E.SPAWNED,E.DIED,E.DIVIDED,E.CONSUMED_PREY,E.TOXIN_KILL,E.PARASITIZED,
-    E.COLONY_FORMED,E.QUORUM_ACTIVATED,E.SPECIATION,E.CATACLYSM,E.AUTOPOIESIS_LOST,E.NICHE_CONSTRUCTED];
-  const icons = {
-    [E.SPAWNED]:{t:'+ born',c:'color:#00e676'},
-    [E.DIED]:{t:'✗ died',c:'color:#ff5252'},
-    [E.DIVIDED]:{t:'÷ divided',c:'color:#00e5ff'},
-    [E.CONSUMED_PREY]:{t:'⚔ predation',c:'color:#ff9100'},
-    [E.TOXIN_KILL]:{t:'☠ toxin kill',c:'color:#e040fb'},
-    [E.PARASITIZED]:{t:'⚡ parasitized',c:'color:#e040fb'},
-    [E.COLONY_FORMED]:{t:'⬡ colony formed',c:'color:#ffd740'},
-    [E.QUORUM_ACTIVATED]:{t:'◈ quorum!',c:'color:#00e5ff'},
-    [E.CATACLYSM]:{t:'💥 CATACLYSM',c:'color:#ff1744;font-weight:bold'},
-    [E.AUTOPOIESIS_LOST]:{t:'◇ autopoiesis lost',c:'color:#ff8a65'},
-    [E.NICHE_CONSTRUCTED]:{t:'⚒ niche built',c:'color:#69f0ae'},
-    [E.SPECIATION]:{t:'★ speciation',c:'color:#ffd740'},
-  };
-  sim.bus.subscribe(logTypes, (evt) => {
-    const info = icons[evt.type] || {t:evt.type,c:''};
-    const src = evt.src ? evt.src.slice(0,6) : '—';
-    let detail = '';
-    if (evt.type===E.DIVIDED) detail = ` gen${evt.data.gen||'?'}`;
-    if (evt.type===E.DIED) detail = ` age=${evt.data.age||'?'} ${evt.data.trophic||''} k=${evt.data.kills||0}`;
-    if (evt.type===E.CONSUMED_PREY) detail = ` ate ${(evt.data.preyId||'').slice(0,6)}`;
-    if (evt.type===E.COLONY_FORMED) detail = ` size=${evt.data.size||'?'}`;
-    if (evt.type===E.CATACLYSM) detail = ` ${evt.data.type||''}`;
-    if (evt.type===E.PARASITIZED) detail = ` from ${(evt.data.hostId||'').slice(0,6)}`;
-    const d = document.createElement('div');
-    d.className = 'entry';
-    d.innerHTML = `<span style="${info.c}">[${src}] ${info.t}</span>${detail}`;
-    logEl.appendChild(d);
-    if (logEl.children.length > 60) logEl.removeChild(logEl.firstChild);
-    logEl.scrollTop = logEl.scrollHeight;
+function elog(){
+  const el=document.getElementById('elog');
+  const types=[E.SPAWN,E.DIE,E.DIVIDE,E.SEXUAL,E.PREY,E.TOXIN,E.PARASITE,E.COL_FORM,E.QUORUM,E.CATA,E.HGT,E.DORMANT_IN,E.DORMANT_OUT,E.NICHE,E.BIOFILM,E.SCAV,E.COOP];
+  const ic={[E.SPAWN]:{t:'+',c:'#00e676'},[E.DIE]:{t:'✗',c:'#ff5252'},[E.DIVIDE]:{t:'÷',c:'#00e5ff'},
+    [E.SEXUAL]:{t:'♀♂',c:'#e040fb'},[E.PREY]:{t:'⚔',c:'#ff9100'},[E.TOXIN]:{t:'☠',c:'#e040fb'},
+    [E.PARASITE]:{t:'⚡',c:'#e040fb'},[E.COL_FORM]:{t:'⬡',c:'#ffd740'},[E.QUORUM]:{t:'◈',c:'#00e5ff'},
+    [E.CATA]:{t:'💥',c:'#ff1744'},[E.HGT]:{t:'⇄',c:'#ff9100'},[E.DORMANT_IN]:{t:'💤',c:'#448aff'},
+    [E.DORMANT_OUT]:{t:'☀',c:'#ffd740'},[E.NICHE]:{t:'⚒',c:'#69f0ae'},[E.COOP]:{t:'♥',c:'#00e5ff'}};
+  sim.bus.sub(types,(ev)=>{
+    const i=ic[ev.t]||{t:ev.t,c:'#888'};
+    const s=ev.src?(ev.src+'').slice(0,5):'—';
+    let det='';
+    if(ev.t===E.SEXUAL)det=` gen${ev.d.gen||'?'}`;
+    if(ev.t===E.DIE)det=` ${ev.d.cause||'?'}`;
+    if(ev.t===E.PREY)det=` ate ${(ev.d.prey||'').slice(0,5)}`;
+    if(ev.t===E.HGT)det=` ${ev.d.trait} from ${(ev.d.from||'').slice(0,5)}`;
+    if(ev.t===E.CATA)det=` ${ev.d.type||''}`;
+    const d=document.createElement('div');d.className='e';
+    d.innerHTML=`<span style="color:${i.c}">${i.t}</span> <span style="color:#3a5a6a">${s}</span>${det}`;
+    el.appendChild(d);if(el.children.length>80)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;
   });
 }
 
-function setupTooltip() {
-  canvas.addEventListener('mousemove', (e) => {
-    const CS = cellSize();
-    const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) / CS;
-    const my = (e.clientY - rect.top) / CS;
-    hoveredLF = null;
-    for (const lf of sim.world.lifeForms) {
-      if (!lf.alive) continue;
-      if (Math.abs(mx-lf.x)<1 && Math.abs(my-lf.y)<1) { hoveredLF=lf; break; }
-    }
-    const tt = document.getElementById('tooltip');
-    if (hoveredLF) {
-      const lf = hoveredLF;
-      tt.innerHTML = `<div class="tt-id">${lf.id} <span style="color:${roleColor(lf.trophic)}">[${lf.trophic}]</span></div>
-        <div class="tt-row"><span>Species</span><span>${lf.speciesId??'?'}</span></div>
-        <div class="tt-row"><span>Gen / Age</span><span>${lf.generation} / ${lf.age}</span></div>
-        <div class="tt-row"><span>Energy</span><span>${lf.energy.toFixed(1)}</span></div>
-        <div class="tt-row"><span>Viability</span><span>${lf.viability.toFixed(3)}</span></div>
-        <div class="tt-row"><span>Membrane</span><span>${(lf.membrane.integrity*100).toFixed(0)}% (armor ${lf.membrane.armor.toFixed(2)})</span></div>
-        <div class="tt-row"><span>Autopoietic</span><span>${lf.autopoietic?'✓':'✗'}</span></div>
-        <div class="tt-row"><span>Colony</span><span>${lf.colonyId||'none'}</span></div>
-        <div class="tt-row"><span>Quorum</span><span>${lf.quorumActive?'ACTIVE':'—'}</span></div>
-        <div class="tt-row"><span>Kills</span><span>${lf.kills}</span></div>
-        <div class="tt-row"><span>Aggro/Tox/Coop</span><span>${lf.genome.aggro.toFixed(2)}/${lf.genome.toxicity.toFixed(2)}/${lf.genome.cooperation.toFixed(2)}</span></div>`;
+function ttip(){
+  cv.addEventListener('mousemove',(e)=>{
+    const C=cs(),rect=cv.getBoundingClientRect();
+    const mx2=(e.clientX-rect.left)/C,my2=(e.clientY-rect.top)/C;
+    hov=null;
+    for(const lf of sim.world.lfs){if(!lf.alive)continue;if(abs(mx2-lf.x)<1&&abs(my2-lf.y)<1){hov=lf;break}}
+    const tt=document.getElementById('tt');
+    if(hov){const l=hov;
+      tt.innerHTML=`<div class="ti">${l.id} <span style="color:${tCol(l.trophic)}">[${l.trophic}]</span> ${STAGE_NAMES[l.stage]} ${l.dormant?'💤':''}</div>
+        <div class="tr"><span>Species</span><span>${l.spId??'?'}</span></div>
+        <div class="tr"><span>Gen/Age</span><span>${l.gen}/${l.age}</span></div>
+        <div class="tr"><span>Energy</span><span>${l.nrg.toFixed(1)}</span></div>
+        <div class="tr"><span>Viability</span><span>${l.v.toFixed(3)}</span></div>
+        <div class="tr"><span>Membrane</span><span>${(l.mem.int*100|0)}% ar=${l.mem.ar.toFixed(2)}</span></div>
+        <div class="tr"><span>Colony</span><span>${l.colId||'—'} ${l.qActive?'QUORUM':''}</span></div>
+        <div class="tr"><span>Kills/Matings</span><span>${l.kills}/${l.matings}</span></div>
+        <div class="tr"><span>HGT</span><span>${l.hgtCount}</span></div>
+        <div class="tr"><span>Biofilm</span><span>${l.biofilm.toFixed(2)}</span></div>
+        <div class="tr"><span>Immune</span><span>[${[...l.immune].map(v=>v.toFixed(1)).join(',')}]</span></div>
+        <div class="tr"><span>Brain out</span><span>${l.lastNN?[...l.lastNN].map(v=>v.toFixed(2)).join(' '):'—'}</span></div>
+        <div class="tr"><span>Agg/Tox/Cop/Spd</span><span>${l.g.aggro.toFixed(2)}/${l.g.toxicity.toFixed(2)}/${l.g.cooperation.toFixed(2)}/${l.g.speed.toFixed(2)}</span></div>`;
       tt.style.display='block';
-      tt.style.left = Math.min(e.clientX-rect.left+12, rect.width-250)+'px';
-      tt.style.top = (e.clientY-rect.top+12)+'px';
-    } else { tt.style.display='none'; }
+      tt.style.left=mn(e.clientX-rect.left+10,rect.width-270)+'px';
+      tt.style.top=(e.clientY-rect.top+10)+'px';
+    }else tt.style.display='none';
   });
-  canvas.addEventListener('mouseleave', ()=>{ document.getElementById('tooltip').style.display='none'; hoveredLF=null; });
+  cv.addEventListener('mouseleave',()=>{document.getElementById('tt').style.display='none';hov=null});
 }
 
-function setupControls() {
-  document.getElementById('btn-pause').addEventListener('click', toggleRun);
-  document.getElementById('btn-step').addEventListener('click', ()=>{ if (!running) { sim.step(); render(); }});
-  document.getElementById('btn-spawn').addEventListener('click', ()=> sim.world.spawn(sim.bus));
-  document.getElementById('btn-predator').addEventListener('click', ()=> sim.world.spawn(sim.bus, null, null, randomGenome('predator')));
-  document.getElementById('btn-cataclysm').addEventListener('click', ()=> {
-    const types = ['meteor','plague','bloom'];
-    sim.world.cataclysm(sim.bus, types[Math.random()*types.length|0]);
-  });
-  document.getElementById('btn-reset').addEventListener('click', ()=>{
-    if (animId) cancelAnimationFrame(animId);
-    running=false;
-    document.getElementById('btn-pause').textContent='▶ Run';
-    document.getElementById('event-log').innerHTML='';
-    _id=0; _colId=0;
-    sim = new Simulation(80,50,20);
-    setupEventLog();
-    render();
-    toggleRun();
-  });
-  document.getElementById('speed').addEventListener('input', (e)=>{ speed=parseInt(e.target.value); });
-  document.getElementById('view-mode').addEventListener('change', (e)=>{ viewMode=e.target.value; });
+function ctrl(){
+  document.getElementById('bp').onclick=toggle;
+  document.getElementById('bs').onclick=()=>{if(!run){sim.step();draw()}};
+  document.getElementById('ba').onclick=()=>sim.world.spawn(sim.bus);
+  document.getElementById('br').onclick=()=>sim.world.spawn(sim.bus,null,null,rg('pred'));
+  document.getElementById('bd').onclick=()=>{const t=['meteor','plague','bloom','ice'];sim.world.cata(sim.bus,t[R()*t.length|0])};
+  document.getElementById('bx').onclick=()=>{
+    if(anim)cancelAnimationFrame(anim);run=0;_id=0;_ci=0;
+    document.getElementById('bp').textContent='▶';
+    document.getElementById('elog').innerHTML='';
+    sim=new Sim(80,50,22);elog();draw();toggle();
+  };
+  document.getElementById('spd').oninput=(e)=>{spd=+e.target.value};
+  document.getElementById('vm').onchange=(e)=>{vm=e.target.value};
 }
 
-function setupTabs() {
-  for (const btn of document.querySelectorAll('.tab-bar button')) {
-    btn.addEventListener('click', ()=>{
-      const panel = btn.closest('.panel');
-      panel.querySelectorAll('.tab-bar button').forEach(b=>b.classList.remove('active'));
-      panel.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-    });
-  }
-}
+function tabs(){for(const b of document.querySelectorAll('.tb button'))b.onclick=()=>{
+  const p=b.closest('.p');p.querySelectorAll('.tb button').forEach(x=>x.classList.remove('on'));
+  p.querySelectorAll('.tc').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');
+}}
 
-function toggleRun() {
-  running=!running;
-  const btn=document.getElementById('btn-pause');
-  btn.textContent=running?'⏸ Pause':'▶ Run';
-  btn.classList.toggle('active',running);
-  if (running) loop();
-}
+function toggle(){run=!run;document.getElementById('bp').textContent=run?'⏸':'▶';document.getElementById('bp').classList.toggle('on',run);if(run)loop()}
+let lt=0;
+function loop(){if(!run)return;const now=performance.now();if(now-lt>=1000/spd){sim.step();draw();lt=now}anim=requestAnimationFrame(loop)}
 
-let lastTick=0;
-function loop() {
-  if (!running) return;
-  const now=performance.now(), interval=1000/speed;
-  if (now-lastTick>=interval) {
-    sim.step();
-    render();
-    lastTick=now;
-  }
-  animId=requestAnimationFrame(loop);
-}
+// ═══════════════════════════════════════════════════════════
+//  DRAW
+// ═══════════════════════════════════════════════════════════
+function draw(){
+  const w=sim.world,W=w.w,H=w.h,C=cs();
+  const cw=document.getElementById('wc').clientWidth,ch=document.getElementById('wc').clientHeight;
+  cx.clearRect(0,0,cw,ch);
 
-function render() {
-  const w = sim.world, W=w.w, H=w.h;
-  const CS = cellSize();
-  const container = document.getElementById('world-container');
-  const cw = container.clientWidth, ch = container.clientHeight;
+  // Season tint
+  const sTint=w.season==='winter'?[0,0,8]:w.season==='summer'?[5,2,0]:w.season==='autumn'?[3,1,0]:[0,3,2];
 
-  ctx.clearRect(0, 0, cw, ch);
+  // Background
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const sa=w.res[M.A].get(x,y),sb=w.res[M.B].get(x,y),dead=w.res[M.D].get(x,y);
+    const tot=sa+sb;
+    let r=5+mn(15,tot*1.2)+mn(20,dead*4)+sTint[0];
+    let g=7+mn(30,tot*2.2)+sTint[1];
+    let b=12+mn(22,tot*1.5)+sTint[2];
 
-  // ── Background: resource heatmap ──
-  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
-    const sa = w.res[M.SUB_A].get(x,y), sb = w.res[M.SUB_B].get(x,y);
-    const dead = w.res[M.DEAD].get(x,y);
-    const total = sa+sb;
-    let r = 6 + Math.min(15, total*1.2) + Math.min(20, dead*4);
-    let g = 8 + Math.min(35, total*2.5);
-    let b = 14 + Math.min(25, total*1.8);
-
-    // Signal field overlay
-    if (viewMode==='signals' || viewMode==='normal') {
-      const sig = w.signalField.get(x,y);
-      if (sig > 0.2) { r+=sig*8; g+=sig*12; b+=sig*5; }
+    if(vm==='ph'){// Pheromone view
+      const p0=w.ph[0].get(x,y),p1=w.ph[1].get(x,y),p2=w.ph[2].get(x,y);
+      r+=p1*15+p2*8;g+=p0*12+p2*4;b+=p0*6+p2*12;
+    }else if(vm==='ter'){// Territory view
+      const t2=w.terF.get(x,y);r+=t2*20;g+=t2*8;b+=t2*5;
+    }else{// Normal: subtle signal/toxin overlay
+      const sig=w.ph[0].get(x,y)+w.ph[2].get(x,y);
+      const tox=w.toxF.get(x,y);
+      if(sig>.2){g+=sig*5;b+=sig*3}
+      if(tox>.2){r+=tox*8}
     }
-    // Toxin field overlay
-    if (viewMode==='signals' || viewMode==='normal') {
-      const tox = w.toxinField.get(x,y);
-      if (tox > 0.2) { r+=tox*12; g-=tox*2; b-=tox*2; }
-    }
-
-    ctx.fillStyle = `rgb(${Math.min(255,r|0)},${Math.min(255,g|0)},${Math.min(255,b|0)})`;
-    ctx.fillRect(x*CS, y*CS, CS+0.5, CS+0.5);
+    cx.fillStyle=`rgb(${mn(255,r|0)},${mn(255,g|0)},${mn(255,b|0)})`;
+    cx.fillRect(x*C,y*C,C+.5,C+.5);
   }
 
-  // ── Colony bonds ──
-  if (viewMode==='bonds' || viewMode==='normal') {
-    ctx.lineWidth = 0.8;
-    for (const [,col] of w.colonies) {
-      const members = [...col.members].map(mid => w.lifeForms.find(l=>l.id===mid && l.alive)).filter(Boolean);
-      if (members.length < 2) continue;
-      ctx.strokeStyle = 'rgba(255,215,64,0.2)';
-      for (let i=0;i<members.length;i++) {
-        for (let j=i+1;j<members.length;j++) {
-          ctx.beginPath();
-          ctx.moveTo(members[i].x*CS+CS/2, members[i].y*CS+CS/2);
-          ctx.lineTo(members[j].x*CS+CS/2, members[j].y*CS+CS/2);
-          ctx.stroke();
-        }
+  // Colony bonds
+  if(vm==='eco'||vm==='nn'){
+    cx.lineWidth=.6;
+    for(const[,col]of w.cols){
+      const ms=[...col.m].map(mid=>w.lfs.find(l=>l.id===mid&&l.alive)).filter(Boolean);
+      if(ms.length<2)continue;
+      cx.strokeStyle='rgba(255,215,64,0.15)';
+      for(let i=0;i<ms.length;i++)for(let j=i+1;j<ms.length;j++){
+        cx.beginPath();cx.moveTo(ms[i].x*C+C/2,ms[i].y*C+C/2);cx.lineTo(ms[j].x*C+C/2,ms[j].y*C+C/2);cx.stroke();
       }
     }
   }
 
-  // ── Life forms ──
-  for (const lf of w.lifeForms) {
-    if (!lf.alive) continue;
-    const cx = lf.x*CS+CS/2, cy = lf.y*CS+CS/2;
-    const r = (2 + lf.size*0.7) * Math.min(CS/12, 1.2);
-    const v = lf.viability;
-    const h = lf.hueActual;
+  // Life forms
+  for(const lf of w.lfs){
+    if(!lf.alive)continue;
+    const px=lf.x*C+C/2,py=lf.y*C+C/2;
+    const rr=(1.5+lf.sz*.6)*mn(C/10,1.4);
+    const h=lf.hue;
 
-    // Color by view mode
-    let bodyColor, glowColor;
-    if (viewMode === 'species') {
-      bodyColor = `hsl(${h},70%,55%)`;
-      glowColor = `hsla(${h},70%,55%,`;
-    } else if (viewMode === 'energy') {
-      const ep = Math.min(1, lf.energy/50);
-      bodyColor = `hsl(${ep*120},80%,50%)`;
-      glowColor = `hsla(${ep*120},80%,50%,`;
-    } else if (viewMode === 'trophic') {
-      bodyColor = roleColor(lf.trophic);
-      glowColor = bodyColor.replace(')',',').replace('rgb','rgba');
-      if (!glowColor.includes('rgba')) glowColor = bodyColorToRGBA(bodyColor);
-    } else {
-      // Normal: role-based color
-      if (!lf.autopoietic) { bodyColor='#ff5252'; glowColor='rgba(255,82,82,'; }
-      else if (lf.canDivide()) { bodyColor='#00e5ff'; glowColor='rgba(0,229,255,'; }
-      else {
-        bodyColor = roleColor(lf.trophic);
-        glowColor = bodyColorToRGBA(bodyColor);
-      }
+    // Color
+    let body,glow;
+    if(vm==='sp'){body=`hsl(${h},70%,55%)`;glow=`hsla(${h},70%,55%,`}
+    else if(vm==='nrg'){const ep=mn(1,lf.nrg/50);body=`hsl(${ep*120},80%,50%)`;glow=`hsla(${ep*120},80%,50%,`}
+    else if(vm==='tr'){body=tCol(lf.trophic);glow=hex2rgba(body)}
+    else if(vm==='age'){const sc2=['#ffffff88','#88ddff','#00e676','#ffd740'][lf.stage];body=sc2;glow=hex2rgba(sc2)}
+    else if(vm==='nn'&&lf.lastNN){const v2=lf.lastNN[2];body=`hsl(${(1-v2)*120},80%,50%)`;glow=`hsla(${(1-v2)*120},80%,50%,`}
+    else{
+      if(lf.dormant){body='#448aff';glow='rgba(68,138,255,'}
+      else if(lf.stage===0){body='#ffffff55';glow='rgba(255,255,255,'}
+      else if(!lf.auto){body='#ff5252';glow='rgba(255,82,82,'}
+      else if(lf.canDiv()){body='#00e5ff';glow='rgba(0,229,255,'}
+      else{body=tCol(lf.trophic);glow=hex2rgba(body)}
     }
 
     // Trail
-    if (lf.trailX.length > 2 && (viewMode==='normal'||viewMode==='species')) {
-      ctx.beginPath();
-      ctx.moveTo(lf.trailX[0]*CS+CS/2, lf.trailY[0]*CS+CS/2);
-      for (let i=1;i<lf.trailX.length;i++) ctx.lineTo(lf.trailX[i]*CS+CS/2, lf.trailY[i]*CS+CS/2);
-      ctx.strokeStyle = (viewMode==='species') ? `hsla(${h},50%,50%,0.15)` : `rgba(150,200,255,0.08)`;
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
+    if(lf.tx.length>2&&(vm==='eco'||vm==='sp')){
+      cx.beginPath();cx.moveTo(lf.tx[0]*C+C/2,lf.ty[0]*C+C/2);
+      for(let i=1;i<lf.tx.length;i++)cx.lineTo(lf.tx[i]*C+C/2,lf.ty[i]*C+C/2);
+      cx.strokeStyle=vm==='sp'?`hsla(${h},50%,50%,.12)`:'rgba(150,200,255,.06)';cx.lineWidth=.4;cx.stroke();
     }
 
     // Glow
-    const grd = ctx.createRadialGradient(cx,cy,r*0.2,cx,cy,r*3);
-    grd.addColorStop(0, glowColor+'0.35)');
-    grd.addColorStop(1, glowColor+'0)');
-    ctx.fillStyle = grd;
-    ctx.beginPath(); ctx.arc(cx,cy,r*3,0,Math.PI*2); ctx.fill();
+    const gr=cx.createRadialGradient(px,py,rr*.2,px,py,rr*(lf.dormant?2:3));
+    gr.addColorStop(0,glow+(lf.dormant?.15:.3)+')');gr.addColorStop(1,glow+'0)');
+    cx.fillStyle=gr;cx.beginPath();cx.arc(px,py,rr*3,0,PI*2);cx.fill();
 
-    // Quorum indicator
-    if (lf.quorumActive) {
-      ctx.beginPath(); ctx.arc(cx,cy,r+4,0,Math.PI*2);
-      ctx.strokeStyle = 'rgba(0,229,255,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([2,2]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    // Quorum pulse
+    if(lf.qActive){
+      cx.beginPath();cx.arc(px,py,rr+4+sin(Date.now()*.005)*2,0,PI*2);
+      cx.strokeStyle='rgba(0,229,255,0.4)';cx.lineWidth=1.2;cx.setLineDash([2,2]);cx.stroke();cx.setLineDash([]);
+    }
+
+    // Biofilm haze
+    if(lf.biofilm>.1){
+      cx.beginPath();cx.arc(px,py,rr+6,0,PI*2);
+      cx.fillStyle=`rgba(100,200,150,${lf.biofilm*.15})`;cx.fill();
     }
 
     // Membrane ring
-    ctx.beginPath(); ctx.arc(cx,cy,r+1.5,0,Math.PI*2);
-    ctx.strokeStyle = `rgba(100,180,255,${lf.membrane.integrity*0.5})`;
-    ctx.lineWidth = lf.membrane.armor > 0.2 ? 2 : 1;
-    ctx.stroke();
+    cx.beginPath();cx.arc(px,py,rr+1.2,0,PI*2);
+    cx.strokeStyle=`rgba(100,180,255,${lf.mem.int*.4})`;cx.lineWidth=lf.mem.ar>.2?1.8:1;cx.stroke();
 
-    // Armor ring
-    if (lf.membrane.armor > 0.2) {
-      ctx.beginPath(); ctx.arc(cx,cy,r+3,0,Math.PI*2*lf.membrane.armor);
-      ctx.strokeStyle = 'rgba(255,180,0,0.5)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
+    // Armor arc
+    if(lf.mem.ar>.15){cx.beginPath();cx.arc(px,py,rr+2.5,0,PI*2*lf.mem.ar);cx.strokeStyle='rgba(255,180,0,0.45)';cx.lineWidth=.8;cx.stroke()}
 
-    // Body
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-    ctx.fillStyle = bodyColor;
-    ctx.fill();
+    // Body shape varies by stage
+    cx.beginPath();
+    if(lf.stage===0){// Egg: small diamond
+      cx.moveTo(px,py-rr);cx.lineTo(px+rr,py);cx.lineTo(px,py+rr);cx.lineTo(px-rr,py);cx.closePath();
+    }else if(lf.stage===1){// Juvenile: triangle
+      cx.moveTo(px,py-rr);cx.lineTo(px+rr*.87,py+rr*.5);cx.lineTo(px-rr*.87,py+rr*.5);cx.closePath();
+    }else if(lf.stage===3){// Elder: hexagon
+      for(let i=0;i<6;i++){const a=PI/3*i-PI/2;cx.lineTo(px+cos(a)*rr,py+sin(a)*rr)}cx.closePath();
+    }else{cx.arc(px,py,rr,0,PI*2)}// Adult: circle
+    cx.fillStyle=body;cx.fill();
 
-    // Kill marks for predators
-    if (lf.kills > 0) {
-      const marks = Math.min(lf.kills, 5);
-      for (let k=0;k<marks;k++) {
-        const ang = (k/marks)*Math.PI*2 - Math.PI/2;
-        ctx.beginPath();
-        ctx.arc(cx+Math.cos(ang)*(r+5), cy+Math.sin(ang)*(r+5), 1, 0, Math.PI*2);
-        ctx.fillStyle = '#ff525288';
-        ctx.fill();
+    // Kill marks
+    if(lf.kills>0){const mk=mn(lf.kills,6);for(let k=0;k<mk;k++){const a=(k/mk)*PI*2-PI/2;
+      cx.beginPath();cx.arc(px+cos(a)*(rr+4),py+sin(a)*(rr+4),.8,0,PI*2);cx.fillStyle='#ff525266';cx.fill()}}
+
+    // Generation dot
+    if(lf.gen>=5){cx.beginPath();cx.arc(px,py,rr*.3,0,PI*2);cx.fillStyle='rgba(255,255,255,0.6)';cx.fill()}
+    else if(lf.gen>=2){cx.beginPath();cx.arc(px,py,rr*.2,0,PI*2);cx.fillStyle='rgba(255,255,255,0.3)';cx.fill()}
+
+    // Dormancy Z
+    if(lf.dormant){cx.fillStyle='#448aff';cx.font=`${mn(8,C*.6)}px monospace`;cx.fillText('z',px+rr+1,py-rr)}
+
+    // Neural activity visualization (in nn mode)
+    if(vm==='nn'&&lf.lastNN){
+      const nnR=rr*.3;
+      for(let i=0;i<6;i++){
+        const a=(i/6)*PI*2;
+        const ox=px+cos(a)*(rr+3),oy=py+sin(a)*(rr+3);
+        cx.beginPath();cx.arc(ox,oy,nnR,0,PI*2);
+        cx.fillStyle=`rgba(${lf.lastNN[i]*255|0},${(1-lf.lastNN[i])*200|0},100,0.6)`;cx.fill();
       }
     }
 
-    // Inner dot for high generation
-    if (lf.generation >= 5) {
-      ctx.beginPath(); ctx.arc(cx,cy,r*0.35,0,Math.PI*2);
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill();
-    } else if (lf.generation >= 2) {
-      ctx.beginPath(); ctx.arc(cx,cy,r*0.25,0,Math.PI*2);
-      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
-    }
-
     // Hover
-    if (hoveredLF && hoveredLF.id===lf.id) {
-      ctx.beginPath(); ctx.arc(cx,cy,r+6,0,Math.PI*2);
-      ctx.strokeStyle='#ffffff66'; ctx.lineWidth=2; ctx.stroke();
-    }
+    if(hov&&hov.id===lf.id){cx.beginPath();cx.arc(px,py,rr+7,0,PI*2);cx.strokeStyle='#fff5';cx.lineWidth=1.5;cx.stroke()}
   }
 
-  updateUI();
+  ui();
 }
 
-function bodyColorToRGBA(hex) {
-  if (hex.startsWith('rgba')) return hex.slice(0,-1)+',';
-  if (hex.startsWith('rgb')) return hex.replace('rgb','rgba').replace(')',',');
-  // Parse hex
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},`;
+function hex2rgba(hex){
+  if(hex.includes('rgba'))return hex.slice(0,-1)+',';
+  if(hex.includes('rgb'))return hex.replace('rgb','rgba').replace(')',',');
+  if(hex.includes('hsl'))return hex.replace('hsl','hsla').replace(')',',');
+  const r2=parseInt(hex.slice(1,3),16)||0,g2=parseInt(hex.slice(3,5),16)||0,b2=parseInt(hex.slice(5,7),16)||0;
+  return`rgba(${r2},${g2},${b2},`;
 }
 
-function updateUI() {
-  const s = sim.summary();
-  document.getElementById('s-tick').textContent = s.tick;
-  document.getElementById('s-pop').textContent = s.pop;
-  document.getElementById('s-species').textContent = s.species;
-  document.getElementById('s-producers').textContent = s.producers;
-  document.getElementById('s-predators').textContent = s.predators;
-  document.getElementById('s-colonies').textContent = s.colonies;
-  document.getElementById('s-symbioses').textContent = s.symbioses;
-  document.getElementById('s-bd').textContent = `${s.births}/${s.deaths}`;
-  document.getElementById('s-gen').textContent = s.maxGen;
-  document.getElementById('s-events').textContent = s.events;
+function ui(){
+  const s=sim.sum();
+  document.getElementById('xt').textContent=s.tick;
+  document.getElementById('xsn').textContent=s.season;
+  document.getElementById('xsn').className='sv '+(s.season==='winter'?'vb':s.season==='summer'?'vo':'vy');
+  document.getElementById('xp').textContent=s.pop;
+  document.getElementById('xs').textContent=s.sp;
+  document.getElementById('xtr').textContent=`${s.pr}/${s.pd}/${s.sc}/${s.pa}`;
+  document.getElementById('xco').textContent=s.cols;
+  document.getElementById('xdo').textContent=s.dor;
+  document.getElementById('xbd').textContent=`${s.b}/${s.d}`;
+  document.getElementById('xrp').textContent=`${s.sx}/${s.ax}`;
+  document.getElementById('xhgt').textContent=s.hgt;
+  document.getElementById('xg').textContent=s.mg;
+  document.getElementById('xev').textContent=s.ev;
 
-  // Species distribution bar
-  const bar = document.getElementById('species-bar');
-  const legend = document.getElementById('species-legend');
-  bar.innerHTML = '';
-  legend.innerHTML = '';
-  const total = Math.max(1, s.pop);
-  for (const sp of sim.world.species) {
-    const pct = (sp.members.length / total * 100);
-    const d = document.createElement('div');
-    d.style.width = pct+'%';
-    d.style.background = sp.color;
-    bar.appendChild(d);
-  }
-  // Show top 4 species
-  const sorted = [...sim.world.species].sort((a,b)=>b.members.length-a.members.length).slice(0,4);
-  legend.innerHTML = sorted.map(sp=>`<span style="color:${sp.color}">■</span> ${sp.members.length}`).join(' ');
+  // Species bar
+  const bar=document.getElementById('spb'),leg=document.getElementById('spl');
+  bar.innerHTML='';leg.innerHTML='';
+  const tot=mx(1,s.pop);
+  for(const sp of sim.world.species){const d=document.createElement('div');d.style.width=(sp.m.length/tot*100)+'%';d.style.background=sp.c;bar.appendChild(d)}
+  const sorted=[...sim.world.species].sort((a,b)=>b.m.length-a.m.length).slice(0,5);
+  leg.innerHTML=sorted.map(sp=>`<span style="color:${sp.c}">■</span>${sp.m.length}`).join(' ');
 
   // Sparklines
-  drawSparkline('spark-pop', sim.stats.popHist, '#00e676');
-  if (document.getElementById('diversity-tab').classList.contains('active'))
-    drawSparkline('spark-diversity', sim.stats.speciesHist, '#e040fb');
-  if (document.getElementById('trophic-tab').classList.contains('active'))
-    drawDualSparkline('spark-trophic', sim.stats.prodHist, sim.stats.predHist, '#00e676', '#ff5252');
+  spark('s1',sim.st.pH,'#00e676');
+  if(document.getElementById('dt').classList.contains('on'))spark('s2',sim.st.spH,'#e040fb');
+  if(document.getElementById('tt2').classList.contains('on'))dualSpark('s3',sim.st.prH,sim.st.pdH,'#00e676','#ff5252');
+  if(document.getElementById('st').classList.contains('on'))spark('s4',sim.st.sH,'#ffd740');
 
-  // Genome diversity map
-  updateGenomeMap();
-}
-
-function drawSparkline(id, data, color) {
-  const c=document.getElementById(id), cx=c.getContext('2d');
-  const rect=c.getBoundingClientRect();
-  c.width=rect.width*dpr; c.height=rect.height*dpr;
-  cx.scale(dpr,dpr);
-  const W=rect.width, H=rect.height;
-  cx.clearRect(0,0,W,H);
-  if (data.length<2) return;
-  const recent=data.slice(-250);
-  const mn=Math.min(...recent), mx=Math.max(...recent), rng=mx-mn||1;
-  cx.beginPath(); cx.moveTo(0,H);
-  for (let i=0;i<recent.length;i++) {
-    const x=(i/(recent.length-1))*W, y=H-((recent[i]-mn)/rng)*(H-4)-2;
-    cx.lineTo(x,y);
+  // Genome map
+  const alive=sim.world.lfs.filter(l=>l.alive);
+  if(alive.length){
+    const traits=['aggro','toxicity','cooperation','speed','armor','nicheEng','parasitism','dormancy'];
+    const colors=['#ff5252','#e040fb','#00e5ff','#ffd740','#ff9100','#69f0ae','#e040fb','#448aff'];
+    let html='';for(let i=0;i<traits.length;i++){
+      const vals=alive.map(l=>l.g[traits[i]]);const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+      html+=`<div class="gc"><div class="gb" style="height:${avg*100}%;background:${colors[i]}44;border-top:1px solid ${colors[i]}"></div></div>`;
+    }document.getElementById('gmap').innerHTML=html;
   }
-  cx.lineTo(W,H); cx.closePath();
-  const grd=cx.createLinearGradient(0,0,0,H);
-  grd.addColorStop(0,color+'44'); grd.addColorStop(1,color+'08');
-  cx.fillStyle=grd; cx.fill();
-  cx.beginPath();
-  for (let i=0;i<recent.length;i++) {
-    const x=(i/(recent.length-1))*W, y=H-((recent[i]-mn)/rng)*(H-4)-2;
-    if (i===0) cx.moveTo(x,y); else cx.lineTo(x,y);
-  }
-  cx.strokeStyle=color; cx.lineWidth=1.5; cx.stroke();
-}
 
-function drawDualSparkline(id, d1, d2, c1, c2) {
-  const c=document.getElementById(id), cx=c.getContext('2d');
-  const rect=c.getBoundingClientRect();
-  c.width=rect.width*dpr; c.height=rect.height*dpr;
-  cx.scale(dpr,dpr);
-  const W=rect.width, H=rect.height;
-  cx.clearRect(0,0,W,H);
-  const r1=d1.slice(-250), r2=d2.slice(-250);
-  if (r1.length<2) return;
-  const all=[...r1,...r2];
-  const mn=Math.min(...all), mx=Math.max(...all), rng=mx-mn||1;
-  for (const [data,color] of [[r1,c1],[r2,c2]]) {
-    cx.beginPath();
-    for (let i=0;i<data.length;i++) {
-      const x=(i/(data.length-1))*W, y=H-((data[i]-mn)/rng)*(H-4)-2;
-      if (i===0) cx.moveTo(x,y); else cx.lineTo(x,y);
-    }
-    cx.strokeStyle=color; cx.lineWidth=1.2; cx.stroke();
+  // Neural activity panel
+  if(hov&&hov.lastNN){
+    const labels=['Move∠','Speed','Aggro','Signal','Repro','Dorm'];
+    document.getElementById('nnv').innerHTML=[...hov.lastNN].map((v,i)=>
+      `<div class="nn-node" style="background:rgba(${v*255|0},${(1-v)*180|0},100,0.5)" title="${labels[i]}: ${v.toFixed(3)}"></div>`
+    ).join('');
+    document.getElementById('nnl').textContent=hov.id+' brain output';
   }
 }
 
-function updateGenomeMap() {
-  const el = document.getElementById('genome-map');
-  const alive = sim.world.lifeForms.filter(l=>l.alive);
-  if (!alive.length) { el.innerHTML=''; return; }
-  const traits = ['aggro','toxicity','cooperation','speed','armor','nicheEng'];
-  const labels = ['Aggro','Toxic','Coop','Speed','Armor','Niche'];
-  let html = '';
-  for (let i=0;i<traits.length;i++) {
-    const vals = alive.map(l=>l.genome[traits[i]]);
-    const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
-    const mx = Math.max(...vals);
-    const colors = ['#ff5252','#e040fb','#00e5ff','#ffd740','#ff9100','#69f0ae'];
-    html += `<div class="g-cell" style="background:#0a1020" title="${labels[i]}: avg ${avg.toFixed(2)}">
-      <div class="g-bar" style="height:${avg*100}%;background:${colors[i]}44;border-top:2px solid ${colors[i]}"></div>
-    </div>`;
-  }
-  el.innerHTML = html;
+function spark(id,data,color){
+  const c=document.getElementById(id),cx2=c.getContext('2d');
+  const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=rect.height*dpr;cx2.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;cx2.clearRect(0,0,W,H);
+  if(data.length<2)return;const d=data.slice(-300);
+  const lo=mn(...d),hi=mx(...d),rng=hi-lo||1;
+  cx2.beginPath();cx2.moveTo(0,H);
+  for(let i=0;i<d.length;i++){cx2.lineTo(i/(d.length-1)*W,H-((d[i]-lo)/rng)*(H-3)-1.5)}
+  cx2.lineTo(W,H);cx2.closePath();
+  const gr=cx2.createLinearGradient(0,0,0,H);gr.addColorStop(0,color+'33');gr.addColorStop(1,color+'06');
+  cx2.fillStyle=gr;cx2.fill();
+  cx2.beginPath();for(let i=0;i<d.length;i++){const x2=i/(d.length-1)*W,y2=H-((d[i]-lo)/rng)*(H-3)-1.5;if(i===0)cx2.moveTo(x2,y2);else cx2.lineTo(x2,y2)}
+  cx2.strokeStyle=color;cx2.lineWidth=1.2;cx2.stroke();
+}
+function dualSpark(id,d1,d2,c1,c2){
+  const c=document.getElementById(id),cx2=c.getContext('2d');
+  const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=rect.height*dpr;cx2.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;cx2.clearRect(0,0,W,H);
+  const r1=d1.slice(-300),r2=d2.slice(-300);if(r1.length<2)return;
+  const all=[...r1,...r2];const lo=mn(...all),hi=mx(...all),rng=hi-lo||1;
+  for(const[data,color]of[[r1,c1],[r2,c2]]){cx2.beginPath();
+    for(let i=0;i<data.length;i++){const x2=i/(data.length-1)*W,y2=H-((data[i]-lo)/rng)*(H-3)-1.5;if(i===0)cx2.moveTo(x2,y2);else cx2.lineTo(x2,y2)}
+    cx2.strokeStyle=color;cx2.lineWidth=1;cx2.stroke()}
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  try { init(); } catch(e) {
-    document.body.innerHTML='<pre style="color:red;padding:20px">ERROR: '+e.message+'\n'+e.stack+'</pre>';
-  }
-});
+document.addEventListener('DOMContentLoaded',()=>{try{init()}catch(e){document.body.innerHTML='<pre style="color:red;padding:20px">'+e.message+'\n'+e.stack+'</pre>'}});
 </script>
 </body>
 </html>
