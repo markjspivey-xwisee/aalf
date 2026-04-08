@@ -82,7 +82,9 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <label>Spd<input id="spd" type="range" min="1" max="120" value="20" style="width:60px"></label>
 <label>View<select id="vm">
 <option value="world">World</option><option value="biome">Biome</option><option value="tribe">Tribes</option>
-<option value="tool">Technology</option><option value="heat">Heatmap</option><option value="social">Social</option>
+<option value="tool">Technology</option><option value="heat">Food Heatmap</option><option value="social">Social</option>
+<option value="empire">Empires</option><option value="trade">Trade &amp; Roads</option><option value="disease">Disease</option>
+<option value="density">Population Density</option>
 </select></label>
 <button id="bmute">🔇</button>
 </div>
@@ -110,34 +112,46 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <div class="p">
 <h3>World</h3>
 <div class="sr"><span class="sl">Year</span><span id="xt" class="sv vy">0</span></div>
-<div class="sr"><span class="sl">Season</span><span id="xsn" class="sv vy">—</span></div>
-<div class="sr"><span class="sl">Time</span><span id="xtod" class="sv vy">—</span></div>
+<div class="sr"><span class="sl">Season / Time</span><span id="xsn" class="sv vy">—</span></div>
+<div class="sr"><span class="sl">Weather</span><span id="xweath" class="sv">—</span></div>
+<div class="sr"><span class="sl">Era</span><span id="xera" class="sv vo">—</span></div>
 <div class="sr"><span class="sl">Population</span><span id="xp" class="sv vg">0</span></div>
+<div class="sr"><span class="sl">Growth Rate</span><span id="xgr" class="sv vg">—</span></div>
+<div class="sr"><span class="sl">Avg Lifespan</span><span id="xlife" class="sv">—</span></div>
+<div class="sr"><span class="sl">Demographics</span><span id="xdemo" class="sv" style="font-size:8px">—</span></div>
 <div class="sr"><span class="sl">Animals</span><span id="xan" class="sv vo">0</span></div>
-<div class="sr"><span class="sl">Tribes</span><span id="xtr" class="sv vo">0</span></div>
+<div class="sr"><span class="sl">Tribes / Empires</span><span id="xtr" class="sv vo">0</span></div>
 <div class="sr"><span class="sl">Structures</span><span id="xst" class="sv vw">0</span></div>
-<div class="sr"><span class="sl">Highest Tool</span><span id="xht" class="sv vc">—</span></div>
-<div class="sr"><span class="sl">Fire Known</span><span id="xfi" class="sv vr">—</span></div>
-<div class="sr"><span class="sl">Farming Known</span><span id="xfa" class="sv vg">—</span></div>
+<div class="sr"><span class="sl">Ruins / Wonders</span><span id="xrw" class="sv vy">0</span></div>
+<div class="sr"><span class="sl">Best Tool</span><span id="xht" class="sv vc">—</span></div>
 <div class="sr"><span class="sl">Births / Deaths</span><span id="xbd" class="sv">0/0</span></div>
-<div class="sr"><span class="sl">Wars</span><span id="xwa" class="sv vr">0</span></div>
-<div class="sr"><span class="sl">Trades</span><span id="xtd" class="sv vc">0</span></div>
-<div class="sr"><span class="sl">Rituals</span><span id="xri" class="sv vm">0</span></div>
+<div class="sr"><span class="sl">Wars / Trades</span><span id="xwt" class="sv">0/0</span></div>
+<div class="sr"><span class="sl">Active Diseases</span><span id="xdis" class="sv vr">0</span></div>
+<div class="sr"><span class="sl">Alliances</span><span id="xall" class="sv vc">0</span></div>
+<div class="sr"><span class="sl">Total Wealth</span><span id="xwlth" class="sv vy">0</span></div>
 </div>
 <div class="p">
 <h3>Tribes</h3>
 <div id="trb" class="sb2"></div>
 <div id="trl" style="margin-top:2px;font-size:8px"></div>
 </div>
+<div class="p" id="tribe-detail" style="display:none">
+<h3>Tribe Detail <span id="td-close" style="cursor:pointer;float:right;color:#5a5070">✕</span></h3>
+<div id="td-content" style="font-size:9px;line-height:1.5"></div>
+</div>
 <div class="p">
 <div class="tb">
 <button class="on" data-t="pt">Pop</button>
 <button data-t="tt2">Tribes</button>
 <button data-t="tch">Tech</button>
+<button data-t="warh">Wars</button>
+<button data-t="wlth">Wealth</button>
 </div>
 <div id="pt" class="tc on"><div class="sc"><canvas id="s1"></canvas></div></div>
 <div id="tt2" class="tc"><div class="sc"><canvas id="s2"></canvas></div></div>
 <div id="tch" class="tc"><div class="sc"><canvas id="s3"></canvas></div></div>
+<div id="warh" class="tc"><div class="sc"><canvas id="s4"></canvas></div></div>
+<div id="wlth" class="tc"><div class="sc"><canvas id="s5"></canvas></div></div>
 </div>
 <div class="p">
 <h3>Technology Tree</h3>
@@ -1590,8 +1604,9 @@ class Sim{
   constructor(w=80,h=55,n=30){
     this.bus=new Bus;this.world=new World(w,h);
     this.world.bus=this.bus;
-    this.st={b:0,d:0,wars:0,trades:0,rituals:0,pH:[],tH:[],techH:[]};
-    this.bus.sub(E.BORN,()=>this.st.b++);this.bus.sub(E.DIE,()=>this.st.d++);
+    this.st={b:0,d:0,wars:0,trades:0,rituals:0,pH:[],tH:[],techH:[],warH:[],wealthH:[],deathAges:[]};
+    this.bus.sub(E.BORN,()=>this.st.b++);
+    this.bus.sub(E.DIE,(ev)=>{this.st.d++;if(ev.d.age)this.st.deathAges.push(ev.d.age);if(this.st.deathAges.length>200)this.st.deathAges.shift()});
     this.bus.sub(E.WAR,()=>this.st.wars++);this.bus.sub(E.TRADE,()=>this.st.trades++);
     this.bus.sub(E.RITUAL,()=>this.st.rituals++);
     for(let g=0;g<4;g++){
@@ -1630,7 +1645,10 @@ class Sim{
     this.st.tH.push(this.world.tribes.length);
     const maxTech=this.world.tribes.reduce((m,t)=>mx(m,t.knowledge),0);
     this.st.techH.push(maxTech);
-    const mh=700;for(const k of['pH','tH','techH'])if(this.st[k].length>mh)this.st[k]=this.st[k].slice(-mh);
+    this.st.warH.push(this.st.wars);
+    const totalWealth=this.world.tribes.reduce((s,t)=>s+t.wealth,0);
+    this.st.wealthH.push(totalWealth);
+    const mh=700;for(const k of['pH','tH','techH','warH','wealthH'])if(this.st[k].length>mh)this.st[k]=this.st[k].slice(-mh);
     return r;
   }
   sum(){
@@ -1849,6 +1867,7 @@ function init(){
   setupNarrative(sim.bus,sim.world);
   setupToasts();setupKeys();
   camX=0;camY=0;camZoom=1;
+  document.getElementById('td-close').onclick=()=>document.getElementById('tribe-detail').style.display='none';
 }
 
 function setupToasts(){
@@ -2059,6 +2078,18 @@ function draw(){
     else if(vm==='heat'){
       const f=w.res.get(x,y,'food');
       col=`rgb(${mn(255,F(20+f*30))},${mn(255,F(15+f*25))},${mn(255,F(10+f*10))})`;
+    }else if(vm==='trade'){
+      const base=BIOME_COL[b];const r2=parseInt(base.slice(1,3),16),g2=parseInt(base.slice(3,5),16),b2=parseInt(base.slice(5,7),16);
+      const road=w.roads[y*W+x];
+      col=`rgb(${mn(255,F(r2*.3+road*180))},${mn(255,F(g2*.3+road*150))},${mn(255,F(b2*.3+road*100))})`;
+    }else if(vm==='disease'){
+      const base=BIOME_COL[b];const r2=parseInt(base.slice(1,3),16),g2=parseInt(base.slice(3,5),16),b2=parseInt(base.slice(5,7),16);
+      col=`rgb(${mn(255,F(r2*.4))},${mn(255,F(g2*.4))},${mn(255,F(b2*.4))})`;
+    }else if(vm==='density'){
+      col='rgb(8,6,14)';// will overlay density after
+    }else if(vm==='empire'){
+      const base=BIOME_COL[b];const r2=parseInt(base.slice(1,3),16),g2=parseInt(base.slice(3,5),16),b2=parseInt(base.slice(5,7),16);
+      col=`rgb(${F(r2*.25)},${F(g2*.25)},${F(b2*.25)})`;// dark base, empires overlay color
     }else{
       const base=BIOME_COL[b];const r2=parseInt(base.slice(1,3),16),g2=parseInt(base.slice(3,5),16),b2=parseInt(base.slice(5,7),16);
       const food=w.res.get(x,y,'food');
@@ -2066,6 +2097,41 @@ function draw(){
       col=`rgb(${mn(255,mx(0,F(r2*dim+st[0]+nightR)))},${mn(255,mx(0,F(g2*dim+st[1]+nightG)))},${mn(255,mx(0,F(b2*dim+st[2]+nightB)))})`;
     }
     cx2.fillStyle=col;cx2.fillRect(x*C,y*C,C+.5,C+.5);
+  }
+
+  // ── Population density heatmap overlay ──
+  if(vm==='density'){
+    const densG=new Float32Array(W*H);
+    for(const h of w.humans){if(h.alive){const i=F(h.y)*W+F(h.x);if(i>=0&&i<W*H)densG[i]+=1}}
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const d=densG[y*W+x];if(d>0){
+      cx2.fillStyle=`rgba(${mn(255,F(50+d*60))},${mn(255,F(200-d*20))},${mn(255,F(50+d*10))},${mn(.8,d*.25)})`;
+      cx2.fillRect(x*C,y*C,C+.5,C+.5);
+    }}
+  }
+  // ── Disease overlay per tribe ──
+  if(vm==='disease'){
+    for(const t of w.tribes){if(!t.disease)continue;
+      cx2.fillStyle=`rgba(220,30,30,${t.disease.severity*.15})`;
+      cx2.beginPath();cx2.arc(t.homeX*C+C/2,t.homeY*C+C/2,C*8,0,PI*2);cx2.fill();
+      cx2.fillStyle='#ff5555';cx2.font=`${mx(8,F(C*.5))}px monospace`;cx2.textAlign='center';
+      cx2.fillText(`☠ ${t.disease.name}`,t.homeX*C+C/2,t.homeY*C+C/2);
+    }
+  }
+  // ── Empire overlay ──
+  if(vm==='empire'){
+    for(const t of w.tribes){
+      const sz=t.isEmpire?10:t.overlord?4:6;
+      cx2.fillStyle=t.color.replace(')',',0.15)').replace('hsl','hsla');
+      cx2.beginPath();cx2.arc(t.homeX*C+C/2,t.homeY*C+C/2,C*sz,0,PI*2);cx2.fill();
+      if(t.isEmpire){cx2.strokeStyle=t.color;cx2.lineWidth=2;cx2.beginPath();cx2.arc(t.homeX*C+C/2,t.homeY*C+C/2,C*sz,0,PI*2);cx2.stroke()}
+      cx2.fillStyle=t.color;cx2.font=`bold ${mx(9,F(C*.6))}px monospace`;cx2.textAlign='center';
+      cx2.fillText(`${t.isEmpire?'👑 ':''}${t.name}(${t.sz})`,t.homeX*C+C/2,t.homeY*C-C*2);
+      // Vassal lines
+      for(const vid of t.vassals){const v=w.tribes.find(t2=>t2.id===vid);if(v){
+        cx2.beginPath();cx2.moveTo(t.homeX*C+C/2,t.homeY*C+C/2);cx2.lineTo(v.homeX*C+C/2,v.homeY*C+C/2);
+        cx2.strokeStyle='rgba(200,150,50,0.4)';cx2.lineWidth=1.5;cx2.setLineDash([2,3]);cx2.stroke();cx2.setLineDash([]);
+      }}
+    }
   }
 
   // ── Night: fire pit glow (warm orange circles, max 15 for perf) ──
@@ -2327,42 +2393,71 @@ function drawMinimap(){
 
 function ui(){
   const s=sim.sum();
-  document.getElementById('xt').textContent=`Y${s.year} T${s.tick}`;
-  document.getElementById('xsn').textContent=s.season;
-  document.getElementById('xsn').className='sv '+(s.season==='winter'?'vb':s.season==='summer'?'vo':'vy');
-  document.getElementById('xtod').textContent=s.tod;
-  const todColClass=(s.tod==='Night')?'vb':(s.tod==='Dawn'||s.tod==='Dusk')?'vo':'vy';
-  document.getElementById('xtod').className='sv '+todColClass;
-  document.getElementById('xp').textContent=s.pop;
-  document.getElementById('xan').textContent=`🦌${s.animals.deer} 🐺${s.animals.wolf} 🐗${s.animals.boar}`;
-  document.getElementById('xtr').textContent=s.tribes;
-  document.getElementById('xst').textContent=s.structs;
-  document.getElementById('xht').textContent=s.maxTool;
-  document.getElementById('xfi').textContent=s.fire?'YES':'no';
-  document.getElementById('xfi').className='sv '+(s.fire?'vo':'');
-  document.getElementById('xfa').textContent=s.farm?'YES':'no';
-  document.getElementById('xfa').className='sv '+(s.farm?'vg':'');
-  document.getElementById('xbd').textContent=`${s.b}/${s.d}`;
-  document.getElementById('xwa').textContent=s.wars;
-  document.getElementById('xtd').textContent=s.trades;
-  document.getElementById('xri').textContent=s.rituals;
+  const alive=sim.world.humans.filter(h=>h.alive);
+  const w=sim.world;
 
+  // ── Core stats ──
+  document.getElementById('xt').textContent=`Y${s.year} T${s.tick}`;
+  const sn=s.season;const td=s.tod;
+  document.getElementById('xsn').innerHTML=`<span class="${sn==='winter'?'vb':sn==='summer'?'vo':'vy'}">${sn}</span> · <span class="${td==='Night'?'vb':'vy'}">${td}</span>`;
+  document.getElementById('xweath').textContent=weather?weather.type:'—';
+  const maxT=alive.reduce((m,h)=>mx(m,h.tool),0);
+  document.getElementById('xera').textContent=ERA_NAME[TOOL_ERA[maxT]||0]||'Stone Age';
+  document.getElementById('xp').textContent=s.pop;
+
+  // Growth rate (births-deaths per 100 ticks)
+  const pH=sim.st.pH;
+  const gr=pH.length>50?(pH[pH.length-1]-pH[pH.length-50]):'—';
+  const grEl=document.getElementById('xgr');
+  grEl.textContent=typeof gr==='number'?(gr>0?'+':'')+gr+'/50t':'—';
+  grEl.className='sv '+(gr>0?'vg':gr<0?'vr':'');
+
+  // Avg lifespan
+  const da=sim.st.deathAges;
+  document.getElementById('xlife').textContent=da.length>5?F(da.reduce((a,b)=>a+b,0)/da.length)+' yrs':'—';
+
+  // Demographics
+  const babies=alive.filter(h=>h.stage===0).length;
+  const kids=alive.filter(h=>h.stage===1).length;
+  const adults=alive.filter(h=>h.stage===2).length;
+  const elders=alive.filter(h=>h.stage===3).length;
+  document.getElementById('xdemo').textContent=`👶${babies} 🧒${kids} 🧑${adults} 👴${elders}`;
+
+  document.getElementById('xan').textContent=`🦌${s.animals.deer} 🐺${s.animals.wolf} 🐗${s.animals.boar}`;
+  const empires=w.tribes.filter(t=>t.isEmpire).length;
+  document.getElementById('xtr').textContent=`${s.tribes}${empires?' ('+empires+' emp)':''}`;
+  document.getElementById('xst').textContent=s.structs;
+  document.getElementById('xrw').textContent=`${w.ruins.length} / ${w.wonders.length}`;
+  document.getElementById('xht').textContent=TOOL_NAME[maxT];
+  document.getElementById('xbd').textContent=`${s.b}/${s.d}`;
+  document.getElementById('xwt').textContent=`${s.wars}/${s.trades}`;
+  const diseased=w.tribes.filter(t=>t.disease).length;
+  document.getElementById('xdis').textContent=diseased||'none';
+  document.getElementById('xdis').className='sv '+(diseased?'vr':'vg');
+  const alliances=w.tribes.filter(t=>t.allianceWith).length/2;
+  document.getElementById('xall').textContent=F(alliances)||'none';
+  const totalWealth=w.tribes.reduce((s2,t)=>s2+t.wealth,0);
+  document.getElementById('xwlth').textContent=F(totalWealth);
+
+  // ── Tribe bar + detail ──
   const bar=document.getElementById('trb'),leg=document.getElementById('trl');
   bar.innerHTML='';leg.innerHTML='';
   const tot=mx(1,s.pop);
-  const sorted=[...sim.world.tribes].sort((a,b)=>b.sz-a.sz);
-  for(const t of sorted){const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;bar.appendChild(d)}
+  const sorted=[...w.tribes].sort((a,b)=>b.sz-a.sz);
+  for(const t of sorted){const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;d.style.cursor='pointer';
+    d.title=t.name;d.onclick=()=>showTribeDetail(t);bar.appendChild(d)}
   leg.innerHTML=sorted.slice(0,4).map(t=>{
-    const techs=Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>({fire:'🔥',farming:'🌾',language:'💬',burial:'⚱',domestication:'🐕',monument:'🗿'}[k]||'✦')).join('');
-    const migIcon=t.migrating?'🚶':'';
-    const legendStr=t.legends.length?`📜${t.legends.length}`:'';
-    const leader=t.leaderName?`👑${t.leaderName}`:'';
-    return`<span style="color:${t.color}">■</span>${t.name}(${t.sz})${techs}${migIcon}${legendStr} <span style="color:#8a7a60">${leader}</span>`;
+    const techs=Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>({fire:'🔥',farming:'🌾',language:'💬',burial:'⚱',domestication:'🐕',monument:'🗿',smelting:'⚒',writing:'📜',iron:'⚔',irrigation:'💧',medicine:'⚕',calendar:'📅',trade_routes:'🛤'}[k]||'✦')).join('');
+    const flags=(t.isEmpire?'👑':'')+(t.overlord?'⛓':'')+(t.migrating?'🚶':'')+(t.disease?'☠':'')+(t.allianceWith?'🤝':'');
+    return`<span style="color:${t.color};cursor:pointer" onclick="showTribeDetail(sim.world.tribes.find(t2=>t2.id==='${t.id}'))">■${t.name}</span>(${t.sz})${techs}${flags}`;
   }).join(' ');
 
+  // ── Sparklines ──
   spark('s1',sim.st.pH,'#7dce82');
   if(document.getElementById('tt2').classList.contains('on'))spark('s2',sim.st.tH,'#e09040');
   if(document.getElementById('tch').classList.contains('on'))spark('s3',sim.st.techH,'#55b8e0');
+  if(document.getElementById('warh').classList.contains('on'))spark('s4',sim.st.warH,'#e05555');
+  if(document.getElementById('wlth').classList.contains('on'))spark('s5',sim.st.wealthH,'#e0c050');
 
   const tt=document.getElementById('techtree');
   const allTechs=Object.keys(TECHS);
@@ -2383,6 +2478,46 @@ function ui(){
   // Show highest individual tool
   techHTML+=`<div style="color:#5a5070;margin-top:3px">Best tool: <span style="color:#e0c050">${TOOL_NAME[maxTool]}</span></div>`;
   tt.innerHTML=techHTML;
+}
+
+function showTribeDetail(t){
+  if(!t){document.getElementById('tribe-detail').style.display='none';return}
+  document.getElementById('tribe-detail').style.display='block';
+  const members=[...t.members].map(mid=>sim.world.humans.find(h=>h.id===mid&&h.alive)).filter(Boolean);
+  const techs=Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>k);
+  const goods=Object.entries(t.goods).filter(([k,v])=>v>0).map(([k,v])=>`${GOOD_ICON[k]||'?'}${v}`);
+  const vassalNames=t.vassals.map(vid=>{const v=sim.world.tribes.find(t2=>t2.id===vid);return v?v.name:'?'});
+  const overlordName=t.overlord?sim.world.tribes.find(t2=>t2.id===t.overlord)?.name:'—';
+  const allyName=t.allianceWith?sim.world.tribes.find(t2=>t2.id===t.allianceWith)?.name:'—';
+  // Skill averages
+  const skills=['hunt','gather','craft','fight','social','build','farm'];
+  const skillAvg=skills.map(sk=>{const avg=members.reduce((s,h)=>s+h.skills[sk],0)/(members.length||1);return`${sk[0].toUpperCase()}:${avg.toFixed(1)}`});
+  // Tool distribution
+  const toolDist={};for(const m of members)toolDist[TOOL_NAME[m.tool]]=(toolDist[TOOL_NAME[m.tool]]||0)+1;
+  const toolStr=Object.entries(toolDist).map(([k,v])=>`${k}:${v}`).join(' ');
+  let html=`<div style="color:${t.color};font-size:11px;font-weight:bold;margin-bottom:4px">${t.name} ${t.isEmpire?'👑 EMPIRE':''} ${t.overlord?'⛓ vassal of '+overlordName:''}</div>`;
+  html+=`<div class="sr"><span class="sl">Pop / Leader</span><span class="sv">${t.sz} / 👑${t.leaderName||'none'}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Belief</span><span class="sv">${t.belief} (${(t.faithStr*100|0)}%)</span></div>`;
+  html+=`<div class="sr"><span class="sl">Taboo</span><span class="sv">${t.taboo}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Techs</span><span class="sv">${techs.join(', ')||'none'}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Wealth / Goods</span><span class="sv">${F(t.wealth)} ${goods.join(' ')||'none'}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Culture Score</span><span class="sv">${F(t.cultureScore)}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Vassals</span><span class="sv">${vassalNames.join(', ')||'none'}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Alliance</span><span class="sv">${allyName}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Disease</span><span class="sv ${t.disease?'vr':''}">${t.disease?t.disease.name+' ('+t.diseaseTimer+')':'healthy'}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Wars/Trades/Rituals</span><span class="sv">${t.wars}/${t.trades}/${t.rituals}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Skills</span><span class="sv" style="font-size:7px">${skillAvg.join(' ')}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Tools</span><span class="sv" style="font-size:7px">${toolStr||'none'}</span></div>`;
+  html+=`<div class="sr"><span class="sl">Language</span><span class="sv" style="font-size:7px">food=${t.speak('food')} war=${t.speak('war')} god=${t.speak('god')}</span></div>`;
+  if(t.legends.length){
+    html+=`<div style="margin-top:3px;color:#e0c050;font-size:8px">📜 Legends:</div>`;
+    for(const l of t.legends.slice(-3))html+=`<div style="color:#c8b880;font-size:7px;padding-left:6px">${l.name} — ${l.deed} (Y${l.year})</div>`;
+  }
+  if(t.memory.stories.length){
+    html+=`<div style="margin-top:3px;color:#8a7a60;font-size:8px">📖 History:</div>`;
+    for(const s of t.memory.stories.slice(-3))html+=`<div style="color:#6a5a50;font-size:7px;padding-left:6px">${s}</div>`;
+  }
+  document.getElementById('td-content').innerHTML=html;
 }
 
 function spark(id,data,color){
