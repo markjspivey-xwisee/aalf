@@ -343,6 +343,131 @@ class TribalMemory{
 }
 
 // ═══════════════════════════════════════════════════════════
+//  EMERGENT CITIES
+// ═══════════════════════════════════════════════════════════
+let _cityId=0;
+class City{
+  constructor(x,y,tribe,name){
+    this.id='city'+(_cityId++);this.x=x;this.y=y;this.tribe=tribe;this.name=name||tribe.name+'polis';
+    this.pop=0;this.age=0;this.hasMarket=false;this.hasWall=false;this.tier=1;// 1=village,2=town,3=city
+  }
+  get tierName(){return['','village','town','city'][this.tier]}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BLOODLINE / DYNASTY TRACKING
+// ═══════════════════════════════════════════════════════════
+class Bloodline{
+  constructor(){this.families={}}// familyName -> {founder, gen, members[], achievements[]}
+  register(human,parentA){
+    const family=parentA?this.families[parentA._family]:null;
+    if(family){human._family=parentA._family;family.members.push(human.id);family.gen=mx(family.gen,human._gen||0)}
+    else{const fn=human.name;this.families[fn]={founder:human.name,gen:0,members:[human.id],achievements:[]};human._family=fn}
+  }
+  addAchievement(familyName,deed){const f=this.families[familyName];if(f){f.achievements.push(deed);if(f.achievements.length>8)f.achievements.shift()}}
+  topDynasties(n=3){return Object.entries(this.families).sort((a,b)=>b[1].members.length-a[1].members.length).slice(0,n).map(([k,v])=>({name:k,...v}))}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CLIMATE SYSTEM — Long-term biome shifts
+// ═══════════════════════════════════════════════════════════
+class Climate{
+  constructor(){this.temp=0.5;this.moisture=0.5;this.trend=0;this.era='temperate';this.shiftTimer=2000+F(R()*3000)}
+  tick(worldTick,terrain,w,h,bus){
+    // Slow drift
+    this.temp+=((R()-.5)*.001)+this.trend;
+    this.moisture+=(R()-.5)*.001;
+    this.temp=mx(0,mn(1,this.temp));this.moisture=mx(0,mn(1,this.moisture));
+    // Major climate shift events
+    if(--this.shiftTimer<=0){
+      this.shiftTimer=3000+F(R()*4000);
+      const events=['warming','cooling','drought','wet_period'];
+      const ev=events[F(R()*events.length)];
+      if(ev==='warming'){this.trend=.0002;this.era='warming'}
+      else if(ev==='cooling'){this.trend=-.0002;this.era='cooling'}
+      else if(ev==='drought'){this.moisture=mx(.1,this.moisture-.15);this.era='drought'}
+      else{this.moisture=mn(.9,this.moisture+.15);this.era='wet period'}
+      try{showToast(`🌍 Climate shift: ${this.era}!`,'disaster')}catch(e){}
+      bus.emit(E.DISASTER,null,{type:'climate: '+this.era});
+    }
+    // Every 500 ticks, potentially shift some biome tiles
+    if(worldTick%500===0){
+      let changes=0;
+      for(let i=0;i<w*h;i++){
+        if(R()>.005)continue;// only shift ~0.5% of tiles
+        const b=terrain[i];
+        if(this.temp>.65&&b===BIOME.FOREST&&R()<.3){terrain[i]=BIOME.PLAINS;changes++}// desertification
+        if(this.temp>.75&&b===BIOME.PLAINS&&R()<.2){terrain[i]=BIOME.DESERT;changes++}
+        if(this.temp<.3&&b===BIOME.PLAINS&&R()<.2){terrain[i]=BIOME.TUNDRA;changes++}// ice age
+        if(this.moisture>.7&&b===BIOME.DESERT&&R()<.2){terrain[i]=BIOME.PLAINS;changes++}
+        if(this.moisture>.8&&b===BIOME.PLAINS&&R()<.15){terrain[i]=BIOME.FOREST;changes++}
+        if(this.moisture<.25&&b===BIOME.FERTILE&&R()<.1){terrain[i]=BIOME.PLAINS;changes++}// rivers dry
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MYTHOLOGY ENGINE — Creation myths from real history
+// ═══════════════════════════════════════════════════════════
+function generateMyth(tribe){
+  const templates=[
+    ()=>{const l=tribe.legends[0];return l?`In the dawn of time, ${l.name} the ${l.deed} led our people from darkness.`:`Before memory, the ${tribe.name} wandered without purpose.`},
+    ()=>{const b=tribe.belief;return`The ${tribe.words?.god||'spirits'} showed us the way of ${b}. Those who follow the ${tribe.words?.god||'spirits'} are blessed.`},
+    ()=>{const e=tribe.memory.enemies[0];return e?`Beware the ${e}, for they brought war upon our ancestors.`:`The world was peaceful before the tribes fought.`},
+    ()=>{const t=tribe.hasTech('fire');return t?`${tribe.legends[0]?.name||'The First One'} stole fire from the sky and gave warmth to the ${tribe.name}.`:`The cold winds still howl, for we have not found the secret of flame.`},
+    ()=>{const w=tribe.memory.stories[0];return w||`Our elders speak of times before memory, when the land was young.`},
+    ()=>`The ${tribe.words?.god||'great spirit'} made the ${tribe.name} from the earth itself. We are the chosen of ${tribe.belief}.`,
+    ()=>{const a=tribe.memory.allies[0];return a?`The ${a} are our brothers, bound by ${tribe.belief}.`:`We stand alone, strong in our ${tribe.belief}.`},
+  ];
+  return templates[F(R()*templates.length)]();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CURRENCY SYSTEM
+// ═══════════════════════════════════════════════════════════
+const CURRENCY_NAMES=['shells','beads','bronze coins','silver coins','gold coins'];
+function currencyTier(tribe){
+  if(tribe.hasTech('iron'))return 4;
+  if(tribe.hasTech('bronze'))return 3;
+  if(tribe.hasTech('writing'))return 2;
+  if(tribe.trades>10)return 1;
+  return 0;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRIBAL SYMBOLS — Procedural geometric emblems
+// ═══════════════════════════════════════════════════════════
+function genSymbol(tribe){
+  // Generate a simple geometric pattern as array of drawing commands
+  const cmds=[];const sides=3+F(tribe.culture*5);const r=8;
+  // Outer shape
+  cmds.push({type:'poly',sides,r,rot:tribe.hue/360*PI*2,fill:true});
+  // Inner decoration based on tech level
+  if(tribe.knowledge>2)cmds.push({type:'poly',sides:mn(8,sides+1),r:r*.5,rot:PI/sides,fill:false});
+  if(tribe.knowledge>4)cmds.push({type:'circle',r:r*.25});
+  if(tribe.isEmpire)cmds.push({type:'star',points:5,r:r*.7});
+  return cmds;
+}
+function drawSymbol(ctx,x,y,cmds,color,scale=1){
+  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+  for(const c of cmds){
+    ctx.beginPath();
+    if(c.type==='poly'){
+      for(let i=0;i<=c.sides;i++){const a=(i/c.sides)*PI*2+(c.rot||0);ctx.lineTo(cos(a)*c.r,sin(a)*c.r)}
+      ctx.closePath();
+    }else if(c.type==='circle'){ctx.arc(0,0,c.r,0,PI*2)}
+    else if(c.type==='star'){
+      for(let i=0;i<c.points*2;i++){const a=(i/(c.points*2))*PI*2-PI/2;const r2=i%2?c.r*.4:c.r;ctx.lineTo(cos(a)*r2,sin(a)*r2)}
+      ctx.closePath();
+    }
+    if(c.fill){ctx.fillStyle=color;ctx.fill()}
+    else{ctx.strokeStyle=color;ctx.lineWidth=1;ctx.stroke()}
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════
 //  TRADE GOODS — Biome-specific luxury resources
 // ═══════════════════════════════════════════════════════════
 const TRADE_GOODS={GOLD:0,GEMS:1,SPICES:2,FURS:3,SALT:4,COPPER:5,OBSIDIAN:6};
@@ -418,7 +543,17 @@ class Tribe{
     // ── Culture score ──
     this.cultureScore=0;
     // ── Alliance ──
-    this.allianceWith=null;// tribe id
+    this.allianceWith=null;
+    // ── Cities ──
+    this.cities=[];
+    // ── Currency ──
+    this.currencyTier=0;this.inflation=0;
+    // ── Mythology ──
+    this.myths=[];
+    // ── Symbol ──
+    this.symbol=null;// generated lazily
+    // ── Marriage diplomacy ──
+    this.marriages=[];// {partnerId, year}
   }
   get sz(){return this.members.size}
   get color(){return`hsl(${this.hue},60%,50%)`}
@@ -616,6 +751,8 @@ class Human{
     this.speech=null;this.speechTimer=0;// speech bubble
     this.phenoHue=tribe?tribe.skinBase+F((R()-.5)*8):35;
     this.phenoLight=tribe?tribe.skinLight+F((R()-.5)*6):45;
+    this._family=null;this._gen=parentA?(parentA._gen||0)+1:0;
+    this._spouse=null;// diplomatic marriage partner
     if(tribe)tribe.members.add(this.id);
   }
   get stage(){return ageStage(this.age)}
@@ -870,7 +1007,8 @@ class Human{
         this.partner=n.id;n.partner=this.id;this._mateCool=200;n._mateCool=200;
         const baby=new Human(this.x+(R()-.5),this.y+(R()-.5),this.tribe,this,n);
         world.humans.push(baby);this.children++;n.children++;
-        bus.emit(E.BORN,baby.id,{name:baby.name,mother:this.sex==='f'?this.name:n.name,father:this.sex==='m'?this.name:n.name,tribe:this.tribe?.name});
+        if(world.bloodline)world.bloodline.register(baby,this);
+        bus.emit(E.BORN,baby.id,{name:baby.name,family:baby._family,gen:baby._gen,mother:this.sex==='f'?this.name:n.name,father:this.sex==='m'?this.name:n.name,tribe:this.tribe?.name});
         if(audioEngine)audioEngine.playBirth();
       }
       if(this.stage>=2&&n.stage===1&&R()<.05){
@@ -942,9 +1080,12 @@ class World{
     this.terrain=genTerrain(w,h);
     this.res=new ResGrid(w,h,this.terrain);
     this.humans=[];this.tribes=[];this.structures=[];this.animals=[];
-    this.ruins=[];this.wonders=[];
-    this.roads=new Float32Array(w*h);// road wear intensity per cell
-    this.activeDiseases=[];// {disease, x, y, radius, timer}
+    this.ruins=[];this.wonders=[];this.cities=[];
+    this.roads=new Float32Array(w*h);
+    this.activeDiseases=[];
+    this.climate=new Climate();
+    this.bloodline=new Bloodline();
+    this.year=0;
     this.season='spring';this.sMult=1;this.year=0;
     this.timeOfDay=0.3;// start at morning
     this.bus=null;// set by Sim
@@ -1020,6 +1161,11 @@ class World{
     if(this.tick%60===0)this._updateDiseases(bus);
     if(this.tick%35===0)this._updateAlliances(bus);
     if(this.tick%100===0)this._checkWonders(bus);
+    if(this.tick%80===0)this._checkCities(bus);
+    if(this.tick%200===0)this._generateMyths(bus);
+    if(this.tick%150===0)this._checkMarriageDiplomacy(bus);
+    if(this.tick%50===0)this._updateCurrency();
+    this.climate.tick(this.tick,this.terrain,this.w,this.h,bus);
     // Roads: human movement wears paths
     for(const h of this.humans){if(h.alive&&h.stage>=1){const ri=this.ix(F(h.x),F(h.y));this.roads[ri]=mn(1,this.roads[ri]+.003)}}
     // Road decay
@@ -1181,6 +1327,8 @@ class World{
           }
           // Winner takes half of loser's wealth
           const loot=F(loser.wealth*.5);winner.wealth+=loot;loser.wealth-=loot;
+          // Cascading collapse: if empire loses badly
+          if(loser.isEmpire&&loser.sz<winner.sz*.4)this._triggerCollapse(loser,bus);
         }
       }
     }
@@ -1337,6 +1485,8 @@ class World{
       if(!tribe.disease){tribe.diseaseTimer=0;continue}
       tribe.diseaseTimer--;
       if(tribe.diseaseTimer<=0){tribe.disease=null;continue}
+      // Disease can collapse empires
+      if(tribe.isEmpire&&tribe.sz<10)this._triggerCollapse(tribe,bus);
       // Kill members
       const mortality=tribe.disease.severity*(tribe.hasTech('medicine')?.3:1);
       for(const mid of [...tribe.members]){
@@ -1407,6 +1557,137 @@ class World{
         try{showToast(`🏛 ${tribe.name} built the ${name}!`,'monument')}catch(e){}
       }
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  EMERGENT CITIES
+  // ═══════════════════════════════════════════════════════════
+  _checkCities(bus){
+    for(const tribe of this.tribes){
+      if(tribe.sz<12)continue;
+      // Count structure clusters
+      const clusters={};
+      for(const s of tribe.structures){
+        const key=F(s.x/5)+','+F(s.y/5);clusters[key]=(clusters[key]||0)+1;
+      }
+      for(const[key,count]of Object.entries(clusters)){
+        if(count<5)continue;
+        const[cx,cy]=key.split(',').map(Number);
+        const existingCity=this.cities.find(c=>abs(c.x-cx*5)<6&&abs(c.y-cy*5)<6);
+        if(existingCity){
+          existingCity.pop=count;existingCity.age++;
+          if(count>=10&&existingCity.tier<2){existingCity.tier=2;try{showToast(`🏘 ${existingCity.name} grew into a TOWN!`,'monument')}catch(e){}}
+          if(count>=18&&existingCity.tier<3){existingCity.tier=3;try{showToast(`🏙 ${existingCity.name} became a CITY!`,'monument')}catch(e){}}
+          continue;
+        }
+        // New city!
+        const cityNames=['ur','mem','bab','ash','gar','kol','dur','mar','kar','sul'];
+        const name=tribe.name.slice(0,2)+cityNames[F(R()*cityNames.length)];
+        const city=new City(cx*5+2,cy*5+2,tribe,name);city.pop=count;
+        this.cities.push(city);tribe.cities.push(city);
+        tribe.memory.addStory(`The settlement of ${name} was founded`);
+        try{showToast(`🏘 ${name} founded by the ${tribe.name}!`,'monument')}catch(e){}
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  MYTHOLOGY
+  // ═══════════════════════════════════════════════════════════
+  _generateMyths(bus){
+    for(const tribe of this.tribes){
+      if(tribe.sz<5||tribe.myths.length>=5)continue;
+      if(tribe.hasTech('language')&&R()<.1){
+        const myth=generateMyth(tribe);
+        tribe.myths.push(myth);
+        tribe.memory.addStory('A new myth spreads: "'+myth.slice(0,60)+'..."');
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  MARRIAGE DIPLOMACY
+  // ═══════════════════════════════════════════════════════════
+  _checkMarriageDiplomacy(bus){
+    for(const a of this.tribes){
+      if(a.sz<8)continue;
+      for(const b of this.tribes){
+        if(b.id===a.id||b.sz<8)continue;
+        const rel=a.relation(b.id);
+        if(rel>0&&rel<.6&&R()<.008){// friendly but not allied yet
+          // Find eligible adults
+          const bridePool=[...a.members].map(mid=>this.humans.find(h=>h.id===mid&&h.alive&&h.stage===2&&!h._spouse)).filter(Boolean);
+          const groomPool=[...b.members].map(mid=>this.humans.find(h=>h.id===mid&&h.alive&&h.stage===2&&!h._spouse)).filter(Boolean);
+          const bride=bridePool.find(h=>h.sex==='f');
+          const groom=groomPool.find(h=>h.sex==='m');
+          if(bride&&groom){
+            bride._spouse=groom.id;groom._spouse=bride.id;
+            // Bride moves to groom's tribe
+            a.members.delete(bride.id);bride.tribe=b;b.members.add(bride.id);
+            a.adjustRelation(b.id,.15);b.adjustRelation(a.id,.15);
+            a.marriages.push({partnerId:b.id,year:this.year});b.marriages.push({partnerId:a.id,year:this.year});
+            a.memory.addStory(`${bride.name} was wed to ${groom.name} of the ${b.name}, sealing peace`);
+            b.memory.addStory(`${groom.name} wed ${bride.name} of the ${a.name}`);
+            try{showToast(`💒 Royal marriage: ${bride.name} (${a.name}) weds ${groom.name} (${b.name})!`,'pop')}catch(e){}
+          }
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  CURRENCY
+  // ═══════════════════════════════════════════════════════════
+  _updateCurrency(){
+    for(const tribe of this.tribes){
+      const tier=currencyTier(tribe);
+      if(tier>tribe.currencyTier){
+        tribe.currencyTier=tier;
+        tribe.memory.addStory(`The ${tribe.name} adopted ${CURRENCY_NAMES[tier]} as currency`);
+        try{showToast(`💰 ${tribe.name} invented ${CURRENCY_NAMES[tier]}!`,'monument')}catch(e){}
+      }
+      // Inflation: wealth grows too fast relative to goods
+      const totalGoods=Object.values(tribe.goods).reduce((s,v)=>s+v,0);
+      if(tribe.wealth>totalGoods*5+50)tribe.inflation=mn(1,tribe.inflation+.01);
+      else tribe.inflation=mx(0,tribe.inflation-.005);
+      // High inflation causes unrest → potential revolution
+      if(tribe.inflation>.7&&tribe.sz>10&&R()<.005){
+        tribe.memory.addStory(`Economic collapse! The ${CURRENCY_NAMES[tribe.currencyTier]} became worthless.`);
+        tribe.wealth=F(tribe.wealth*.2);tribe.inflation=.1;
+        try{showToast(`💸 Economic COLLAPSE in ${tribe.name}!`,'disaster')}catch(e){}
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  CASCADING COLLAPSE
+  // ═══════════════════════════════════════════════════════════
+  _triggerCollapse(empire,bus){
+    if(!empire.isEmpire)return;
+    // All vassals break free
+    for(const vid of [...empire.vassals]){
+      const v=this.tribes.find(t=>t.id===vid);
+      if(v){v.overlord=null;v.adjustRelation(empire.id,-.5)}
+    }
+    empire.vassals=[];empire.isEmpire=false;
+    // Tech regression in former empire
+    const techKeys=Object.keys(empire.techs);
+    let lost=0;
+    for(const k of techKeys){
+      if(empire.techs[k]&&R()<.2){empire.techs[k]=0;lost++}// 20% chance to lose each tech
+    }
+    empire.knowledge=mx(0,empire.knowledge-lost);
+    // Population crash
+    const members=[...empire.members];
+    for(const mid of members){
+      const m=this.humans.find(h=>h.id===mid&&h.alive);
+      if(m&&R()<.15)m.die(bus,'collapse');
+    }
+    // Wealth evaporates
+    empire.wealth=F(empire.wealth*.1);
+    empire.memory.addStory(`The ${empire.name} empire COLLAPSED. A dark age began.`);
+    this.bloodline.addAchievement(empire.leaderName||empire.name,'witnessed the fall of '+empire.name);
+    try{showToast(`💀 The ${empire.name} EMPIRE has COLLAPSED! Dark age begins!`,'disaster')}catch(e){}
   }
 
   disaster(bus,type){
@@ -2175,6 +2456,30 @@ function draw(){
     cx2.fillStyle='#888';cx2.fillText('🏚',px,py);
   }
 
+  // ── Cities ──
+  for(const city of w.cities){
+    const px=city.x*C+C/2,py=city.y*C+C/2;
+    const tribe=w.tribes.find(t=>t.id===city.tribe?.id||t.cities.includes(city));
+    const col=tribe?tribe.color:'#888';
+    // Growth rings
+    const rings=city.tier;
+    for(let i=rings;i>0;i--){
+      cx2.strokeStyle=col.replace(')',`,${.1+i*.05})`).replace('hsl','hsla');
+      cx2.lineWidth=1;cx2.beginPath();cx2.arc(px,py,C*(2+i*1.5),0,PI*2);cx2.stroke();
+    }
+    // City fill
+    cx2.fillStyle=col.replace(')',',0.08)').replace('hsl','hsla');
+    cx2.beginPath();cx2.arc(px,py,C*(2+rings*1.5),0,PI*2);cx2.fill();
+    // Label
+    cx2.fillStyle=col;cx2.font=`bold ${mx(8,F(C*.55))}px monospace`;cx2.textAlign='center';
+    cx2.fillText(`${city.name} (${city.tierName})`,px,py-C*2);
+    // Tribal symbol at city center
+    if(tribe){
+      if(!tribe.symbol)tribe.symbol=genSymbol(tribe);
+      drawSymbol(cx2,px,py,tribe.symbol,col,mx(.5,C/14));
+    }
+  }
+
   // ── Wonders ──
   for(const ww of w.wonders){
     const px=ww.x*C+C/2,py=ww.y*C+C/2;
@@ -2219,6 +2524,11 @@ function draw(){
     if(tribe.disease)sub+=` · ☠${tribe.disease.name}`;
     if(tribe.allianceWith){const ally=w.tribes.find(t2=>t2.id===tribe.allianceWith);if(ally)sub+=` · 🤝${ally.name}`}
     cx2.fillText(sub,tribe.homeX*C+C/2,tribe.homeY*C-C*3.2);
+    // Tribal symbol
+    if(!tribe.symbol)tribe.symbol=genSymbol(tribe);
+    drawSymbol(cx2,tribe.homeX*C-C*4,tribe.homeY*C-C*4.5,tribe.symbol,tribe.color,mx(.4,C/16));
+    // Currency tier indicator
+    if(tribe.currencyTier>0){cx2.fillStyle='#c0a040';cx2.font=`${mx(7,F(C*.4))}px monospace`;cx2.fillText(CURRENCY_NAMES[tribe.currencyTier],tribe.homeX*C+C/2,tribe.homeY*C-C*1.5)}
     // Disease overlay: red tint
     if(tribe.disease){
       cx2.fillStyle='rgba(200,30,30,0.08)';cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*6,0,PI*2);cx2.fill();
@@ -2516,6 +2826,26 @@ function showTribeDetail(t){
   if(t.memory.stories.length){
     html+=`<div style="margin-top:3px;color:#8a7a60;font-size:8px">📖 History:</div>`;
     for(const s of t.memory.stories.slice(-3))html+=`<div style="color:#6a5a50;font-size:7px;padding-left:6px">${s}</div>`;
+  }
+  // Cities
+  if(t.cities.length){
+    html+=`<div style="margin-top:3px;color:#d0c8b0;font-size:8px">🏘 Cities:</div>`;
+    for(const c of t.cities)html+=`<div style="color:#a0988a;font-size:7px;padding-left:6px">${c.name} (${c.tierName}, pop ~${c.pop})</div>`;
+  }
+  // Currency
+  if(t.currencyTier>0)html+=`<div class="sr"><span class="sl">Currency</span><span class="sv vy">${CURRENCY_NAMES[t.currencyTier]}${t.inflation>.3?' ⚠inflation '+F(t.inflation*100)+'%':''}</span></div>`;
+  // Myths
+  if(t.myths.length){
+    html+=`<div style="margin-top:3px;color:#c0a870;font-size:8px;font-style:italic">📖 Mythology:</div>`;
+    for(const m of t.myths.slice(-2))html+=`<div style="color:#a09070;font-size:7px;padding-left:6px;font-style:italic">"${m}"</div>`;
+  }
+  // Marriages
+  if(t.marriages.length)html+=`<div class="sr"><span class="sl">Marriages</span><span class="sv">${t.marriages.length} diplomatic</span></div>`;
+  // Top dynasty
+  const dynasties=sim.world.bloodline.topDynasties(2);
+  if(dynasties.length){
+    html+=`<div style="margin-top:3px;color:#c0a050;font-size:8px">👑 Dynasties:</div>`;
+    for(const d of dynasties)html+=`<div style="color:#a08840;font-size:7px;padding-left:6px">${d.name} lineage: ${d.members.length} members, gen ${d.gen}</div>`;
   }
   document.getElementById('td-content').innerHTML=html;
 }
