@@ -329,6 +329,40 @@ class TribalMemory{
 }
 
 // ═══════════════════════════════════════════════════════════
+//  TRADE GOODS — Biome-specific luxury resources
+// ═══════════════════════════════════════════════════════════
+const TRADE_GOODS={GOLD:0,GEMS:1,SPICES:2,FURS:3,SALT:4,COPPER:5,OBSIDIAN:6};
+const GOOD_NAME=['gold','gems','spices','furs','salt','copper','obsidian'];
+const GOOD_ICON=['💰','💎','🌶','🦊','🧂','🪨','🔮'];
+// Which biomes produce which goods
+const BIOME_GOODS={[BIOME.MOUNTAIN]:[TRADE_GOODS.GOLD,TRADE_GOODS.COPPER,TRADE_GOODS.OBSIDIAN],
+  [BIOME.FOREST]:[TRADE_GOODS.FURS,TRADE_GOODS.SPICES],[BIOME.DESERT]:[TRADE_GOODS.SALT,TRADE_GOODS.GEMS],
+  [BIOME.FERTILE]:[TRADE_GOODS.SPICES],[BIOME.PLAINS]:[TRADE_GOODS.SALT]};
+
+// ═══════════════════════════════════════════════════════════
+//  DISEASE SYSTEM
+// ═══════════════════════════════════════════════════════════
+const DISEASES=['plague','fever','pox','cough','flux'];
+class Disease{
+  constructor(name,severity,spreadRate){this.name=name||DISEASES[F(R()*DISEASES.length)];this.severity=severity||.3+R()*.5;this.spreadRate=spreadRate||.05+R()*.1;this.duration=200+F(R()*300)}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RUINS — Left by destroyed tribes
+// ═══════════════════════════════════════════════════════════
+class Ruin{
+  constructor(x,y,tribeName,techs){this.x=x;this.y=y;this.name=tribeName;this.techs=techs;this.explored=false}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WORLD WONDER
+// ═══════════════════════════════════════════════════════════
+const WONDERS=['Great Pyramid','Stone Circle','Grand Temple','Sky Tower','Eternal Flame','Oracle Cave'];
+class Wonder{
+  constructor(name,x,y,tribe){this.name=name;this.x=x;this.y=y;this.tribe=tribe;this.age=0}
+}
+
+// ═══════════════════════════════════════════════════════════
 //  TRIBE
 // ═══════════════════════════════════════════════════════════
 let _ti=0;
@@ -357,8 +391,20 @@ class Tribe{
     // ── Tribal memory ──
     this.memory=new TribalMemory();
     // ── Social hierarchy ──
-    this.leaderId=null;// most reputable member
-    this.leaderName=null;
+    this.leaderId=null;this.leaderName=null;
+    // ── Empire system ──
+    this.vassals=[];// tribe ids that are subjugated
+    this.overlord=null;// tribe id this is vassal to
+    this.isEmpire=false;
+    // ── Economy ──
+    this.wealth=0;this.goods={};// trade goods stockpile
+    this.tradeRoutes=[];// {targetId,good,age}
+    // ── Disease ──
+    this.disease=null;this.diseaseTimer=0;
+    // ── Culture score ──
+    this.cultureScore=0;
+    // ── Alliance ──
+    this.allianceWith=null;// tribe id
   }
   get sz(){return this.members.size}
   get color(){return`hsl(${this.hue},60%,50%)`}
@@ -692,6 +738,23 @@ class Human{
     if(R()<.003&&!this.tribe?.hasTech('fire')){
       if(this.tribe){this.tribe.learnTech('fire',bus);bus.emit(E.FIRE,this.id,{name:this.name,tribe:this.tribe.name})}
     }
+    // Explore ruins — discover lost technology
+    if(this.tribe&&world.ruins){
+      for(const r of world.ruins){
+        if(r.explored)continue;
+        if(abs(this.x-r.x)<2&&abs(this.y-r.y)<2){
+          r.explored=true;
+          // Learn a random tech from the ruins
+          const ruinTechs=Object.entries(r.techs).filter(([k,v])=>v&&!this.tribe.hasTech(k));
+          if(ruinTechs.length){
+            const[tech]=ruinTechs[F(R()*ruinTechs.length)];
+            this.tribe.learnTech(tech,bus);
+            this.tribe.memory.addStory(`${this.name} explored the ruins of ${r.name} and discovered ${tech}`);
+            try{showToast(`🏚 ${this.name} found ${tech} in the ruins of ${r.name}!`,'monument')}catch(e){}
+          }
+        }
+      }
+    }
   }
 
   _craft(bus,world){
@@ -865,6 +928,9 @@ class World{
     this.terrain=genTerrain(w,h);
     this.res=new ResGrid(w,h,this.terrain);
     this.humans=[];this.tribes=[];this.structures=[];this.animals=[];
+    this.ruins=[];this.wonders=[];
+    this.roads=new Float32Array(w*h);// road wear intensity per cell
+    this.activeDiseases=[];// {disease, x, y, radius, timer}
     this.season='spring';this.sMult=1;this.year=0;
     this.timeOfDay=0.3;// start at morning
     this.bus=null;// set by Sim
@@ -936,6 +1002,14 @@ class World{
     if(this.tick%30===0)this._checkWar(bus);
     if(this.tick%50===0)this._checkMigration(bus);
     if(this.tick%40===0)this._updateLeadersAndBeliefs(bus);
+    if(this.tick%25===0)this._updateEconomy(bus);
+    if(this.tick%60===0)this._updateDiseases(bus);
+    if(this.tick%35===0)this._updateAlliances(bus);
+    if(this.tick%100===0)this._checkWonders(bus);
+    // Roads: human movement wears paths
+    for(const h of this.humans){if(h.alive&&h.stage>=1){const ri=this.ix(F(h.x),F(h.y));this.roads[ri]=mn(1,this.roads[ri]+.003)}}
+    // Road decay
+    if(this.tick%100===0)for(let i=0;i<this.roads.length;i++)this.roads[i]=mx(0,this.roads[i]-.05);
 
     for(const tribe of this.tribes){
       if(!tribe.hasTech('farming')&&tribe.sz>6){
@@ -1069,6 +1143,30 @@ class World{
           if(audioEngine)audioEngine.playWar();
           if(particles)particles.emit(loser.homeX,loser.homeY,20,{vx:0,vy:-.1,vxR:1,vyR:.8,life:20,lifeR:10,r:220,g:40,b:30,a:.7,sz:2.5,spread:3});
           for(const mid of winner.members){const m=this.humans.find(h=>h.id===mid);if(m){m.skills.fight=mn(1,m.skills.fight+.02);if(m.kills>2)winner.addLegend(m.name,'great warrior',this.year)}}
+          // ── Conquest: if loser is very weakened, vassalize or absorb ──
+          if(loser.sz<=3&&winner.sz>loser.sz*2){
+            // Full absorption
+            for(const mid of [...loser.members]){const m=this.humans.find(h2=>h2.id===mid&&h2.alive);
+              if(m){m.tribe=winner;winner.members.add(m.id);loser.members.delete(m.id)}}
+            // Loot wealth and goods
+            winner.wealth+=loser.wealth;loser.wealth=0;
+            for(const[g,n]of Object.entries(loser.goods)){winner.goods[g]=(winner.goods[g]||0)+n}
+            // Leave ruins
+            this.ruins.push(new Ruin(F(loser.homeX),F(loser.homeY),loser.name,{...loser.techs}));
+            winner.memory.addStory(`The ${winner.name} conquered and absorbed the ${loser.name}`);
+            try{showToast(`👑 ${winner.name} CONQUERED ${loser.name}!`,'war')}catch(e){}
+            if(winner.sz>20)winner.isEmpire=true;
+          }else if(loser.sz>3&&winner.sz>loser.sz){
+            // Vassalize
+            if(!loser.overlord){
+              loser.overlord=winner.id;winner.vassals.push(loser.id);
+              winner.isEmpire=true;
+              winner.memory.addStory(`The ${loser.name} submitted to ${winner.name} rule`);
+              try{showToast(`⚔ ${loser.name} becomes VASSAL of ${winner.name}!`,'war')}catch(e){}
+            }
+          }
+          // Winner takes half of loser's wealth
+          const loot=F(loser.wealth*.5);winner.wealth+=loot;loser.wealth-=loot;
         }
       }
     }
@@ -1141,6 +1239,158 @@ class World{
           bus.emit(E.MIGRATE,tribe.id,{tribe:tribe.name,x:F(bestX),y:F(bestY)});
           if(particles)particles.emit(bestX,bestY,15,{vx:0,vy:-.1,vxR:.5,vyR:.3,life:30,lifeR:15,r:200,g:180,b:100,a:.5,sz:2,spread:4});
         }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  ECONOMY — Trade goods, wealth, caravans
+  // ═══════════════════════════════════════════════════════════
+  _updateEconomy(bus){
+    for(const tribe of this.tribes){
+      if(tribe.sz<3)continue;
+      // Collect trade goods from biome
+      const homeBiome=this.terrain[this.ix(F(tribe.homeX),F(tribe.homeY))];
+      const available=BIOME_GOODS[homeBiome]||[];
+      for(const g of available){if(R()<.1)tribe.goods[g]=(tribe.goods[g]||0)+1}
+      // Culture score from rituals, monuments, legends, wonders
+      tribe.cultureScore=tribe.rituals*.1+tribe.legends.length*5+
+        tribe.structures.filter(s=>s.type===STRUCT.MONUMENT).length*10+
+        (this.wonders.filter(w2=>w2.tribe===tribe.id).length*50);
+      // Vassal tribute
+      for(const vid of tribe.vassals){
+        const v=this.tribes.find(t=>t.id===vid);
+        if(v&&v.sz>0){const tribute=mn(v.wealth*.1,5);v.wealth-=tribute;tribe.wealth+=tribute}
+      }
+      // Trade between friendly tribes
+      for(const other of this.tribes){
+        if(other.id===tribe.id||tribe.relation(other.id)<.2)continue;
+        if(Object.keys(tribe.goods).length>0&&R()<.02){
+          // Exchange a good for wealth
+          const goodKeys=Object.keys(tribe.goods).filter(k=>tribe.goods[k]>0);
+          if(goodKeys.length){
+            const g=goodKeys[F(R()*goodKeys.length)];
+            tribe.goods[g]--;other.goods[g]=(other.goods[g]||0)+1;
+            tribe.wealth+=3;other.wealth=mx(0,other.wealth-2);
+            tribe.adjustRelation(other.id,.03);other.adjustRelation(tribe.id,.03);
+            // Wear a road between them
+            const steps=20;for(let i=0;i<=steps;i++){
+              const rx=tribe.homeX+(other.homeX-tribe.homeX)*i/steps;
+              const ry=tribe.homeY+(other.homeY-tribe.homeY)*i/steps;
+              const ri=this.ix(F(rx),F(ry));this.roads[ri]=mn(1,this.roads[ri]+.02);
+            }
+          }
+        }
+      }
+      // Rebellion: vassals revolt when overlord is weak or vassal is strong
+      if(tribe.overlord){
+        const overlord=this.tribes.find(t=>t.id===tribe.overlord);
+        if(!overlord||overlord.sz<tribe.sz*.8||R()<.005){
+          // REVOLT
+          if(overlord){overlord.vassals=overlord.vassals.filter(v=>v!==tribe.id);overlord.adjustRelation(tribe.id,-.5)}
+          tribe.overlord=null;
+          tribe.memory.addStory(`The ${tribe.name} rose up and threw off their oppressors!`);
+          try{showToast(`⚡ ${tribe.name} REBELS against ${overlord?.name||'their overlord'}!`,'war')}catch(e){}
+        }
+      }
+      // Cultural attraction: high culture tribes attract loners and steal members
+      if(tribe.cultureScore>20){
+        for(const h of this.humans){
+          if(!h.alive||h.tribe===tribe||!h.tribe||h.stage<2)continue;
+          if(h.tribe.cultureScore<tribe.cultureScore*.5&&R()<.001){
+            const old=h.tribe;old.members.delete(h.id);h.tribe=tribe;tribe.members.add(h.id);
+            tribe.memory.addStory(`${h.name} of the ${old.name} was drawn to ${tribe.name} culture`);
+          }
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  DISEASE
+  // ═══════════════════════════════════════════════════════════
+  _updateDiseases(bus){
+    // Spontaneous disease from overcrowding
+    for(const tribe of this.tribes){
+      if(tribe.sz>25&&!tribe.disease&&R()<.01){
+        tribe.disease=new Disease();tribe.diseaseTimer=tribe.disease.duration;
+        tribe.memory.addStory(`A terrible ${tribe.disease.name} struck the ${tribe.name}`);
+        try{showToast(`☠ ${tribe.disease.name} strikes the ${tribe.name}!`,'disaster')}catch(e){}
+      }
+    }
+    // Spread and damage
+    for(const tribe of this.tribes){
+      if(!tribe.disease){tribe.diseaseTimer=0;continue}
+      tribe.diseaseTimer--;
+      if(tribe.diseaseTimer<=0){tribe.disease=null;continue}
+      // Kill members
+      const mortality=tribe.disease.severity*(tribe.hasTech('medicine')?.3:1);
+      for(const mid of [...tribe.members]){
+        const m=this.humans.find(h=>h.id===mid&&h.alive);
+        if(m&&R()<mortality*.008){m.die(bus,tribe.disease.name)}
+      }
+      // Spread to nearby tribes
+      for(const other of this.tribes){
+        if(other.id===tribe.id||other.disease)continue;
+        const dx=abs(tribe.homeX-other.homeX),dy=abs(tribe.homeY-other.homeY);
+        if(dx<10&&dy<10&&R()<tribe.disease.spreadRate*.1){
+          other.disease=new Disease(tribe.disease.name,tribe.disease.severity*.8,tribe.disease.spreadRate*.7);
+          other.diseaseTimer=other.disease.duration;
+          try{showToast(`☠ ${other.disease.name} spreads to ${other.name}!`,'disaster')}catch(e){}
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  ALLIANCES
+  // ═══════════════════════════════════════════════════════════
+  _updateAlliances(bus){
+    for(const a of this.tribes){
+      if(a.allianceWith)continue;
+      // Seek alliance against common enemy
+      for(const b of this.tribes){
+        if(b.id===a.id||b.allianceWith)continue;
+        if(a.relation(b.id)>.4){
+          // Check if both hostile to same third tribe
+          for(const c of this.tribes){
+            if(c.id===a.id||c.id===b.id)continue;
+            if(a.relation(c.id)<-.3&&b.relation(c.id)<-.3&&R()<.01){
+              a.allianceWith=b.id;b.allianceWith=a.id;
+              a.adjustRelation(b.id,.2);b.adjustRelation(a.id,.2);
+              a.memory.addStory(`The ${a.name} and ${b.name} allied against the ${c.name}`);
+              try{showToast(`🤝 ALLIANCE: ${a.name} + ${b.name}!`,'pop')}catch(e){}
+              break;
+            }
+          }
+        }
+      }
+    }
+    // Break alliances if relations sour
+    for(const t of this.tribes){
+      if(t.allianceWith){
+        const ally=this.tribes.find(t2=>t2.id===t.allianceWith);
+        if(!ally||t.relation(t.allianceWith)<0){t.allianceWith=null}
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  WORLD WONDERS
+  // ═══════════════════════════════════════════════════════════
+  _checkWonders(bus){
+    const usedNames=new Set(this.wonders.map(w2=>w2.name));
+    for(const tribe of this.tribes){
+      if(tribe.sz<20||tribe.knowledge<5||tribe.cultureScore<30)continue;
+      const available=WONDERS.filter(w2=>!usedNames.has(w2));
+      if(!available.length)continue;
+      if(R()<.008){
+        const name=available[F(R()*available.length)];
+        const w2=new Wonder(name,F(tribe.homeX),F(tribe.homeY),tribe.id);
+        this.wonders.push(w2);
+        tribe.addLegend(tribe.leaderName||tribe.name,'built '+name,this.year);
+        tribe.memory.addStory(`The ${tribe.name} built the ${name}, a wonder of the world`);
+        try{showToast(`🏛 ${tribe.name} built the ${name}!`,'monument')}catch(e){}
       }
     }
   }
@@ -1845,6 +2095,30 @@ function draw(){
     cx2.fillRect(0,0,W*C,H*C);
   }
 
+  // ── Roads (worn paths between settlements) ──
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const ri=y*W+x;const rv=w.roads[ri];
+    if(rv>.05){cx2.fillStyle=`rgba(180,160,120,${rv*.35})`;cx2.fillRect(x*C,y*C,C+.5,C+.5)}
+  }
+
+  // ── Ruins ──
+  cx2.font=`${mx(10,F(C*.8))}px serif`;cx2.textAlign='center';cx2.textBaseline='middle';
+  for(const r of w.ruins){
+    const px=r.x*C+C/2,py=r.y*C+C/2;
+    cx2.fillStyle='rgba(100,80,60,0.3)';cx2.beginPath();cx2.arc(px,py,C*1.2,0,PI*2);cx2.fill();
+    cx2.fillStyle='#888';cx2.fillText('🏚',px,py);
+  }
+
+  // ── Wonders ──
+  for(const ww of w.wonders){
+    const px=ww.x*C+C/2,py=ww.y*C+C/2;
+    // Golden glow
+    cx2.fillStyle='rgba(255,200,50,0.15)';cx2.beginPath();cx2.arc(px,py,C*3,0,PI*2);cx2.fill();
+    cx2.fillStyle='rgba(255,220,80,0.25)';cx2.beginPath();cx2.arc(px,py,C*1.5,0,PI*2);cx2.fill();
+    cx2.fillStyle='#fff';cx2.font=`${mx(12,F(C))}px serif`;cx2.fillText('🏛',px,py);
+    cx2.fillStyle='#e0c050';cx2.font=`${mx(7,F(C*.5))}px monospace`;cx2.fillText(ww.name,px,py+C*1.5);
+  }
+
   // ── Structures (drawn with explicit white bg circle for visibility) ──
   const fontSize=mx(10,mn(C*.8,16));
   cx2.font=`${fontSize}px serif`;cx2.textAlign='center';cx2.textBaseline='middle';
@@ -1873,8 +2147,21 @@ function draw(){
     // Belief + leader subtitle
     cx2.font=`${mx(7,F(C*.45))}px monospace`;
     cx2.fillStyle=tribe.color.replace('60%','40%');
-    const sub=`${tribe.belief||''}${tribe.leaderName?' · 👑'+tribe.leaderName:''}`;
+    let sub=`${tribe.belief||''}${tribe.leaderName?' · 👑'+tribe.leaderName:''}`;
+    if(tribe.isEmpire)sub='👑 EMPIRE · '+sub;
+    if(tribe.overlord){const ov=w.tribes.find(t2=>t2.id===tribe.overlord);sub=`vassal of ${ov?.name||'?'} · `+sub}
+    if(tribe.disease)sub+=` · ☠${tribe.disease.name}`;
+    if(tribe.allianceWith){const ally=w.tribes.find(t2=>t2.id===tribe.allianceWith);if(ally)sub+=` · 🤝${ally.name}`}
     cx2.fillText(sub,tribe.homeX*C+C/2,tribe.homeY*C-C*3.2);
+    // Disease overlay: red tint
+    if(tribe.disease){
+      cx2.fillStyle='rgba(200,30,30,0.08)';cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*6,0,PI*2);cx2.fill();
+    }
+    // Empire: larger territory circle
+    if(tribe.isEmpire){
+      cx2.strokeStyle=tribe.color.replace(')',',0.3)').replace('hsl','hsla');cx2.lineWidth=2;
+      cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*9,0,PI*2);cx2.stroke();
+    }
   }
 
   // ── Animals ──
@@ -1968,6 +2255,16 @@ function draw(){
         if(rel>0)cx2.strokeStyle=`rgba(60,200,80,${mn(.5,rel*.6)})`;// green=friendly
         else cx2.strokeStyle=`rgba(220,50,50,${mn(.5,abs(rel)*.6)})`;// red=hostile
         cx2.setLineDash(rel>0?[4,4]:[2,4]);cx2.stroke();cx2.setLineDash([]);
+        // Alliance: thick golden line
+        if(a.allianceWith===b.id){
+          cx2.beginPath();cx2.moveTo(ax,ay);cx2.lineTo(bx,by);
+          cx2.strokeStyle='rgba(255,200,50,0.5)';cx2.lineWidth=2.5;cx2.setLineDash([]);cx2.stroke();
+        }
+        // Vassal: thin dotted line with arrow
+        if(a.vassals.includes(b.id)||b.vassals.includes(a.id)){
+          cx2.beginPath();cx2.moveTo(ax,ay);cx2.lineTo(bx,by);
+          cx2.strokeStyle='rgba(200,150,50,0.4)';cx2.lineWidth=1.5;cx2.setLineDash([1,3]);cx2.stroke();cx2.setLineDash([]);
+        }
       }
     }
   }
