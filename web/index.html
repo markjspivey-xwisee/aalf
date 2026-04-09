@@ -85,6 +85,17 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 }
 @media(min-width:901px){#sb-toggle{display:none}#sb-close-wrap{display:none!important}}
 @media(max-width:900px){#sb-close-wrap{display:block!important}}
+.gov-panel{background:#0f0d18;border:1px solid #2a2040;border-radius:5px;padding:8px}
+.gov-panel h3{color:#e8a040}
+.gov-btn{background:#1a1628;border:1px solid #2a2640;color:#a090c0;padding:4px 8px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:9px;margin:2px}
+.gov-btn:hover{background:#2a2640;color:#e8a040}
+.gov-btn.active{background:#e8a04022;border-color:#e8a040;color:#e8a040}
+.gov-btn.god{border-color:#c06040}.gov-btn.god:hover{background:#c0604022;color:#ff8060}
+.peer-status{font-size:8px;padding:2px 6px;border-radius:8px;display:inline-block}
+.peer-online{background:#00e67622;color:#00e676;border:1px solid #00e67644}
+.peer-offline{background:#ff525222;color:#ff5252;border:1px solid #ff525244}
+.decree-list{font-size:8px;max-height:60px;overflow-y:auto;margin-top:3px}
+.decree-item{padding:1px 4px;color:#c0a880;border-left:2px solid #e8a04044}
 </style>
 </head>
 <body>
@@ -99,6 +110,9 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <button id="ba">+Human</button>
 <button id="bd" class="dn">Disaster</button>
 <button id="bx">Reset</button>
+<button id="bsave">💾</button>
+<button id="bgov" class="gov-btn">👑 Govern</button>
+<button id="bgod" class="gov-btn god">⚡ God</button>
 <button id="bmute">🔇</button>
 <label>Spd<input id="spd" type="range" min="1" max="120" value="20" style="width:60px"></label>
 <label>View<select id="vm">
@@ -135,6 +149,8 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <div class="p">
 <h3>World</h3>
 <div class="sr"><span class="sl">Year</span><span id="xt" class="sv vy">0</span></div>
+<div class="sr"><span class="sl">Peers</span><span id="xpeers" class="peer-status peer-offline">offline</span></div>
+<div class="sr"><span class="sl">World Seed</span><span id="xseed" class="sv" style="font-size:8px">—</span></div>
 <div class="sr"><span class="sl">Season / Time</span><span id="xsn" class="sv vy">—</span></div>
 <div class="sr"><span class="sl">Weather</span><span id="xweath" class="sv">—</span></div>
 <div class="sr"><span class="sl">Era</span><span id="xera" class="sv vo">—</span></div>
@@ -157,6 +173,34 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <h3>Tribes</h3>
 <div id="trb" class="sb2"></div>
 <div id="trl" style="margin-top:2px;font-size:8px"></div>
+</div>
+<div class="p gov-panel" id="gov-panel" style="display:none">
+<h3>👑 Governance <span id="gov-close" style="cursor:pointer;float:right;color:#5a5070;font-size:11px">✕</span></h3>
+<div class="sr"><span class="sl">Your Tribe</span><span id="gov-tribe" class="sv vy">none</span></div>
+<div style="margin:4px 0"><span style="font-size:8px;color:#5a5070">Select a tribe from the bar above, then issue decrees:</span></div>
+<div id="gov-decrees" style="display:flex;flex-wrap:wrap;gap:2px">
+<button class="gov-btn" data-decree="focus_food">🌾 Focus Food</button>
+<button class="gov-btn" data-decree="focus_build">🏠 Focus Build</button>
+<button class="gov-btn" data-decree="focus_war">⚔ Prepare War</button>
+<button class="gov-btn" data-decree="focus_craft">🔨 Focus Craft</button>
+<button class="gov-btn" data-decree="migrate">🚶 Migrate</button>
+<button class="gov-btn" data-decree="ritual">🌀 Hold Ritual</button>
+<button class="gov-btn" data-decree="trade">🤝 Seek Trade</button>
+<button class="gov-btn" data-decree="monument">🗿 Build Monument</button>
+</div>
+<div id="gov-active" class="decree-list"></div>
+</div>
+<div class="p" id="god-panel" style="display:none">
+<h3>⚡ God Powers <span id="god-close" style="cursor:pointer;float:right;color:#5a5070;font-size:11px">✕</span></h3>
+<div style="display:flex;flex-wrap:wrap;gap:2px">
+<button class="gov-btn god" data-god="bless_food">🌾 Bless Land</button>
+<button class="gov-btn god" data-god="smite">💥 Smite Area</button>
+<button class="gov-btn god" data-god="rain">🌧 Bring Rain</button>
+<button class="gov-btn god" data-god="plague">☠ Send Plague</button>
+<button class="gov-btn god" data-god="spawn_animals">🦌 Spawn Herd</button>
+<button class="gov-btn god" data-god="inspire">✨ Inspire Tribe</button>
+</div>
+<div style="font-size:8px;color:#5a5070;margin-top:4px" id="god-status">Click map after selecting a power</div>
 </div>
 <div class="p" id="tribe-detail" style="display:none">
 <h3>Tribe Detail <span id="td-close" style="cursor:pointer;float:right;color:#5a5070">✕</span></h3>
@@ -824,6 +868,10 @@ class Human{
     if(this.hunger>50){this._seekFood(world,bus);return}
     if(this.warmth<30&&this.tribe&&this.tribe.hasTech('fire')){this._goHome(world);return}
     if(this.social<40&&this.tribe){this._socialize(world,bus);return}
+
+    // Check for governance decree override
+    if(typeof applyDecree!=='undefined'){const override=applyDecree(this,world);
+      if(override&&this[override]&&R()<.4){this[override](bus,world);return}}
 
     const roll=R();
     if(roll<.12&&this.skills.craft>.2)this._craft(bus,world);
@@ -2934,7 +2982,277 @@ function spark(id,data,color){
   cx.strokeStyle=color;cx.lineWidth=1.2;cx.stroke();
 }
 
-document.addEventListener('DOMContentLoaded',()=>{try{init()}catch(e){document.body.innerHTML='<pre style="color:red;padding:20px">'+e.message+'\n'+e.stack+'</pre>'}});
+// ═══════════════════════════════════════════════════════════
+//  PERSISTENCE — localStorage save/load
+// ═══════════════════════════════════════════════════════════
+function saveWorld(){
+  try{
+    const w=sim.world;
+    const state={
+      tick:w.tick,seed:worldSeed,
+      terrain:Array.from(w.terrain),
+      humans:w.humans.filter(h=>h.alive).map(h=>({
+        x:h.x,y:h.y,age:h.age,sex:h.sex,name:h.name,tool:h.tool,
+        hunger:h.hunger,thirst:h.thirst,warmth:h.warmth,social:h.social,
+        skills:{...h.skills},tribeId:h.tribe?.id,children:h.children,kills:h.kills,
+        phenoHue:h.phenoHue,phenoLight:h.phenoLight,_family:h._family,_gen:h._gen
+      })),
+      tribes:w.tribes.map(t=>({
+        id:t.id,name:t.name,hue:t.hue,techs:{...t.techs},knowledge:t.knowledge,
+        homeX:t.homeX,homeY:t.homeY,wars:t.wars,trades:t.trades,rituals:t.rituals,
+        belief:t.belief,taboo:t.taboo,faithStr:t.faithStr,culture:t.culture,
+        wealth:t.wealth,goods:{...t.goods},currencyTier:t.currencyTier,
+        skinBase:t.skinBase,skinLight:t.skinLight,isEmpire:t.isEmpire,
+        legends:t.legends,myths:t.myths,words:{...t.words},
+        relations:{...t.relations},vassals:[...t.vassals],overlord:t.overlord
+      })),
+      structures:w.structures.map(s=>({type:s.type,x:s.x,y:s.y,hp:s.hp,age:s.age,tribe:s.tribe})),
+      ruins:w.ruins.map(r=>({x:r.x,y:r.y,name:r.name,explored:r.explored})),
+      wonders:w.wonders.map(ww=>({name:ww.name,x:ww.x,y:ww.y,tribe:ww.tribe})),
+      stats:{...sim.st,deathAges:sim.st.deathAges.slice(-50)},
+      climate:{temp:w.climate.temp,moisture:w.climate.moisture,trend:w.climate.trend,era:w.climate.era},
+      decrees:[...activeDecrees],govTribe:govTribeId,
+    };
+    const json=JSON.stringify(state);
+    if(json.length>4500000){console.warn('Save too large:',json.length);return false}
+    localStorage.setItem('aalf_save',json);
+    localStorage.setItem('aalf_save_time',Date.now().toString());
+    return true;
+  }catch(e){console.error('Save failed:',e);return false}
+}
+
+function hasSave(){return!!localStorage.getItem('aalf_save')}
+
+function loadWorld(){
+  try{
+    const json=localStorage.getItem('aalf_save');
+    if(!json)return false;
+    const s=JSON.parse(json);
+    // We can't fully reconstruct — but we can restore key state
+    // For now just restore the seed so terrain matches
+    worldSeed=s.seed;
+    return s;
+  }catch(e){console.error('Load failed:',e);return false}
+}
+
+function deleteSave(){localStorage.removeItem('aalf_save');localStorage.removeItem('aalf_save_time')}
+
+// ═══════════════════════════════════════════════════════════
+//  GOVERNANCE — Player controls a tribe via decrees
+// ═══════════════════════════════════════════════════════════
+let govTribeId=null;
+let activeDecrees=[];// {decree, tribeId, tick}
+let godMode=null;// active god power
+let worldSeed=F(R()*999999);
+
+function selectGovTribe(tribe){
+  govTribeId=tribe.id;
+  document.getElementById('gov-tribe').textContent=tribe.name;
+  document.getElementById('gov-tribe').style.color=tribe.color;
+  document.getElementById('gov-panel').style.display='block';
+}
+
+function issueDecree(decree,tribeId){
+  activeDecrees.push({decree,tribeId,tick:sim?.world?.tick||0});
+  if(activeDecrees.length>10)activeDecrees.shift();
+  // Apply decree to tribe AI behavior
+  const tribe=sim?.world?.tribes.find(t=>t.id===tribeId);
+  if(!tribe)return;
+  tribe._decree=decree;tribe._decreeTick=sim.world.tick;
+  tribe.memory.addStory(`A decree was issued: ${decree.replace('_',' ')}`);
+  try{showToast(`📜 Decree: ${decree.replace('_',' ')} for ${tribe.name}!`,'monument')}catch(e){}
+  // Sync to Gun if available
+  if(gunWorld)gunWorld.get('decrees').get(Date.now().toString()).put({decree,tribeId,tick:sim.world.tick,peer:peerId});
+  updateDecreeList();
+}
+
+function updateDecreeList(){
+  const el=document.getElementById('gov-active');
+  if(!el)return;
+  el.innerHTML=activeDecrees.slice(-5).map(d=>`<div class="decree-item">📜 ${d.decree.replace(/_/g,' ')}</div>`).join('');
+}
+
+// Apply decrees to human decision-making
+function applyDecree(human,world){
+  if(!human.tribe||!human.tribe._decree)return null;
+  const age=world.tick-(human.tribe._decreeTick||0);
+  if(age>500)return null;// decree expires after 500 ticks
+  const d=human.tribe._decree;
+  if(d==='focus_food')return'_seekFood';
+  if(d==='focus_build')return'_build';
+  if(d==='focus_war')return R()<.3?'_seekFood':null;// war prep = stockpile + fight training
+  if(d==='focus_craft')return'_craft';
+  if(d==='ritual')return R()<.15?'_socialize':null;// more socializing = more rituals
+  if(d==='trade')return null;// handled by relation adjustments
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GOD POWERS — Divine intervention
+// ═══════════════════════════════════════════════════════════
+function activateGodPower(power){
+  godMode=power;
+  document.getElementById('god-status').textContent=`🎯 ${power.replace(/_/g,' ')} — click on the map`;
+  document.getElementById('wc').style.cursor='crosshair';
+}
+
+function executeGodPower(worldX,worldY){
+  if(!godMode||!sim)return;
+  const w=sim.world;
+  const gx=F(worldX),gy=F(worldY);
+  if(godMode==='bless_food'){
+    for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)w.res.add(gx+dx,gy+dy,'food',4);
+    if(particles)particles.emit(worldX,worldY,20,{vx:0,vy:-.2,vxR:1,vyR:.5,life:25,lifeR:10,r:100,g:220,b:80,a:.7,sz:2.5,spread:4});
+    try{showToast('🌾 The land is blessed with abundance!','farm')}catch(e){}
+  }else if(godMode==='smite'){
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){w.res.take(gx+dx,gy+dy,'food',5);w.res.take(gx+dx,gy+dy,'wood',5)}
+    for(const h of w.humans){if(h.alive&&abs(h.x-worldX)<3&&abs(h.y-worldY)<3&&R()<.3)h.die(sim.bus,'divine wrath')}
+    if(particles)particles.emit(worldX,worldY,30,{vx:0,vy:-.3,vxR:1.5,vyR:1,life:20,lifeR:10,r:255,g:50,b:30,a:.9,sz:3,spread:3});
+    try{showToast('💥 Divine wrath strikes the land!','disaster')}catch(e){}
+  }else if(godMode==='rain'){
+    for(let dy=-5;dy<=5;dy++)for(let dx=-5;dx<=5;dx++){w.res.add(gx+dx,gy+dy,'water',3);w.res.add(gx+dx,gy+dy,'food',1)}
+    try{showToast('🌧 Rain falls upon the land!','pop')}catch(e){}
+  }else if(godMode==='plague'){
+    for(const t of w.tribes){if(abs(t.homeX-worldX)<8&&abs(t.homeY-worldY)<8&&!t.disease){
+      t.disease=new Disease('divine plague',.6,.15);t.diseaseTimer=300;
+      try{showToast(`☠ A divine plague strikes the ${t.name}!`,'disaster')}catch(e){}
+    }}
+  }else if(godMode==='spawn_animals'){
+    for(let i=0;i<8;i++)w.spawnAnimal(ANIMAL_TYPE.DEER,worldX+(R()-.5)*4,worldY+(R()-.5)*4);
+    try{showToast('🦌 A great herd appears!','pop')}catch(e){}
+  }else if(godMode==='inspire'){
+    const tribe=w.tribes.find(t=>abs(t.homeX-worldX)<6&&abs(t.homeY-worldY)<6);
+    if(tribe){
+      tribe.cultureScore+=20;tribe.faithStr=mn(1,tribe.faithStr+.1);
+      for(const mid of tribe.members){const m=w.humans.find(h=>h.id===mid&&h.alive);if(m){for(const sk of Object.keys(m.skills))m.skills[sk]=mn(1,m.skills[sk]+.03)}}
+      if(particles)particles.emit(worldX,worldY,15,{vx:0,vy:-.3,vxR:.8,vyR:.5,life:30,lifeR:10,r:255,g:220,b:100,a:.8,sz:2,spread:3});
+      try{showToast(`✨ The ${tribe.name} are divinely inspired!`,'monument')}catch(e){}
+    }
+  }
+  // Sync to Gun
+  if(gunWorld)gunWorld.get('godActions').get(Date.now().toString()).put({power:godMode,x:worldX,y:worldY,peer:peerId});
+  godMode=null;
+  document.getElementById('god-status').textContent='Select a power above';
+  document.getElementById('wc').style.cursor='default';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GUN.JS — Decentralized peer-to-peer persistence
+// ═══════════════════════════════════════════════════════════
+let gun=null,gunWorld=null,peerId='p'+F(R()*1e8);
+let peerCount=0;
+
+function initGun(){
+  try{
+    // Gun.js loaded from CDN
+    if(typeof Gun==='undefined'){
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/gun/gun.js';
+      s.onload=()=>{
+        gun=Gun({peers:['https://gun-manhattan.herokuapp.com/gun']});// public relay
+        const roomId='aalf-'+worldSeed;
+        gunWorld=gun.get(roomId);
+        // Listen for peer decrees
+        gunWorld.get('decrees').map().on((data)=>{
+          if(data&&data.peer!==peerId&&data.decree){
+            activeDecrees.push(data);
+            if(activeDecrees.length>20)activeDecrees=activeDecrees.slice(-20);
+            updateDecreeList();
+          }
+        });
+        // Listen for god actions from other peers
+        gunWorld.get('godActions').map().on((data)=>{
+          if(data&&data.peer!==peerId&&data.power){
+            // Replay god action
+            godMode=data.power;executeGodPower(data.x,data.y);
+          }
+        });
+        // Presence tracking
+        gunWorld.get('peers').get(peerId).put({id:peerId,joined:Date.now(),seed:worldSeed});
+        gunWorld.get('peers').map().on(()=>{ peerCount++;updatePeerStatus() });
+        updatePeerStatus();
+        console.log('Gun.js connected to room:',roomId);
+      };
+      s.onerror=()=>console.log('Gun.js CDN unavailable — running offline');
+      document.head.appendChild(s);
+    }
+  }catch(e){console.log('Gun.js init failed:',e)}
+}
+
+function updatePeerStatus(){
+  const el=document.getElementById('xpeers');
+  if(!el)return;
+  if(gun&&gunWorld){
+    el.textContent=`online (${mx(1,peerCount)} peers)`;
+    el.className='peer-status peer-online';
+  }else{
+    el.textContent='offline';
+    el.className='peer-status peer-offline';
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  try{
+    // Check for save
+    if(hasSave()){
+      const saveTime=localStorage.getItem('aalf_save_time');
+      const ago=saveTime?F((Date.now()-parseInt(saveTime))/60000):0;
+      if(confirm(`Resume saved world? (${ago} min ago)\n\nCancel for fresh start.`)){
+        const data=loadWorld();
+        if(data)worldSeed=data.seed;
+      }else{deleteSave()}
+    }
+    // Parse seed from URL if shared
+    const params=new URLSearchParams(window.location.search);
+    if(params.has('seed'))worldSeed=parseInt(params.get('seed'))||worldSeed;
+    document.getElementById('xseed').textContent='#'+worldSeed;
+
+    init();
+
+    // Wire up governance
+    document.getElementById('bgov').onclick=()=>{
+      const p=document.getElementById('gov-panel');
+      p.style.display=p.style.display==='none'?'block':'none';
+    };
+    document.getElementById('gov-close').onclick=()=>document.getElementById('gov-panel').style.display='none';
+    for(const btn of document.querySelectorAll('[data-decree]')){
+      btn.onclick=()=>{if(govTribeId)issueDecree(btn.dataset.decree,govTribeId)};
+    }
+    // God mode
+    document.getElementById('bgod').onclick=()=>{
+      const p=document.getElementById('god-panel');
+      p.style.display=p.style.display==='none'?'block':'none';
+    };
+    document.getElementById('god-close').onclick=()=>document.getElementById('god-panel').style.display='none';
+    for(const btn of document.querySelectorAll('[data-god]')){
+      btn.onclick=()=>activateGodPower(btn.dataset.god);
+    }
+    // God power click on map
+    document.getElementById('cv').addEventListener('click',(e)=>{
+      if(!godMode)return;
+      const rect=e.target.getBoundingClientRect();
+      const C=cs0();
+      const wx=(e.clientX-rect.left)/(C*camZoom)+camX;
+      const wy=(e.clientY-rect.top)/(C*camZoom)+camY;
+      executeGodPower(wx,wy);
+    },{capture:true});
+    // Save button
+    document.getElementById('bsave').onclick=()=>{
+      if(saveWorld())try{showToast('💾 World saved!','pop')}catch(e){}
+    };
+    // Auto-save every 500 ticks
+    setInterval(()=>{if(sim&&sim.world.tick%500<5)saveWorld()},10000);
+    // Share seed via URL
+    if(!params.has('seed'))history.replaceState(null,'',`?seed=${worldSeed}`);
+    // Init Gun.js for decentralized sync
+    initGun();
+    // Make tribe bar clickable for governance
+    const origShowTD=window.showTribeDetail;
+    window.showTribeDetail=function(t){if(t)selectGovTribe(t);if(origShowTD)origShowTD(t)};
+  }catch(e){
+    document.body.innerHTML='<pre style="color:red;padding:20px">'+e.message+'\n'+e.stack+'</pre>';
+  }
+});
 </script>
 </body>
 </html>
