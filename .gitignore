@@ -5,3 +5,8 @@ dist/
 build/
 node_modules/
 package-lock.json
+multiplayer_test.js
+mp_test2.js
+test_load.js
+browser_test.js
+package.json
