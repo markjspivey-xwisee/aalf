@@ -174,7 +174,7 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <div id="trb" class="sb2"></div>
 <div id="trl" style="margin-top:2px;font-size:8px"></div>
 </div>
-<div class="p gov-panel" id="gov-panel" style="display:none">
+<div class="p gov-panel" id="gov-panel">
 <h3>👑 Governance <span id="gov-close" style="cursor:pointer;float:right;color:#5a5070;font-size:11px">✕</span></h3>
 <div class="sr"><span class="sl">Your Tribe</span><span id="gov-tribe" class="sv vy">none</span></div>
 <div style="margin:4px 0"><span style="font-size:8px;color:#5a5070">Select a tribe from the bar above, then issue decrees:</span></div>
@@ -190,7 +190,7 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 </div>
 <div id="gov-active" class="decree-list"></div>
 </div>
-<div class="p" id="god-panel" style="display:none">
+<div class="p" id="god-panel">
 <h3>⚡ God Powers <span id="god-close" style="cursor:pointer;float:right;color:#5a5070;font-size:11px">✕</span></h3>
 <div style="display:flex;flex-wrap:wrap;gap:2px">
 <button class="gov-btn god" data-god="bless_food">🌾 Bless Land</button>
@@ -2415,6 +2415,11 @@ let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1
   if(!isClient){
     sim.step();
     weather.tick(sim.world.season);
+    // Auto-assign player to first tribe if not yet assigned
+    if(!govTribeId&&sim.world.tribes.length>0){
+      const firstTribe=sim.world.tribes[0];
+      selectGovTribe(firstTribe);
+    }
     // Broadcast state to clients every 10 ticks
     if(isHost&&gunWorld&&sim.world.tick%10===0){
       const snap=_createSnapshot();
