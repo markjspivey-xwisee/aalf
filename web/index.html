@@ -2411,21 +2411,27 @@ function tabs(){for(const b of document.querySelectorAll('.tb button'))b.onclick
 }}
 function toggle(){run=!run;document.getElementById('bp').textContent=run?'⏸':'▶';document.getElementById('bp').classList.toggle('on',run);if(run)loop()}
 let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1000/spd){
-  sim.step();
-  weather.tick(sim.world.season);
-  // Emit particles
+  // Only HOST advances the simulation — clients just render
+  if(!isClient){
+    sim.step();
+    weather.tick(sim.world.season);
+    // Broadcast state to clients every 10 ticks
+    if(isHost&&gunWorld&&sim.world.tick%10===0){
+      const snap=_createSnapshot();
+      try{gunWorld.get('state').put({tick:sim.world.tick,data:JSON.stringify(snap),ts:Date.now()})}catch(e){}
+    }
+  }
+  // Particles (visual only, both host and client)
   const C=cs0();
-  weather.emitParticles(particles,document.getElementById('wc').clientWidth,document.getElementById('wc').clientHeight,camX,camY,camZoom);
-  // Smoke from fire pits
-  for(const s of sim.world.structures){if(s.type===STRUCT.FIRE_PIT&&R()<.3)particles.emit(s.x+.5,s.y-.2,1,{vx:0,vy:-.15,life:25,lifeR:15,r:160,g:150,b:140,a:.3,sz:2.5,spread:.3})}
-  // Dust from moving humans
-  for(const h of sim.world.humans){if(h.alive&&h.stage>=2&&h.tx.length>2&&R()<.15)particles.emit(h.x,h.y+.3,1,{vx:(R()-.5)*.1,vy:-.05,life:10,lifeR:5,r:140,g:120,b:90,a:.2,sz:1.5,spread:.3})}
-  // Autumn leaves
-  if(sim.world.season==='autumn'&&R()<.1)particles.emit(camX+R()*60/camZoom,camY-1,1,{vx:.2,vy:.15,life:50,lifeR:20,r:200+F(R()*55),g:120+F(R()*60),b:30,a:.4,sz:2,spread:30});
+  if(sim&&sim.world){
+    weather.emitParticles(particles,document.getElementById('wc').clientWidth,document.getElementById('wc').clientHeight,camX,camY,camZoom);
+    for(const s of sim.world.structures){if(s.type===STRUCT.FIRE_PIT&&R()<.3)particles.emit(s.x+.5,s.y-.2,1,{vx:0,vy:-.15,life:25,lifeR:15,r:160,g:150,b:140,a:.3,sz:2.5,spread:.3})}
+    for(const h of sim.world.humans){if(h.alive&&h.stage>=2&&h.tx.length>2&&R()<.15)particles.emit(h.x,h.y+.3,1,{vx:(R()-.5)*.1,vy:-.05,life:10,lifeR:5,r:140,g:120,b:90,a:.2,sz:1.5,spread:.3})}
+    if(sim.world.season==='autumn'&&R()<.1)particles.emit(camX+R()*60/camZoom,camY-1,1,{vx:.2,vy:.15,life:50,lifeR:20,r:200+F(R()*55),g:120+F(R()*60),b:30,a:.4,sz:2,spread:30});
+  }
   particles.tick();
-  checkMilestones(sim);
-  // Day bar
-  const daym=document.getElementById('daym');if(daym)daym.style.left=(sim.world.timeOfDay*100)+'%';
+  if(!isClient)checkMilestones(sim);
+  const daym=document.getElementById('daym');if(daym&&sim)daym.style.left=(sim.world.timeOfDay*100)+'%';
   draw();lt=now}anim=requestAnimationFrame(loop)}
 
 // ═══════════════════════════════════════════════════════════
@@ -3244,26 +3250,86 @@ function _createSnapshot(){
   const w=sim.world;
   return{
     tick:w.tick,year:w.year,season:w.season,timeOfDay:w.timeOfDay,
-    humans:w.humans.filter(h=>h.alive).map(h=>({x:+h.x.toFixed(1),y:+h.y.toFixed(1),stage:h.stage,
-      tribeIdx:w.tribes.indexOf(h.tribe),sex:h.sex,tool:h.tool,task:h.task,hunger:h.hunger|0})),
-    tribes:w.tribes.map(t=>({name:t.name,sz:t.sz,hue:t.hue,homeX:+t.homeX.toFixed(1),homeY:+t.homeY.toFixed(1),
-      belief:t.belief,leader:t.leaderName,isEmpire:t.isEmpire,disease:t.disease?.name||null})),
+    humans:w.humans.filter(h=>h.alive).slice(0,200).map(h=>({x:+h.x.toFixed(1),y:+h.y.toFixed(1),stage:h.stage,
+      tribeIdx:w.tribes.indexOf(h.tribe),sex:h.sex,tool:h.tool,task:h.task,hunger:h.hunger|0,
+      name:h.name,children:h.children,kills:h.kills})),
+    tribes:w.tribes.map(t=>({id:t.id,name:t.name,sz:t.sz,hue:t.hue,homeX:+t.homeX.toFixed(1),homeY:+t.homeY.toFixed(1),
+      belief:t.belief,leader:t.leaderName,isEmpire:t.isEmpire,disease:t.disease?.name||null,
+      wars:t.wars,trades:t.trades,rituals:t.rituals,wealth:t.wealth|0,
+      techs:Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>k),
+      vassals:t.vassals.length,overlord:!!t.overlord,faithStr:+(t.faithStr||0).toFixed(2),
+      cultureScore:t.cultureScore|0,currencyTier:t.currencyTier,
+      skinBase:t.skinBase,skinLight:t.skinLight})),
     animals:w.animals.filter(a=>a.alive).map(a=>({x:+a.x.toFixed(1),y:+a.y.toFixed(1),type:a.type})),
-    structures:w.structures.slice(0,100).map(s=>({x:s.x,y:s.y,type:s.type})),
+    structures:w.structures.slice(0,150).map(s=>({x:s.x,y:s.y,type:s.type})),
     cities:w.cities.map(c=>({x:c.x,y:c.y,name:c.name,tier:c.tier})),
     wonders:w.wonders.map(ww=>({x:ww.x,y:ww.y,name:ww.name})),
     ruins:w.ruins.map(r=>({x:r.x,y:r.y,name:r.name})),
+    births:sim.st.b,deaths:sim.st.d,
   };
 }
 
 function _applySnapshot(snap){
-  // Client: update rendered positions without running full sim
-  // For now, clients still run their own sim but we overlay tribe/human positions
-  // Full sync would require reconstructing the entire world state
-  // This is a lightweight approach: clients see host's tribes/humans
-  if(!sim)return;
-  // Update sidebar stats from snapshot
-  const el=document.getElementById('xp');if(el)el.textContent=snap.humans?.length||'?';
+  if(!sim||!sim.world)return;
+  const w=sim.world;
+  // Sync tick/time
+  w.tick=snap.tick||w.tick;
+  w.year=F((snap.tick||0)/50);
+  w.season=snap.season||w.season;
+  w.timeOfDay=snap.timeOfDay||w.timeOfDay;
+
+  // Sync humans — rebuild from snapshot
+  w.humans=[];
+  if(snap.humans){
+    for(const h of snap.humans){
+      const human=new Human(h.x,h.y,null);
+      human.age=15;// approximate
+      human.stage=h.stage;human.sex=h.sex;human.tool=h.tool;
+      human.task=h.task;human.hunger=h.hunger;human.alive=true;
+      human.phenoHue=35;human.phenoLight=45;
+      if(h.tribeIdx>=0&&snap.tribes&&snap.tribes[h.tribeIdx]){
+        const tData=snap.tribes[h.tribeIdx];
+        human.phenoHue=tData.hue||35;
+      }
+      human.tx=[h.x];human.ty=[h.y];
+      w.humans.push(human);
+    }
+  }
+
+  // Sync tribes
+  w.tribes=[];
+  if(snap.tribes){
+    for(const t of snap.tribes){
+      const tribe=new Tribe(t.hue);
+      tribe.name=t.name;tribe.homeX=t.homeX;tribe.homeY=t.homeY;
+      tribe.belief=t.belief;tribe.leaderName=t.leader;tribe.isEmpire=t.isEmpire;
+      tribe.disease=t.disease?{name:t.disease}:null;
+      // Assign humans to tribes
+      const tribeHumans=w.humans.filter((_,i)=>snap.humans[i]?.tribeIdx===snap.tribes.indexOf(t));
+      for(const h of tribeHumans){h.tribe=tribe;tribe.members.add(h.id)}
+      w.tribes.push(tribe);
+    }
+  }
+
+  // Sync animals
+  w.animals=[];
+  if(snap.animals){
+    for(const a of snap.animals){
+      const animal=new Animal(a.type,a.x,a.y);
+      w.animals.push(animal);
+    }
+  }
+
+  // Sync structures (lightweight)
+  w.structures=[];
+  if(snap.structures){
+    for(const s of snap.structures)w.structures.push(new Structure(s.type,s.x,s.y,null));
+  }
+
+  // Sync cities, wonders, ruins
+  w.cities=(snap.cities||[]).map(c=>{const city=new City(c.x,c.y,null,c.name);city.tier=c.tier;return city});
+  w.wonders=(snap.wonders||[]).map(ww=>new Wonder(ww.name,ww.x,ww.y,null));
+  w.ruins=(snap.ruins||[]).map(r=>new Ruin(r.x,r.y,r.name,{}));
 }
 
 function claimTribe(tribeId){
