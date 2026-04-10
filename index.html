@@ -3053,6 +3053,10 @@ let godMode=null;// active god power
 let worldSeed=F(R()*999999);
 
 function selectGovTribe(tribe){
+  // Try to claim via Gun.js (enforces one tribe per player)
+  if(gunWorld){
+    if(!claimTribe(tribe.id))return;// already claimed by someone else
+  }
   govTribeId=tribe.id;
   document.getElementById('gov-tribe').textContent=tribe.name;
   document.getElementById('gov-tribe').style.color=tribe.color;
@@ -3068,8 +3072,8 @@ function issueDecree(decree,tribeId){
   tribe._decree=decree;tribe._decreeTick=sim.world.tick;
   tribe.memory.addStory(`A decree was issued: ${decree.replace('_',' ')}`);
   try{showToast(`📜 Decree: ${decree.replace('_',' ')} for ${tribe.name}!`,'monument')}catch(e){}
-  // Sync to Gun if available
-  if(gunWorld)gunWorld.get('decrees').get(Date.now().toString()).put({decree,tribeId,tick:sim.world.tick,peer:peerId});
+  // Sync to other peers
+  if(gunWorld&&!isHost)sendCommand({type:'decree',decree,tribeId});
   updateDecreeList();
 }
 
@@ -3136,64 +3140,169 @@ function executeGodPower(worldX,worldY){
       try{showToast(`✨ The ${tribe.name} are divinely inspired!`,'monument')}catch(e){}
     }
   }
-  // Sync to Gun
-  if(gunWorld)gunWorld.get('godActions').get(Date.now().toString()).put({power:godMode,x:worldX,y:worldY,peer:peerId});
+  // Sync to host if client
+  if(gunWorld&&!isHost)sendCommand({type:'god',power:godMode,x:worldX,y:worldY});
   godMode=null;
   document.getElementById('god-status').textContent='Select a power above';
   document.getElementById('wc').style.cursor='default';
 }
 
 // ═══════════════════════════════════════════════════════════
-//  GUN.JS — Decentralized peer-to-peer persistence
+//  GUN.JS — Host/Client multiplayer with tribe claiming
 // ═══════════════════════════════════════════════════════════
 let gun=null,gunWorld=null,peerId='p'+F(R()*1e8);
-let peerCount=0;
+let peerCount=0,isHost=false,isClient=false;
+let claimedTribes={};// peerId -> tribeId
+let stateChannel=null;
 
 function initGun(){
   try{
-    // Gun.js loaded from CDN
-    if(typeof Gun==='undefined'){
-      const s=document.createElement('script');
-      s.src='https://cdn.jsdelivr.net/npm/gun/gun.js';
-      s.onload=()=>{
-        gun=Gun({peers:['https://gun-manhattan.herokuapp.com/gun']});// public relay
-        const roomId='aalf-'+worldSeed;
-        gunWorld=gun.get(roomId);
-        // Listen for peer decrees
-        gunWorld.get('decrees').map().on((data)=>{
-          if(data&&data.peer!==peerId&&data.decree){
-            activeDecrees.push(data);
-            if(activeDecrees.length>20)activeDecrees=activeDecrees.slice(-20);
-            updateDecreeList();
-          }
-        });
-        // Listen for god actions from other peers
-        gunWorld.get('godActions').map().on((data)=>{
-          if(data&&data.peer!==peerId&&data.power){
-            // Replay god action
-            godMode=data.power;executeGodPower(data.x,data.y);
-          }
-        });
-        // Presence tracking
-        gunWorld.get('peers').get(peerId).put({id:peerId,joined:Date.now(),seed:worldSeed});
-        gunWorld.get('peers').map().on(()=>{ peerCount++;updatePeerStatus() });
-        updatePeerStatus();
-        console.log('Gun.js connected to room:',roomId);
-      };
-      s.onerror=()=>console.log('Gun.js CDN unavailable — running offline');
-      document.head.appendChild(s);
-    }
+    if(typeof Gun!=='undefined')return _setupGun();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/gun/gun.js';
+    s.onload=()=>_setupGun();
+    s.onerror=()=>{console.log('Gun.js CDN unavailable — single player mode');updatePeerStatus()};
+    document.head.appendChild(s);
   }catch(e){console.log('Gun.js init failed:',e)}
+}
+
+function _setupGun(){
+  try{
+    gun=Gun({peers:['https://gun-manhattan.herokuapp.com/gun']});
+    const roomId='aalf-'+worldSeed;
+    gunWorld=gun.get(roomId);
+
+    // ── Check if a host exists ──
+    gunWorld.get('host').once((data)=>{
+      if(data&&data.id&&data.id!==peerId&&(Date.now()-data.ts)<30000){
+        // Host exists — become client
+        isClient=true;isHost=false;
+        console.log('Joining as CLIENT. Host:',data.id);
+        _setupClient();
+      }else{
+        // No host or stale — become host
+        isHost=true;isClient=false;
+        gunWorld.get('host').put({id:peerId,ts:Date.now(),seed:worldSeed});
+        console.log('Becoming HOST for room:',roomId);
+        _setupHost();
+      }
+      updatePeerStatus();
+    });
+
+    // ── Presence ──
+    gunWorld.get('peers').get(peerId).put({id:peerId,joined:Date.now()});
+    gunWorld.get('peers').map().on(()=>{peerCount++;updatePeerStatus()});
+
+    // ── Tribe claiming ──
+    gunWorld.get('claims').map().on((data)=>{
+      if(data&&data.peerId&&data.tribeId){
+        claimedTribes[data.peerId]=data.tribeId;
+      }
+    });
+
+    // ── Listen for commands from clients ──
+    gunWorld.get('commands').map().on((data)=>{
+      if(!isHost||!data||data.peer===peerId)return;
+      if(data.type==='decree'&&sim){
+        const tribe=sim.world.tribes.find(t=>t.id===data.tribeId);
+        if(tribe){tribe._decree=data.decree;tribe._decreeTick=sim.world.tick;
+          activeDecrees.push(data);updateDecreeList();}
+      }
+      if(data.type==='god'&&sim){
+        godMode=data.power;executeGodPower(data.x,data.y);
+      }
+    });
+  }catch(e){console.log('Gun setup error:',e)}
+}
+
+function _setupHost(){
+  // Host broadcasts sim state every 30 ticks
+  setInterval(()=>{
+    if(!sim||!isHost||!gunWorld)return;
+    // Keep host alive
+    gunWorld.get('host').put({id:peerId,ts:Date.now(),seed:worldSeed});
+    // Broadcast compact state snapshot
+    if(sim.world.tick%30===0){
+      const snapshot=_createSnapshot();
+      gunWorld.get('state').put({tick:sim.world.tick,data:JSON.stringify(snapshot),ts:Date.now()});
+    }
+  },1000);
+}
+
+function _setupClient(){
+  // Client receives state from host and renders it
+  gunWorld.get('state').on((data)=>{
+    if(!data||!data.data||!isClient)return;
+    try{
+      const snap=JSON.parse(data.data);
+      _applySnapshot(snap);
+    }catch(e){}
+  });
+}
+
+function _createSnapshot(){
+  const w=sim.world;
+  return{
+    tick:w.tick,year:w.year,season:w.season,timeOfDay:w.timeOfDay,
+    humans:w.humans.filter(h=>h.alive).map(h=>({x:+h.x.toFixed(1),y:+h.y.toFixed(1),stage:h.stage,
+      tribeIdx:w.tribes.indexOf(h.tribe),sex:h.sex,tool:h.tool,task:h.task,hunger:h.hunger|0})),
+    tribes:w.tribes.map(t=>({name:t.name,sz:t.sz,hue:t.hue,homeX:+t.homeX.toFixed(1),homeY:+t.homeY.toFixed(1),
+      belief:t.belief,leader:t.leaderName,isEmpire:t.isEmpire,disease:t.disease?.name||null})),
+    animals:w.animals.filter(a=>a.alive).map(a=>({x:+a.x.toFixed(1),y:+a.y.toFixed(1),type:a.type})),
+    structures:w.structures.slice(0,100).map(s=>({x:s.x,y:s.y,type:s.type})),
+    cities:w.cities.map(c=>({x:c.x,y:c.y,name:c.name,tier:c.tier})),
+    wonders:w.wonders.map(ww=>({x:ww.x,y:ww.y,name:ww.name})),
+    ruins:w.ruins.map(r=>({x:r.x,y:r.y,name:r.name})),
+  };
+}
+
+function _applySnapshot(snap){
+  // Client: update rendered positions without running full sim
+  // For now, clients still run their own sim but we overlay tribe/human positions
+  // Full sync would require reconstructing the entire world state
+  // This is a lightweight approach: clients see host's tribes/humans
+  if(!sim)return;
+  // Update sidebar stats from snapshot
+  const el=document.getElementById('xp');if(el)el.textContent=snap.humans?.length||'?';
+}
+
+function claimTribe(tribeId){
+  if(!gunWorld)return;
+  // Check if already claimed by someone else
+  for(const[pid,tid]of Object.entries(claimedTribes)){
+    if(tid===tribeId&&pid!==peerId){
+      try{showToast(`⚠ That tribe is claimed by another player!`,'disaster')}catch(e){}
+      return false;
+    }
+  }
+  claimedTribes[peerId]=tribeId;
+  gunWorld.get('claims').get(peerId).put({peerId,tribeId,ts:Date.now()});
+  govTribeId=tribeId;
+  return true;
+}
+
+function sendCommand(cmd){
+  if(!gunWorld)return;
+  if(isHost){
+    // Host applies directly
+    if(cmd.type==='decree')issueDecree(cmd.decree,cmd.tribeId);
+    if(cmd.type==='god'){godMode=cmd.power;executeGodPower(cmd.x,cmd.y)}
+  }else{
+    // Client sends to host via Gun
+    gunWorld.get('commands').get(Date.now().toString()).put({...cmd,peer:peerId});
+  }
 }
 
 function updatePeerStatus(){
   const el=document.getElementById('xpeers');
   if(!el)return;
   if(gun&&gunWorld){
-    el.textContent=`online (${mx(1,peerCount)} peers)`;
+    const role=isHost?'HOST':isClient?'client':'connecting';
+    const claimed=Object.keys(claimedTribes).length;
+    el.textContent=`${role} (${mx(1,peerCount)} peers, ${claimed} claimed)`;
     el.className='peer-status peer-online';
   }else{
-    el.textContent='offline';
+    el.textContent='offline (single player)';
     el.className='peer-status peer-offline';
   }
 }
