@@ -175,9 +175,10 @@ footer{grid-column:1/-1;padding:3px 14px;background:var(--pn);border-top:1px sol
 <div id="trl" style="margin-top:2px;font-size:8px"></div>
 </div>
 <div class="p gov-panel" id="gov-panel">
-<h3>👑 Governance <span id="gov-close" style="cursor:pointer;float:right;color:#5a5070;font-size:11px">✕</span></h3>
+<h3>👑 Governance</h3>
 <div class="sr"><span class="sl">Your Tribe</span><span id="gov-tribe" class="sv vy">none</span></div>
-<div style="margin:4px 0"><span style="font-size:8px;color:#5a5070">Select a tribe from the bar above, then issue decrees:</span></div>
+<div class="sr"><span class="sl">AI Rival Tribes</span><span id="gov-rivals" class="sv" style="font-size:8px">—</span></div>
+<div style="margin:4px 0"><span style="font-size:8px;color:#5a5070">You govern your tribe. Other tribes are AI rivals — trade, ally, or war with them. Click a different tribe in the bar to switch.</span></div>
 <div id="gov-decrees" style="display:flex;flex-wrap:wrap;gap:2px">
 <button class="gov-btn" data-decree="focus_food">🌾 Focus Food</button>
 <button class="gov-btn" data-decree="focus_build">🏠 Focus Build</button>
@@ -2645,11 +2646,18 @@ function draw(){
   // ── Tribe territories ──
   for(const tribe of w.tribes){
     if(tribe.sz<1)continue;
-    const alpha=vm==='tribe'?.12:.06;
+    const isPlayer=tribe.id===govTribeId;
+    const alpha=vm==='tribe'?.12:isPlayer?.1:.05;
     cx2.fillStyle=tribe.color.replace(')',`,${alpha})`).replace('hsl','hsla');
     cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*7,0,PI*2);cx2.fill();
+    // Player tribe gets a bright border ring
+    if(isPlayer){
+      cx2.strokeStyle='rgba(255,255,255,0.3)';cx2.lineWidth=2;
+      cx2.beginPath();cx2.arc(tribe.homeX*C+C/2,tribe.homeY*C+C/2,C*7,0,PI*2);cx2.stroke();
+    }
     cx2.fillStyle=tribe.color;cx2.font=`bold ${mx(10,F(C*.7))}px monospace`;cx2.textAlign='center';
-    cx2.fillText(`${tribe.name} (${tribe.sz})`,tribe.homeX*C+C/2,tribe.homeY*C-C*5);
+    const label=isPlayer?`⭐ ${tribe.name} (${tribe.sz}) — YOU`:`${tribe.name} (${tribe.sz})`;
+    cx2.fillText(label,tribe.homeX*C+C/2,tribe.homeY*C-C*5);
     // Belief + leader subtitle
     cx2.font=`${mx(7,F(C*.45))}px monospace`;
     cx2.fillStyle=tribe.color.replace('60%','40%');
@@ -2889,13 +2897,20 @@ function ui(){
   bar.innerHTML='';leg.innerHTML='';
   const tot=mx(1,s.pop);
   const sorted=[...w.tribes].sort((a,b)=>b.sz-a.sz);
-  for(const t of sorted){const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;d.style.cursor='pointer';
-    d.title=t.name;d.onclick=()=>showTribeDetail(t);bar.appendChild(d)}
-  leg.innerHTML=sorted.slice(0,4).map(t=>{
+  for(const t of sorted){
+    const d=document.createElement('div');d.style.width=(t.sz/tot*100)+'%';d.style.background=t.color;d.style.cursor='pointer';
+    if(t.id===govTribeId)d.style.border='2px solid #fff';// highlight player's tribe
+    d.title=t.name+(t.id===govTribeId?' (YOU)':' (AI)');d.onclick=()=>showTribeDetail(t);bar.appendChild(d)}
+  leg.innerHTML=sorted.slice(0,5).map(t=>{
+    const isYou=t.id===govTribeId;
     const techs=Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>({fire:'🔥',farming:'🌾',language:'💬',burial:'⚱',domestication:'🐕',monument:'🗿',smelting:'⚒',writing:'📜',iron:'⚔',irrigation:'💧',medicine:'⚕',calendar:'📅',trade_routes:'🛤'}[k]||'✦')).join('');
-    const flags=(t.isEmpire?'👑':'')+(t.overlord?'⛓':'')+(t.migrating?'🚶':'')+(t.disease?'☠':'')+(t.allianceWith?'🤝':'');
-    return`<span style="color:${t.color};cursor:pointer" onclick="showTribeDetail(sim.world.tribes.find(t2=>t2.id==='${t.id}'))">■${t.name}</span>(${t.sz})${techs}${flags}`;
+    const flags=(isYou?'⭐':'')+(t.isEmpire?'👑':'')+(t.overlord?'⛓':'')+(t.migrating?'🚶':'')+(t.disease?'☠':'')+(t.allianceWith?'🤝':'');
+    return`<span style="color:${t.color};cursor:pointer;${isYou?'text-decoration:underline;':''}" onclick="showTribeDetail(sim.world.tribes.find(t2=>t2.id==='${t.id}'))">${flags}${t.name}</span>(${t.sz})${techs}`;
   }).join(' ');
+  // Update rivals count
+  const rivalsEl=document.getElementById('gov-rivals');
+  if(rivalsEl){const rivals=sorted.filter(t=>t.id!==govTribeId);
+    rivalsEl.textContent=rivals.length?rivals.map(t=>t.name).join(', '):'none yet';}
 
   // ── Sparklines ──
   spark('s1',sim.st.pH,'#7dce82');
