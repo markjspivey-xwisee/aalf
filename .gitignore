@@ -11,3 +11,4 @@ test_load.js
 browser_test.js
 package.json
 mp_test3.js
+autoassign_test.js
