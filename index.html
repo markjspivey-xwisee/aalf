@@ -3087,6 +3087,7 @@ function deleteSave(){localStorage.removeItem('aalf_save');localStorage.removeIt
 //  GOVERNANCE — Player controls a tribe via decrees
 // ═══════════════════════════════════════════════════════════
 let govTribeId=null;
+let govTribeName=null;// persistent name for matching across snapshot rebuilds
 let activeDecrees=[];// {decree, tribeId, tick}
 let godMode=null;// active god power
 let worldSeed=F(R()*999999);
@@ -3097,6 +3098,7 @@ function selectGovTribe(tribe){
     if(!claimTribe(tribe.id))return;// already claimed by someone else
   }
   govTribeId=tribe.id;
+  govTribeName=tribe.name;// persist name for snapshot re-matching
   document.getElementById('gov-tribe').textContent=tribe.name;
   document.getElementById('gov-tribe').style.color=tribe.color;
   document.getElementById('gov-panel').style.display='block';
@@ -3245,7 +3247,8 @@ function initBroadcastChannel(){
       }
       // Client: receive tribe assignment from host
       if(msg.type==='tribe_assigned'&&msg.peer===peerId){
-        govTribeId=msg.tribeId;
+        govTribeName=msg.tribeName;// match by NAME since IDs change on snapshot rebuild
+        govTribeId=msg.tribeId;// initial ID, will be re-matched each frame
         const el=document.getElementById('gov-tribe');
         if(el){el.textContent=msg.tribeName;el.style.color='#e0c050'}
         try{showToast(`🏕 Your tribe "${msg.tribeName}" has been founded!`,'monument')}catch(e){}
@@ -3442,6 +3445,16 @@ function _applySnapshot(snap){
   w.cities=(snap.cities||[]).map(c=>{const city=new City(c.x,c.y,null,c.name);city.tier=c.tier;return city});
   w.wonders=(snap.wonders||[]).map(ww=>new Wonder(ww.name,ww.x,ww.y,null));
   w.ruins=(snap.ruins||[]).map(r=>new Ruin(r.x,r.y,r.name,{}));
+
+  // Re-match player's tribe by NAME (IDs change on each snapshot rebuild)
+  if(govTribeName){
+    const match=w.tribes.find(t=>t.name===govTribeName);
+    if(match){
+      govTribeId=match.id;
+      const el=document.getElementById('gov-tribe');
+      if(el){el.textContent=match.name+' ('+match.sz+')';el.style.color=match.color}
+    }
+  }
 }
 
 function claimTribe(tribeId){
