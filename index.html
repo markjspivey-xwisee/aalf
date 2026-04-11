@@ -3416,7 +3416,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       const p=document.getElementById('gov-panel');
       p.style.display=p.style.display==='none'?'block':'none';
     };
-    document.getElementById('gov-close').onclick=()=>document.getElementById('gov-panel').style.display='none';
+    const govClose=document.getElementById('gov-close');if(govClose)govClose.onclick=()=>document.getElementById('gov-panel').style.display='none';
     for(const btn of document.querySelectorAll('[data-decree]')){
       btn.onclick=()=>{if(govTribeId)issueDecree(btn.dataset.decree,govTribeId)};
     }
