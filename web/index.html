@@ -2252,6 +2252,7 @@ function checkMilestones(simObj){
 }
 
 let sim,cv,cx2,run=0,anim=null,spd=20,vm='world',hov=null,dpr=1;
+let peerCount=0,isHost=false,isClient=false,claimedTribes={},gameSocket=null;
 let particles,weather;
 let showMinimap=true, showHelp=false;
 
@@ -2429,15 +2430,11 @@ let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1
         sim.bus.emit(E.TRIBE_FORM,tribe.id,{name:tribe.name,size:tribe.sz});
       }
     }
-    // Broadcast state to clients every 10 ticks (via BroadcastChannel + Gun.js)
+    // Broadcast state to clients every 10 ticks via WebSocket
     if(sim.world.tick%10===0){
       const snap=_createSnapshot();
       const snapJson=JSON.stringify(snap);
-      // BroadcastChannel (same browser tabs — always works)
-      if(bc)try{bc.postMessage({type:'state',data:snapJson,peer:peerId,peerCount:peerCount+1})}catch(e){}
-      if(bc)try{bc.postMessage({type:'host_alive',peer:peerId})}catch(e){}
-      // Gun.js (cross-browser P2P — may not work without relay)
-      if(isHost&&gunWorld)try{gunWorld.get('state').put({tick:sim.world.tick,data:snapJson,ts:Date.now()})}catch(e){}
+      sendToServer({type:'state',data:snapJson});
     }
   }
   // Particles (visual only, both host and client)
@@ -3094,9 +3091,8 @@ let worldSeed=F(R()*999999);
 
 function selectGovTribe(tribe){
   // Try to claim via Gun.js (enforces one tribe per player)
-  if(gunWorld){
-    if(!claimTribe(tribe.id))return;// already claimed by someone else
-  }
+  // In multiplayer, tribes are assigned by the server
+
   govTribeId=tribe.id;
   govTribeName=tribe.name;// persist name for snapshot re-matching
   document.getElementById('gov-tribe').textContent=tribe.name;
@@ -3113,8 +3109,8 @@ function issueDecree(decree,tribeId){
   tribe._decree=decree;tribe._decreeTick=sim.world.tick;
   tribe.memory.addStory(`A decree was issued: ${decree.replace('_',' ')}`);
   try{showToast(`📜 Decree: ${decree.replace('_',' ')} for ${tribe.name}!`,'monument')}catch(e){}
-  // Sync to other peers
-  if(gunWorld&&!isHost)sendCommand({type:'decree',decree,tribeId});
+  // Sync to server
+  if(isClient)sendCommand({type:'decree',decree,tribeId});
   updateDecreeList();
 }
 
@@ -3181,8 +3177,8 @@ function executeGodPower(worldX,worldY){
       try{showToast(`✨ The ${tribe.name} are divinely inspired!`,'monument')}catch(e){}
     }
   }
-  // Sync to host if client
-  if(gunWorld&&!isHost)sendCommand({type:'god',power:godMode,x:worldX,y:worldY});
+  // Sync to server
+  if(isClient)sendCommand({type:'god',power:godMode,x:worldX,y:worldY});
   godMode=null;
   document.getElementById('god-status').textContent='Select a power above';
   document.getElementById('wc').style.cursor='default';
@@ -3192,174 +3188,64 @@ function executeGodPower(worldX,worldY){
 //  GUN.JS — Host/Client multiplayer with tribe claiming
 // ═══════════════════════════════════════════════════════════
 let gun=null,gunWorld=null,peerId='p'+F(R()*1e8);
-let peerCount=0,isHost=false,isClient=false;
-let claimedTribes={};// peerId -> tribeId
-let stateChannel=null;
+// (declarations moved above — see top of renderer section)
 
-// BroadcastChannel for same-browser tab sync (always works, no relay needed)
-let bc=null;
-function initBroadcastChannel(){
+// ═══════════════════════════════════════════════════════════
+//  WEBSOCKET MULTIPLAYER
+// ═══════════════════════════════════════════════════════════
+function initMultiplayer(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  const wsUrl=`${proto}://${location.host}`;
   try{
-    bc=new BroadcastChannel('aalf-'+worldSeed);
-    bc.onmessage=(e)=>{
-      const msg=e.data;
-      if(!msg||msg.peer===peerId)return;
-      if(msg.type==='state'&&isClient){
-        try{_applySnapshot(JSON.parse(msg.data))}catch(e2){}
-      }
-      if(msg.type==='claim'){claimedTribes[msg.peerId]=msg.tribeId}
-      if(msg.type==='command'&&!isClient){
-        if(msg.cmd.type==='decree')issueDecree(msg.cmd.decree,msg.cmd.tribeId);
-        if(msg.cmd.type==='god'){godMode=msg.cmd.power;executeGodPower(msg.cmd.x,msg.cmd.y)}
-      }
-      if(msg.type==='host_alive'&&msg.peer!==peerId){
-        // Another tab is host — become client
-        if(!isClient&&!isHost){
-          isClient=true;updatePeerStatus();
-          // Request host to create a tribe for us
-          bc.postMessage({type:'join_request',peer:peerId});
-        }
-      }
-      // Host: create tribe for joining player
-      if(msg.type==='join_request'&&!isClient&&sim){
-        const unTribal=sim.world.humans.filter(h=>h.alive&&!h.tribe&&h.stage>=1);
-        if(unTribal.length>=2){
-          // Pick humans far from existing tribes
-          let bestH=unTribal[0];
-          if(sim.world.tribes.length>0){
-            const existingHome=sim.world.tribes[0];
-            bestH=unTribal.reduce((best,h)=>{
-              const d1=abs(h.x-existingHome.homeX)+abs(h.y-existingHome.homeY);
-              const d2=abs(best.x-existingHome.homeX)+abs(best.y-existingHome.homeY);
-              return d1>d2?h:best;
-            });
-          }
-          const tribe=new Tribe();tribe.homeX=bestH.x;tribe.homeY=bestH.y;
-          sim.world.tribes.push(tribe);
-          bestH.tribe=tribe;tribe.members.add(bestH.id);
-          const nearby=sim.world.nearbyHumans(bestH,6).filter(h=>!h.tribe&&h.stage>=1);
-          for(const h of nearby.slice(0,6)){h.tribe=tribe;tribe.members.add(h.id)}
-          // Tell the joining client which tribe is theirs
-          bc.postMessage({type:'tribe_assigned',peer:msg.peer,tribeId:tribe.id,tribeName:tribe.name});
-          try{showToast(`🏕 Player 2 founded the ${tribe.name}!`,'monument')}catch(e){}
-          sim.bus.emit(E.TRIBE_FORM,tribe.id,{name:tribe.name,size:tribe.sz});
-        }
-      }
-      // Client: receive tribe assignment from host
-      if(msg.type==='tribe_assigned'&&msg.peer===peerId){
-        govTribeName=msg.tribeName;// match by NAME since IDs change on snapshot rebuild
-        govTribeId=msg.tribeId;// initial ID, will be re-matched each frame
-        const el=document.getElementById('gov-tribe');
-        if(el){el.textContent=msg.tribeName;el.style.color='#e0c050'}
-        try{showToast(`🏕 Your tribe "${msg.tribeName}" has been founded!`,'monument')}catch(e){}
-      }
-      peerCount=mx(peerCount,msg.peerCount||1);
-      updatePeerStatus();
-      // Host responds to ping immediately
-      if(msg.type==='ping'&&msg.peer!==peerId&&!isClient&&sim){
-        bc.postMessage({type:'host_alive',peer:peerId,peerCount:peerCount+1});
-        // Also immediately send current state so new client renders correctly
-        const snap=_createSnapshot();
-        bc.postMessage({type:'state',data:JSON.stringify(snap),peer:peerId,peerCount:peerCount+1});
-      }
+    gameSocket=new WebSocket(wsUrl);
+    gameSocket.onopen=()=>{
+      console.log('Connected to server');
+      gameSocket.send(JSON.stringify({type:'join',seed:worldSeed,peerId}));
     };
-    // Announce self — this triggers host to respond
-    bc.postMessage({type:'ping',peer:peerId});
-    console.log('BroadcastChannel connected for tab sync');
-  }catch(e){console.log('BroadcastChannel not available')}
+    gameSocket.onmessage=(e)=>{
+      try{
+        const msg=JSON.parse(e.data);
+        if(msg.type==='role'){
+          if(msg.role==='host'){isHost=true;isClient=false}else{isClient=true;isHost=false}
+          if(msg.promoted)try{showToast('👑 You are now the HOST!','monument')}catch(e2){}
+          updatePeerStatus();
+        }else if(msg.type==='state'&&isClient&&sim){
+          try{const snap=typeof msg.data==='string'?JSON.parse(msg.data):msg.data;_applySnapshot(snap)}catch(e2){}
+        }else if(msg.type==='player_joined'&&!isClient&&sim){
+          // Host: create tribe for new player
+          const unTribal=sim.world.humans.filter(h=>h.alive&&!h.tribe&&h.stage>=1);
+          if(unTribal.length>=2){
+            let bestH=unTribal[0];
+            if(sim.world.tribes.length>0){const ex=sim.world.tribes[0];
+              bestH=unTribal.reduce((b,h)=>(abs(h.x-ex.homeX)+abs(h.y-ex.homeY))>(abs(b.x-ex.homeX)+abs(b.y-ex.homeY))?h:b);}
+            const tribe=new Tribe();tribe.homeX=bestH.x;tribe.homeY=bestH.y;
+            sim.world.tribes.push(tribe);
+            bestH.tribe=tribe;tribe.members.add(bestH.id);
+            const nearby=sim.world.nearbyHumans(bestH,6).filter(h=>!h.tribe&&h.stage>=1);
+            for(const h of nearby.slice(0,6)){h.tribe=tribe;tribe.members.add(h.id)}
+            gameSocket.send(JSON.stringify({type:'tribe_created',forPeer:msg.peerId,tribeName:tribe.name,tribeId:tribe.id}));
+            try{showToast(`🏕 Player joined! Tribe "${tribe.name}" founded!`,'monument')}catch(e2){}
+            sim.bus.emit(E.TRIBE_FORM,tribe.id,{name:tribe.name,size:tribe.sz});
+          }
+        }else if(msg.type==='tribe_assigned'){
+          govTribeName=msg.tribeName;govTribeId=msg.tribeId;
+          const el=document.getElementById('gov-tribe');
+          if(el){el.textContent=msg.tribeName;el.style.color='#e0c050'}
+          try{showToast(`🏕 Your tribe "${msg.tribeName}" has been founded!`,'monument')}catch(e2){}
+        }else if(msg.type==='command'&&!isClient&&sim){
+          if(msg.cmd.type==='decree')issueDecree(msg.cmd.decree,msg.cmd.tribeId);
+          if(msg.cmd.type==='god'){godMode=msg.cmd.power;executeGodPower(msg.cmd.x,msg.cmd.y)}
+        }else if(msg.type==='players'){
+          peerCount=msg.count||1;if(msg.tribes)claimedTribes=msg.tribes;updatePeerStatus();
+        }
+      }catch(e2){}
+    };
+    gameSocket.onclose=()=>{gameSocket=null;updatePeerStatus()};
+    gameSocket.onerror=()=>{console.log('No server — single player');gameSocket=null;updatePeerStatus()};
+  }catch(e){updatePeerStatus()}
 }
 
-function initGun(){
-  // Always init BroadcastChannel for same-browser sync
-  initBroadcastChannel();
-  try{
-    if(typeof Gun!=='undefined')return _setupGun();
-    const s=document.createElement('script');
-    // Gun.js disabled — all Heroku relays are dead. Using BroadcastChannel only.
-    // To re-enable: uncomment the line below with a working relay URL
-    // s.src='https://cdn.jsdelivr.net/npm/gun/gun.js';
-    console.log('P2P sync via BroadcastChannel (same browser tabs)');
-    updatePeerStatus();return;
-    s.onload=()=>_setupGun();
-    s.onerror=()=>{console.log('Gun.js unavailable — using BroadcastChannel only');updatePeerStatus()};
-    document.head.appendChild(s);
-  }catch(e){console.log('Gun.js init failed:',e)}
-}
-
-function _setupGun(){
-  try{
-    // Try multiple Gun relays — some may be down
-    gun=Gun({peers:['https://gun-us.herokuapp.com/gun','https://relay.peer.ooo/gun','https://gun-manhattan.herokuapp.com/gun'],localStorage:true});
-    const roomId='aalf-'+worldSeed;
-    gunWorld=gun.get(roomId);
-
-    // ── Check if a host exists ──
-    gunWorld.get('host').once((data)=>{
-      if(data&&data.id&&data.id!==peerId&&(Date.now()-data.ts)<30000){
-        // Host exists — become client
-        isClient=true;isHost=false;
-        console.log('Joining as CLIENT. Host:',data.id);
-        _setupClient();
-      }else{
-        // No host or stale — become host
-        isHost=true;isClient=false;
-        gunWorld.get('host').put({id:peerId,ts:Date.now(),seed:worldSeed});
-        console.log('Becoming HOST for room:',roomId);
-        _setupHost();
-      }
-      updatePeerStatus();
-    });
-
-    // ── Presence ──
-    gunWorld.get('peers').get(peerId).put({id:peerId,joined:Date.now()});
-    gunWorld.get('peers').map().on(()=>{peerCount++;updatePeerStatus()});
-
-    // ── Tribe claiming ──
-    gunWorld.get('claims').map().on((data)=>{
-      if(data&&data.peerId&&data.tribeId){
-        claimedTribes[data.peerId]=data.tribeId;
-      }
-    });
-
-    // ── Listen for commands from clients ──
-    gunWorld.get('commands').map().on((data)=>{
-      if(!isHost||!data||data.peer===peerId)return;
-      if(data.type==='decree'&&sim){
-        const tribe=sim.world.tribes.find(t=>t.id===data.tribeId);
-        if(tribe){tribe._decree=data.decree;tribe._decreeTick=sim.world.tick;
-          activeDecrees.push(data);updateDecreeList();}
-      }
-      if(data.type==='god'&&sim){
-        godMode=data.power;executeGodPower(data.x,data.y);
-      }
-    });
-  }catch(e){console.log('Gun setup error:',e)}
-}
-
-function _setupHost(){
-  // Host broadcasts sim state every 30 ticks
-  setInterval(()=>{
-    if(!sim||!isHost||!gunWorld)return;
-    // Keep host alive
-    gunWorld.get('host').put({id:peerId,ts:Date.now(),seed:worldSeed});
-    // Broadcast compact state snapshot
-    if(sim.world.tick%30===0){
-      const snapshot=_createSnapshot();
-      gunWorld.get('state').put({tick:sim.world.tick,data:JSON.stringify(snapshot),ts:Date.now()});
-    }
-  },1000);
-}
-
-function _setupClient(){
-  // Client receives state from host and renders it
-  gunWorld.get('state').on((data)=>{
-    if(!data||!data.data||!isClient)return;
-    try{
-      const snap=JSON.parse(data.data);
-      _applySnapshot(snap);
-    }catch(e){}
-  });
-}
+function sendToServer(msg){if(gameSocket&&gameSocket.readyState===1)gameSocket.send(JSON.stringify(msg))}
 
 function _createSnapshot(){
   const w=sim.world;
@@ -3372,9 +3258,8 @@ function _createSnapshot(){
       belief:t.belief,leader:t.leaderName,isEmpire:t.isEmpire,disease:t.disease?.name||null,
       wars:t.wars,trades:t.trades,rituals:t.rituals,wealth:t.wealth|0,
       techs:Object.entries(t.techs).filter(([k,v])=>v).map(([k])=>k),
-      vassals:t.vassals.length,overlord:!!t.overlord,faithStr:+(t.faithStr||0).toFixed(2),
-      cultureScore:t.cultureScore|0,currencyTier:t.currencyTier,
-      skinBase:t.skinBase,skinLight:t.skinLight})),
+      skinBase:t.skinBase,skinLight:t.skinLight,faithStr:+(t.faithStr||0).toFixed(2),
+      cultureScore:t.cultureScore|0,currencyTier:t.currencyTier})),
     animals:w.animals.filter(a=>a.alive).map(a=>({x:+a.x.toFixed(1),y:+a.y.toFixed(1),type:a.type})),
     structures:w.structures.slice(0,150).map(s=>({x:s.x,y:s.y,type:s.type})),
     cities:w.cities.map(c=>({x:c.x,y:c.y,name:c.name,tier:c.tier})),
@@ -3383,130 +3268,58 @@ function _createSnapshot(){
     births:sim.st.b,deaths:sim.st.d,
   };
 }
-
 function _applySnapshot(snap){
   if(!sim||!sim.world)return;
   const w=sim.world;
-  // Sync tick/time
-  w.tick=snap.tick||w.tick;
-  w.year=F((snap.tick||0)/50);
-  w.season=snap.season||w.season;
-  w.timeOfDay=snap.timeOfDay||w.timeOfDay;
-
-  // Sync tribes first (need them for human assignment)
-  w.tribes=[];
-  const tribeObjs=[];
-  if(snap.tribes){
-    for(const t of snap.tribes){
-      const tribe=new Tribe(t.hue);
-      tribe.id=t.id||tribe.id;tribe.name=t.name;tribe.homeX=t.homeX;tribe.homeY=t.homeY;
-      tribe.belief=t.belief;tribe.leaderName=t.leader;tribe.isEmpire=t.isEmpire;
-      tribe.disease=t.disease?{name:t.disease}:null;
-      tribe.wars=t.wars||0;tribe.trades=t.trades||0;tribe.rituals=t.rituals||0;
-      tribe.wealth=t.wealth||0;tribe.faithStr=t.faithStr||.2;
-      tribe.cultureScore=t.cultureScore||0;tribe.currencyTier=t.currencyTier||0;
-      tribe.skinBase=t.skinBase||40;tribe.skinLight=t.skinLight||45;
-      if(t.techs)for(const tk of t.techs)tribe.techs[tk]=1;
-      tribeObjs.push(tribe);
-      w.tribes.push(tribe);
-    }
-  }
-
-  // Sync humans
+  w.tick=snap.tick||w.tick;w.year=F((snap.tick||0)/50);
+  w.season=snap.season||w.season;w.timeOfDay=snap.timeOfDay||w.timeOfDay;
+  w.tribes=[];const tribeObjs=[];
+  if(snap.tribes){for(const t of snap.tribes){
+    const tribe=new Tribe(t.hue);tribe.id=t.id||tribe.id;tribe.name=t.name;tribe.homeX=t.homeX;tribe.homeY=t.homeY;
+    tribe.belief=t.belief;tribe.leaderName=t.leader;tribe.isEmpire=t.isEmpire;
+    tribe.disease=t.disease?{name:t.disease}:null;tribe.wars=t.wars||0;tribe.trades=t.trades||0;tribe.rituals=t.rituals||0;
+    tribe.wealth=t.wealth||0;tribe.faithStr=t.faithStr||.2;tribe.cultureScore=t.cultureScore||0;tribe.currencyTier=t.currencyTier||0;
+    tribe.skinBase=t.skinBase||40;tribe.skinLight=t.skinLight||45;
+    if(t.techs)for(const tk of t.techs)tribe.techs[tk]=1;
+    tribeObjs.push(tribe);w.tribes.push(tribe);
+  }}
   w.humans=[];
-  if(snap.humans){
-    for(const h of snap.humans){
-      const human=new Human(h.x,h.y,null);
-      human.name=h.name||human.name;
-      human.age=h.stage===0?2:h.stage===1?10:h.stage===3?55:25;
-      human.stage=h.stage;human.sex=h.sex;human.tool=h.tool;
-      human.task=h.task;human.hunger=h.hunger;human.alive=true;
-      human.children=h.children||0;human.kills=h.kills||0;
-      // Assign tribe and phenotype from tribe data
-      if(h.tribeIdx>=0&&h.tribeIdx<tribeObjs.length){
-        const tribe=tribeObjs[h.tribeIdx];
-        human.tribe=tribe;tribe.members.add(human.id);
-        human.phenoHue=tribe.skinBase+F((R()-.5)*6);
-        human.phenoLight=tribe.skinLight+F((R()-.5)*4);
-      }else{
-        human.phenoHue=35+F((R()-.5)*10);
-        human.phenoLight=42+F((R()-.5)*8);
-      }
-      human.tx=[h.x];human.ty=[h.y];
-      w.humans.push(human);
-    }
-  }
-
-  // Sync animals
-  w.animals=[];
-  if(snap.animals){
-    for(const a of snap.animals){
-      const animal=new Animal(a.type,a.x,a.y);
-      w.animals.push(animal);
-    }
-  }
-
-  // Sync structures (lightweight)
-  w.structures=[];
-  if(snap.structures){
-    for(const s of snap.structures)w.structures.push(new Structure(s.type,s.x,s.y,null));
-  }
-
-  // Sync cities, wonders, ruins
+  if(snap.humans){for(const h of snap.humans){
+    const human=new Human(h.x,h.y,null);human.name=h.name||human.name;
+    human.age=h.stage===0?2:h.stage===1?10:h.stage===3?55:25;
+    human.stage=h.stage;human.sex=h.sex;human.tool=h.tool;human.task=h.task;human.hunger=h.hunger;human.alive=true;
+    human.children=h.children||0;human.kills=h.kills||0;
+    if(h.tribeIdx>=0&&h.tribeIdx<tribeObjs.length){
+      const tribe=tribeObjs[h.tribeIdx];human.tribe=tribe;tribe.members.add(human.id);
+      human.phenoHue=tribe.skinBase+F((R()-.5)*6);human.phenoLight=tribe.skinLight+F((R()-.5)*4);
+    }else{human.phenoHue=35+F((R()-.5)*10);human.phenoLight=42+F((R()-.5)*8)}
+    human.tx=[h.x];human.ty=[h.y];w.humans.push(human);
+  }}
+  w.animals=[];if(snap.animals){for(const a of snap.animals)w.animals.push(new Animal(a.type,a.x,a.y))}
+  w.structures=[];if(snap.structures){for(const s of snap.structures)w.structures.push(new Structure(s.type,s.x,s.y,null))}
   w.cities=(snap.cities||[]).map(c=>{const city=new City(c.x,c.y,null,c.name);city.tier=c.tier;return city});
   w.wonders=(snap.wonders||[]).map(ww=>new Wonder(ww.name,ww.x,ww.y,null));
   w.ruins=(snap.ruins||[]).map(r=>new Ruin(r.x,r.y,r.name,{}));
-
-  // Re-match player's tribe by NAME (IDs change on each snapshot rebuild)
-  if(govTribeName){
-    const match=w.tribes.find(t=>t.name===govTribeName);
-    if(match){
-      govTribeId=match.id;
-      const el=document.getElementById('gov-tribe');
-      if(el){el.textContent=match.name+' ('+match.sz+')';el.style.color=match.color}
-    }
-  }
-}
-
-function claimTribe(tribeId){
-  if(!gunWorld)return;
-  // Check if already claimed by someone else
-  for(const[pid,tid]of Object.entries(claimedTribes)){
-    if(tid===tribeId&&pid!==peerId){
-      try{showToast(`⚠ That tribe is claimed by another player!`,'disaster')}catch(e){}
-      return false;
-    }
-  }
-  claimedTribes[peerId]=tribeId;
-  if(gunWorld)gunWorld.get('claims').get(peerId).put({peerId,tribeId,ts:Date.now()});
-  if(bc)try{bc.postMessage({type:'claim',peerId,tribeId})}catch(e){}
-  govTribeId=tribeId;
-  return true;
+  if(govTribeName){const match=w.tribes.find(t=>t.name===govTribeName);if(match){govTribeId=match.id;
+    const el=document.getElementById('gov-tribe');if(el){el.textContent=match.name+' ('+match.sz+')';el.style.color=match.color}}}
 }
 
 function sendCommand(cmd){
-  if(isHost||(!isClient&&!isHost)){
-    // Host (or standalone) applies directly
+  if(!isClient){
     if(cmd.type==='decree')issueDecree(cmd.decree,cmd.tribeId);
     if(cmd.type==='god'){godMode=cmd.power;executeGodPower(cmd.x,cmd.y)}
-  }else{
-    // Client sends to host via BroadcastChannel + Gun
-    if(bc)try{bc.postMessage({type:'command',cmd,peer:peerId})}catch(e){}
-    if(gunWorld)gunWorld.get('commands').get(Date.now().toString()).put({...cmd,peer:peerId});
+  }else if(gameSocket){
+    sendToServer({type:'command',cmd});
   }
 }
 
 function updatePeerStatus(){
-  const el=document.getElementById('xpeers');
-  if(!el)return;
-  if(gun&&gunWorld){
-    const role=isHost?'HOST':isClient?'client':'connecting';
-    const claimed=Object.keys(claimedTribes).length;
-    el.textContent=`${role} (${mx(1,peerCount)} peers, ${claimed} claimed)`;
+  const el=document.getElementById('xpeers');if(!el)return;
+  if(gameSocket&&gameSocket.readyState===1){
+    el.textContent=`${isHost?'HOST':'CLIENT'} (${peerCount} players)`;
     el.className='peer-status peer-online';
   }else{
-    el.textContent='offline (single player)';
-    el.className='peer-status peer-offline';
+    el.textContent='single player';el.className='peer-status peer-offline';
   }
 }
 
@@ -3564,7 +3377,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     // Share seed via URL
     if(!params.has('seed'))history.replaceState(null,'',`?seed=${worldSeed}`);
     // Init Gun.js for decentralized sync
-    initGun();
+    initMultiplayer();
     // Make tribe bar clickable for governance
     const origShowTD=window.showTribeDetail;
     window.showTribeDetail=function(t){if(t)selectGovTribe(t);if(origShowTD)origShowTD(t)};
