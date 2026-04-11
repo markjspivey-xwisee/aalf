@@ -2412,8 +2412,8 @@ let lt=0;function loop(){if(!run)return;const now=performance.now();if(now-lt>=1
   if(!isClient){
     sim.step();
     weather.tick(sim.world.season);
-    // Auto-create player's tribe: gather nearby humans into a new tribe
-    if(!govTribeId&&sim.world.tick>20){
+    // Auto-create player's tribe (only if no host responded within 60 ticks)
+    if(!govTribeId&&sim.world.tick>60&&!isClient){
       // Find a cluster of humans to form the player's tribe
       const unTribal=sim.world.humans.filter(h=>h.alive&&!h.tribe&&h.stage>=1);
       if(unTribal.length>=3){
@@ -3255,8 +3255,15 @@ function initBroadcastChannel(){
       }
       peerCount=mx(peerCount,msg.peerCount||1);
       updatePeerStatus();
+      // Host responds to ping immediately
+      if(msg.type==='ping'&&msg.peer!==peerId&&!isClient&&sim){
+        bc.postMessage({type:'host_alive',peer:peerId,peerCount:peerCount+1});
+        // Also immediately send current state so new client renders correctly
+        const snap=_createSnapshot();
+        bc.postMessage({type:'state',data:JSON.stringify(snap),peer:peerId,peerCount:peerCount+1});
+      }
     };
-    // Announce self
+    // Announce self — this triggers host to respond
     bc.postMessage({type:'ping',peer:peerId});
     console.log('BroadcastChannel connected for tab sync');
   }catch(e){console.log('BroadcastChannel not available')}
@@ -3268,7 +3275,11 @@ function initGun(){
   try{
     if(typeof Gun!=='undefined')return _setupGun();
     const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/gun/gun.js';
+    // Gun.js disabled — all Heroku relays are dead. Using BroadcastChannel only.
+    // To re-enable: uncomment the line below with a working relay URL
+    // s.src='https://cdn.jsdelivr.net/npm/gun/gun.js';
+    console.log('P2P sync via BroadcastChannel (same browser tabs)');
+    updatePeerStatus();return;
     s.onload=()=>_setupGun();
     s.onerror=()=>{console.log('Gun.js unavailable — using BroadcastChannel only');updatePeerStatus()};
     document.head.appendChild(s);
