@@ -3212,7 +3212,43 @@ function initBroadcastChannel(){
       }
       if(msg.type==='host_alive'&&msg.peer!==peerId){
         // Another tab is host — become client
-        if(!isClient&&!isHost){isClient=true;updatePeerStatus()}
+        if(!isClient&&!isHost){
+          isClient=true;updatePeerStatus();
+          // Request host to create a tribe for us
+          bc.postMessage({type:'join_request',peer:peerId});
+        }
+      }
+      // Host: create tribe for joining player
+      if(msg.type==='join_request'&&!isClient&&sim){
+        const unTribal=sim.world.humans.filter(h=>h.alive&&!h.tribe&&h.stage>=1);
+        if(unTribal.length>=2){
+          // Pick humans far from existing tribes
+          let bestH=unTribal[0];
+          if(sim.world.tribes.length>0){
+            const existingHome=sim.world.tribes[0];
+            bestH=unTribal.reduce((best,h)=>{
+              const d1=abs(h.x-existingHome.homeX)+abs(h.y-existingHome.homeY);
+              const d2=abs(best.x-existingHome.homeX)+abs(best.y-existingHome.homeY);
+              return d1>d2?h:best;
+            });
+          }
+          const tribe=new Tribe();tribe.homeX=bestH.x;tribe.homeY=bestH.y;
+          sim.world.tribes.push(tribe);
+          bestH.tribe=tribe;tribe.members.add(bestH.id);
+          const nearby=sim.world.nearbyHumans(bestH,6).filter(h=>!h.tribe&&h.stage>=1);
+          for(const h of nearby.slice(0,6)){h.tribe=tribe;tribe.members.add(h.id)}
+          // Tell the joining client which tribe is theirs
+          bc.postMessage({type:'tribe_assigned',peer:msg.peer,tribeId:tribe.id,tribeName:tribe.name});
+          try{showToast(`🏕 Player 2 founded the ${tribe.name}!`,'monument')}catch(e){}
+          sim.bus.emit(E.TRIBE_FORM,tribe.id,{name:tribe.name,size:tribe.sz});
+        }
+      }
+      // Client: receive tribe assignment from host
+      if(msg.type==='tribe_assigned'&&msg.peer===peerId){
+        govTribeId=msg.tribeId;
+        const el=document.getElementById('gov-tribe');
+        if(el){el.textContent=msg.tribeName;el.style.color='#e0c050'}
+        try{showToast(`🏕 Your tribe "${msg.tribeName}" has been founded!`,'monument')}catch(e){}
       }
       peerCount=mx(peerCount,msg.peerCount||1);
       updatePeerStatus();
@@ -3343,36 +3379,47 @@ function _applySnapshot(snap){
   w.season=snap.season||w.season;
   w.timeOfDay=snap.timeOfDay||w.timeOfDay;
 
-  // Sync humans — rebuild from snapshot
+  // Sync tribes first (need them for human assignment)
+  w.tribes=[];
+  const tribeObjs=[];
+  if(snap.tribes){
+    for(const t of snap.tribes){
+      const tribe=new Tribe(t.hue);
+      tribe.id=t.id||tribe.id;tribe.name=t.name;tribe.homeX=t.homeX;tribe.homeY=t.homeY;
+      tribe.belief=t.belief;tribe.leaderName=t.leader;tribe.isEmpire=t.isEmpire;
+      tribe.disease=t.disease?{name:t.disease}:null;
+      tribe.wars=t.wars||0;tribe.trades=t.trades||0;tribe.rituals=t.rituals||0;
+      tribe.wealth=t.wealth||0;tribe.faithStr=t.faithStr||.2;
+      tribe.cultureScore=t.cultureScore||0;tribe.currencyTier=t.currencyTier||0;
+      tribe.skinBase=t.skinBase||40;tribe.skinLight=t.skinLight||45;
+      if(t.techs)for(const tk of t.techs)tribe.techs[tk]=1;
+      tribeObjs.push(tribe);
+      w.tribes.push(tribe);
+    }
+  }
+
+  // Sync humans
   w.humans=[];
   if(snap.humans){
     for(const h of snap.humans){
       const human=new Human(h.x,h.y,null);
-      human.age=15;// approximate
+      human.name=h.name||human.name;
+      human.age=h.stage===0?2:h.stage===1?10:h.stage===3?55:25;
       human.stage=h.stage;human.sex=h.sex;human.tool=h.tool;
       human.task=h.task;human.hunger=h.hunger;human.alive=true;
-      human.phenoHue=35;human.phenoLight=45;
-      if(h.tribeIdx>=0&&snap.tribes&&snap.tribes[h.tribeIdx]){
-        const tData=snap.tribes[h.tribeIdx];
-        human.phenoHue=tData.hue||35;
+      human.children=h.children||0;human.kills=h.kills||0;
+      // Assign tribe and phenotype from tribe data
+      if(h.tribeIdx>=0&&h.tribeIdx<tribeObjs.length){
+        const tribe=tribeObjs[h.tribeIdx];
+        human.tribe=tribe;tribe.members.add(human.id);
+        human.phenoHue=tribe.skinBase+F((R()-.5)*6);
+        human.phenoLight=tribe.skinLight+F((R()-.5)*4);
+      }else{
+        human.phenoHue=35+F((R()-.5)*10);
+        human.phenoLight=42+F((R()-.5)*8);
       }
       human.tx=[h.x];human.ty=[h.y];
       w.humans.push(human);
-    }
-  }
-
-  // Sync tribes
-  w.tribes=[];
-  if(snap.tribes){
-    for(const t of snap.tribes){
-      const tribe=new Tribe(t.hue);
-      tribe.name=t.name;tribe.homeX=t.homeX;tribe.homeY=t.homeY;
-      tribe.belief=t.belief;tribe.leaderName=t.leader;tribe.isEmpire=t.isEmpire;
-      tribe.disease=t.disease?{name:t.disease}:null;
-      // Assign humans to tribes
-      const tribeHumans=w.humans.filter((_,i)=>snap.humans[i]?.tribeIdx===snap.tribes.indexOf(t));
-      for(const h of tribeHumans){h.tribe=tribe;tribe.members.add(h.id)}
-      w.tribes.push(tribe);
     }
   }
 
